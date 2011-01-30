@@ -9,11 +9,11 @@ using Mono.Collections.Generic;
 namespace ILRepack
 {
     // worse class name ever
-    public class ReferenceFixator
+    internal class ReferenceFixator
     {
         private readonly ModuleDefinition target;
 
-        public ReferenceFixator(ModuleDefinition target)
+        internal ReferenceFixator(ModuleDefinition target)
         {
             this.target = target;
         }
@@ -54,7 +54,7 @@ namespace ILRepack
             return type;
         }
 
-        public void FixReferences(TypeDefinition type)
+        internal void FixReferences(TypeDefinition type)
         {
             // FixReferences(type.GenericParameters, type);
 
@@ -146,7 +146,7 @@ namespace ILRepack
             }
         }
 
-        public void FixReferences(Collection<CustomAttribute> attributes, IGenericParameterProvider context)
+        internal void FixReferences(Collection<CustomAttribute> attributes, IGenericParameterProvider context)
         {
             for (int i = 0; i < attributes.Count; i++)
             {
@@ -203,7 +203,7 @@ namespace ILRepack
         }
 
 
-        private MethodReference Fix(MethodReference method, IGenericParameterProvider context)
+        internal MethodReference Fix(MethodReference method, IGenericParameterProvider context)
         {
             if (method.IsGenericInstance)
             {

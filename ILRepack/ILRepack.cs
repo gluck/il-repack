@@ -145,14 +145,23 @@ namespace ILRepack
                 Import(r, MainModule.Types);
             }
 
+            CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes);
+            CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations);
+
+            ReferenceFixator fixator = new ReferenceFixator(MainModule);
+            if (OrigMainModule.EntryPoint != null)
+            {
+                MainModule.EntryPoint = fixator.Fix(Import(OrigMainAssemblyDefinition.EntryPoint), null).Resolve();
+            }
+
             INFO("Fixing references");
             // this step travels through all TypeRefs & replaces them by matching TypeDefs
 
-            ReferenceFixator fixator = new ReferenceFixator(MainModule);
             foreach (var r in MainModule.Types)
             {
                 fixator.FixReferences(r);
             }
+            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)
@@ -161,16 +170,6 @@ namespace ILRepack
                 MainModule.AssemblyReferences.Any(
                     y => y.Name == mergedAssemblyName && MainModule.AssemblyReferences.Remove(y));
             }
-
-            CopyCustomAttributes(MergedAssemblies[0].CustomAttributes, TargetAssemblyDefinition.CustomAttributes);
-            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
-
-            CopySecurityDeclarations(MergedAssemblies[0].SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations);
-
-            // Suprisingly we don't need to fix anything for the entry point, cecil can cope with the MethodDefinition coming from another assembly
-            // It's a relief cause the below fix'ing doesn't work (we'd need to lookup the method instead)
-            // TargetAssemblyDefinition.EntryPoint = (MethodDefinition)Fix(Import(MergedAssemblies[0].EntryPoint), null);
-            TargetAssemblyDefinition.EntryPoint = MergedAssemblies[0].EntryPoint;
 
             var parameters = new WriterParameters();
             if (KeyFile != null && File.Exists(KeyFile))

@@ -1,0 +1,13 @@
+syntax: glob
+
+_ReSharper*
+.gitignore
+.git
+bin
+obj
+*.suo
+*.user
+*.pidb
+*.userprefs
+*.xml
+*.gpState
