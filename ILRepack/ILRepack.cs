@@ -356,7 +356,9 @@ namespace ILRepack
         private void CloneTo(MethodDefinition meth, TypeDefinition type)
         {
             // TODO: ignore duplicate method
-            MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, null);
+
+            // use void placeholder as we'll do the return type import later on (after generic parameters)
+            MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, MainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
 
             type.Methods.Add(nm);

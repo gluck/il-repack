@@ -159,7 +159,7 @@ namespace Mono.Cecil {
 		public MethodReference (string name, TypeReference returnType)
 			: base (name)
 		{
-			if (false /* ILRepack // returnType == null*/)
+			if (returnType == null)
 				throw new ArgumentNullException ("returnType");
 
 			this.return_type = new MethodReturnType (this);
