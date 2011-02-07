@@ -12,12 +12,13 @@ namespace ILRepack
     {
         public string OutputFile { get; set; }
         public bool UnionMerge { get; set; }
-        public bool Log { get; set; }
+        public bool LogEnabled { get; set; }
         public Version Version { get; set; }
         public string KeyFile { get; set; }
+        public bool MergeDebugInfo { get; set; }
 
         [Obsolete("Not implemented yet")]
-        public string LogFile { get; set; }
+        public string LogEnabledFile { get; set; }
 
         public Kind? TargetKind { get; set; }
 
@@ -32,7 +33,8 @@ namespace ILRepack
         public ILRepack()
         {
             // default values
-            Log = true;
+            LogEnabled = true;
+            MergeDebugInfo = true;
         }
 
         private static bool OptB(string val, bool def)
@@ -45,28 +47,39 @@ namespace ILRepack
             if (val == null) return val;
             return val.Substring(val.IndexOf(':') + 1);
         }
+        
+        private void Log(object str)
+        {
+            if (LogEnabled)
+            {
+                Console.WriteLine(str.ToString());
+            }
+        }
 
         [STAThread]
         public static int Main(string[] args)
         {
-            // TODO complete
             ILRepack repack = new ILRepack();
             try
             {
+                // TODO: verify arguments, more arguments
                 repack.KeyFile = OptS(args.FirstOrDefault(x => x.StartsWith("/keyfile:")));
-                repack.Log = OptB(args.FirstOrDefault(x => x.StartsWith("/log:")), repack.Log);
+                repack.LogEnabled = OptB(args.FirstOrDefault(x => x.StartsWith("/LogEnabled:")), repack.LogEnabled);
                 repack.OutputFile = OptS(args.FirstOrDefault(x => x.StartsWith("/out:")));
                 repack.UnionMerge = args.Any(x => x == "/union");
+                if (args.Any(x => x.StartsWith("/ndebug")))
+                    repack.MergeDebugInfo = false;
                 if (args.Any(x => x.StartsWith("/ver:")))
                 {
                     repack.Version = new Version(OptS(args.First(x => x.StartsWith("/ver:"))));
                 }
-                repack.SetInputAssemblies(args.Where(File.Exists).ToArray());
+                // everything that doesn't start with a '/' must be a file to merge (TODO: verify this)
+                repack.SetInputAssemblies(args.Where(x => !x.StartsWith("/") && File.Exists(x)).ToArray());
                 repack.Repack();
             }
             catch (Exception e)
             {
-                if (repack.Log) Console.WriteLine(e);
+                repack.Log(e);
                 return 1;
             }
             return 0;
@@ -75,7 +88,23 @@ namespace ILRepack
 
         public void SetInputAssemblies(string[] assems)
         {
-            MergedAssemblies = assems.Select(x => AssemblyDefinition.ReadAssembly(x)).ToList();
+            MergedAssemblies = new List<AssemblyDefinition>();
+            // TODO: this could be parallelized to gain speed
+            bool mergedDebugInfo = false;
+            foreach (string assembly in assems)
+            {
+                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
+                // read PDB/MDB?
+                if (MergeDebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(Path.ChangeExtension(assembly, "mdb"))))
+                {
+                    rp.ReadSymbols = true;
+                    mergedDebugInfo = true;
+                }
+                AssemblyDefinition mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                MergedAssemblies.Add(mergeAsm);
+            }
+            // prevent writing PDB if we haven't read any
+            MergeDebugInfo = mergedDebugInfo;
         }
 
         public enum Kind
@@ -89,11 +118,14 @@ namespace ILRepack
         public void Repack()
         {
             ModuleKind kind = OrigMainModule.Kind;
-            if (TargetKind.HasValue) switch (TargetKind.Value)
+            if (TargetKind.HasValue)
             {
-                case Kind.Dll:    kind = ModuleKind.Dll;     break;
-                case Kind.Exe:    kind = ModuleKind.Console; break;
-                case Kind.WinExe: kind = ModuleKind.Windows; break;
+                switch (TargetKind.Value)
+                {
+                    case Kind.Dll: kind = ModuleKind.Dll; break;
+                    case Kind.Exe: kind = ModuleKind.Console; break;
+                    case Kind.WinExe: kind = ModuleKind.Windows; break;
+                }
             }
             TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(OrigMainAssemblyDefinition.Name, OrigMainModule.Name,
                 new ModuleParameters()
@@ -102,7 +134,9 @@ namespace ILRepack
                         Architecture = OrigMainModule.Architecture,
                         Runtime = OrigMainModule.Runtime
                     });
-            if (Version != null) TargetAssemblyDefinition.Name.Version = Version;
+            if (Version != null)
+                TargetAssemblyDefinition.Name.Version = Version;
+            // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
 
             INFO("Processing references");
             // Add all references to merged assembly (probably not necessary)
@@ -113,7 +147,10 @@ namespace ILRepack
                     TargetAssemblyDefinition.Name.Name != name &&
                     !TargetAssemblyDefinition.MainModule.AssemblyReferences.Any(y => y.Name == name))
                 {
-                    INFO("- add reference " + z);
+                    // TODO: fix .NET runtime references?
+                    // - to target a specific runtime version or
+                    // - to target a single version if merged assemblies target different versions
+                    VERBOSE("- add reference " + z);
                     TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(z);
                 }
             }
@@ -132,7 +169,8 @@ namespace ILRepack
             // merge resources
             foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
             {
-                INFO("- Importing " + r.Name);
+                // TODO: handle duplicate names?
+                VERBOSE("- Importing " + r.Name);
                 TargetAssemblyDefinition.MainModule.Resources.Add(r);
             }
 
@@ -140,13 +178,15 @@ namespace ILRepack
             // merge types
             foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Types))
             {
-                if (r.FullName == "<Module>") continue;
-                INFO("- Importing " + r);
+                if (r.FullName == "<Module>")
+                    continue;
+                // TODO: special handling for "<PrivateImplementationDetails>" (always merge this types by adding subtypes) 
+                VERBOSE("- Importing " + r);
                 Import(r, MainModule.Types);
             }
 
             CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes);
-            CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations);
+            CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
 
             ReferenceFixator fixator = new ReferenceFixator(MainModule);
             if (OrigMainModule.EntryPoint != null)
@@ -171,6 +211,7 @@ namespace ILRepack
                     y => y.Name == mergedAssemblyName && MainModule.AssemblyReferences.Remove(y));
             }
 
+            INFO("Writing output assembly to disk");
             var parameters = new WriterParameters();
             if (KeyFile != null && File.Exists(KeyFile))
             {
@@ -179,10 +220,14 @@ namespace ILRepack
                     parameters.StrongNameKeyPair = new System.Reflection.StrongNameKeyPair(stream);
                 }
             }
+            // write PDB/MDB?
+            if (MergeDebugInfo)
+                parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
-
+            
+            // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly
-            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile);
+            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate));
             // lazy match on the name (not full) to catch requirements about merging different versions
             bool failed = false;
             foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => x.Name == y.Name.Name)))
@@ -197,13 +242,25 @@ namespace ILRepack
 
         public void ERROR(string msg)
         {
-            if (Log) Console.WriteLine("ERROR: " + msg);
+            Log("ERROR: " + msg);
         }
 
         public void INFO(string msg)
         {
-            if (Log) Console.WriteLine("INFO: " + msg);
+            Log("INFO: " + msg);
         }
+
+        public void VERBOSE(string msg)
+        {
+            Log("INFO: " + msg);
+        }
+
+        public void IGNOREDUP(string ignoredType, object ignoredObject)
+        {
+            // TODO: put on a list and log a summary
+            INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
+        }
+
 
         // Real stuff below //
 
@@ -211,11 +268,14 @@ namespace ILRepack
         // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
         //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
 
+        /// <summary>
+        /// Clones a field to a newly created type
+        /// </summary>
         private void CloneTo(FieldDefinition field, TypeDefinition nt)
         {
             if (nt.Fields.Any(x => x.Name == field.Name))
             {
-                Console.WriteLine("Ignoring duplicate field " + field);
+                IGNOREDUP("field", field);
                 return;
             }
             FieldDefinition nf = new FieldDefinition(field.Name, field.Attributes, Import(field.FieldType, nt));
@@ -236,17 +296,30 @@ namespace ILRepack
             CopyCustomAttributes(field.CustomAttributes, nf.CustomAttributes);
         }
 
+        /// <summary>
+        /// Clones a parameter into a newly created method
+        /// </summary>
         private void CloneTo(ParameterDefinition param, MethodDefinition context, Collection<ParameterDefinition> col)
         {
             ParameterDefinition pd = new ParameterDefinition(param.Name, param.Attributes, Import(param.ParameterType, context));
+            if (param.HasMarshalInfo)
+                pd.MarshalInfo = param.MarshalInfo;
             col.Add(pd);
         }
 
-        private void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output)
+        /// <summary>
+        /// Clones a collection of SecurityDeclarations
+        /// </summary>
+        private void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
         {
             foreach (SecurityDeclaration sec in input)
             {
-                output.Add(new SecurityDeclaration(sec.Action));
+                SecurityDeclaration newSec = new SecurityDeclaration(sec.Action);
+                foreach (SecurityAttribute sa in sec.SecurityAttributes)
+                {
+                    newSec.SecurityAttributes.Add(new SecurityAttribute(Import(sa.AttributeType, context)));// TODO: Import AttributeType?
+                }
+                output.Add(newSec);
             }
         }
 
@@ -266,7 +339,13 @@ namespace ILRepack
 
         private void CloneTo(EventDefinition evt, TypeDefinition nt, Collection<EventDefinition> col)
         {
-            // TODO: ignore duplicate event
+            // ignore duplicate event
+            if (nt.Events.Any(x => x.Name == evt.Name))
+            {
+                IGNOREDUP("event", evt);
+                return;
+            }
+
             EventDefinition ed = new EventDefinition(evt.Name, evt.Attributes, Import(evt.EventType, nt));
             col.Add(ed);
             if (evt.AddMethod != null)
@@ -303,7 +382,8 @@ namespace ILRepack
         private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
         {
             TypeDefinition type = MainModule.GetType(reference.FullName);
-            if (type != null) return type;
+            if (type != null)
+                return type;
 
             if (context is MethodReference)
                 return MainModule.Import(reference, (MethodReference)context);
@@ -328,6 +408,8 @@ namespace ILRepack
 
         private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
         {
+            // If this is a Method/TypeDefinition, it will be corrected to a definition again later
+
             if (context is MethodReference)
                 return MainModule.Import(reference, (MethodReference)context);
             if (context is TypeReference)
@@ -337,7 +419,13 @@ namespace ILRepack
 
         private void CloneTo(PropertyDefinition prop, TypeDefinition nt, Collection<PropertyDefinition> col)
         {
-            // TODO: ignore duplicate property
+            // ignore duplicate property
+            if (nt.Properties.Any(x => x.Name == prop.Name))
+            {
+                IGNOREDUP("property", prop);
+                return;
+            }
+
             PropertyDefinition pd = new PropertyDefinition(prop.Name, prop.Attributes, Import(prop.PropertyType, nt));
             col.Add(pd);
             if (prop.SetMethod != null)
@@ -347,7 +435,7 @@ namespace ILRepack
             if (prop.HasOtherMethods)
             {
                 // TODO
-                throw new InvalidOperationException();
+                throw new NotSupportedException("Property has other methods");
             }
 
             CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes);
@@ -355,8 +443,13 @@ namespace ILRepack
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type)
         {
-            // TODO: ignore duplicate method
-
+            // ignore duplicate method
+            if (type.Methods.Any(x => (x.Name == meth.Name) && (x.Parameters.Count == meth.Parameters.Count) &&
+                (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
+            {
+                IGNOREDUP("method", meth);
+                return;
+            }
             // use void placeholder as we'll do the return type import later on (after generic parameters)
             MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, MainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
@@ -374,12 +467,18 @@ namespace ILRepack
             foreach (MethodReference ov in meth.Overrides)
                 nm.Overrides.Add(Import(ov, type));
 
-            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations);
+            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, type);
             CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
+
+            nm.IsAddOn = meth.IsAddOn;
+            nm.IsRemoveOn = meth.IsRemoveOn;
+            nm.IsGetter = meth.IsGetter;
+            nm.IsSetter = meth.IsSetter;
+            nm.CallingConvention = meth.CallingConvention;
         }
 
         private void CloneTo(MethodBody body, MethodDefinition parent)
@@ -390,7 +489,6 @@ namespace ILRepack
             nb.MaxStackSize = body.MaxStackSize;
             nb.InitLocals = body.InitLocals;
             nb.LocalVarToken = body.LocalVarToken;
-            //nb.CodeSize = body.CodeSize;
 
             foreach (VariableDefinition var in body.Variables)
                 nb.Variables.Add(new VariableDefinition(
@@ -400,10 +498,10 @@ namespace ILRepack
             {
                 Instruction ni;
 
-			    if (instr.OpCode.Code == Code.Calli)
-			    {
-			        ni = Instruction.Create(instr.OpCode, (CallSite) instr.Operand);
-			    }
+                if (instr.OpCode.Code == Code.Calli)
+                {
+                    ni = Instruction.Create(instr.OpCode, (CallSite)instr.Operand);
+                }
                 else switch (instr.OpCode.OperandType)
                 {
                     case OperandType.InlineArg:
@@ -524,15 +622,15 @@ namespace ILRepack
 
         internal void Import(TypeDefinition type, Collection<TypeDefinition> col)
         {
-            TypeDefinition nt = MainModule.GetType(type.Namespace, type.Name);
+            TypeDefinition nt = MainModule.GetType(type.FullName);
             if (nt == null)
             {
                 nt = new TypeDefinition(type.Namespace, type.Name, type.Attributes);
                 col.Add(nt);
 
                 CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
-
-                if (type.BaseType != null) nt.BaseType = Import(type.BaseType, nt);
+                if (type.BaseType != null)
+                    nt.BaseType = Import(type.BaseType, nt);
 
                 if (type.HasLayoutInfo)
                 {
@@ -551,19 +649,23 @@ namespace ILRepack
             }
 
             // nested types first
-            foreach (TypeDefinition nested in type.NestedTypes) Import(nested, nt.NestedTypes);
-            foreach (FieldDefinition field in type.Fields) CloneTo(field, nt);
+            foreach (TypeDefinition nested in type.NestedTypes)
+                Import(nested, nt.NestedTypes);
+            foreach (FieldDefinition field in type.Fields)
+                CloneTo(field, nt);
 
             // methods before fields / events
-            foreach (MethodDefinition meth in type.Methods) CloneTo(meth, nt);
+            foreach (MethodDefinition meth in type.Methods)
+                CloneTo(meth, nt);
 
-            foreach (EventDefinition evt in type.Events) CloneTo(evt, nt, nt.Events);
-            foreach (PropertyDefinition prop in type.Properties) CloneTo(prop, nt, nt.Properties);
+            foreach (EventDefinition evt in type.Events)
+                CloneTo(evt, nt, nt.Events);
+            foreach (PropertyDefinition prop in type.Properties)
+                CloneTo(prop, nt, nt.Properties);
 
-            CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations);
+            CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
             CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes);
         }
-
     }
 }

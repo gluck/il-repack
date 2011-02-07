@@ -31,7 +31,8 @@ namespace ILRepack
 
         private TypeReference Fix(TypeReference type, IGenericParameterProvider context)
         {
-            if (type == null || type.IsDefinition || type.IsGenericParameter) return type;
+            if (type == null || type.IsDefinition || type.IsGenericParameter)
+                return type;
 
             if (type is TypeSpecification)
             {
@@ -48,7 +49,7 @@ namespace ILRepack
             }
             else
             {
-                var t2 = target.GetType(type.Namespace, type.Name);
+                var t2 = target.GetType(type.FullName);
                 return t2 ?? type;
             }
             return type;
@@ -61,11 +62,16 @@ namespace ILRepack
             type.BaseType = Fix(type.BaseType, type);
 
             // nested types first
-            foreach (TypeDefinition nested in type.NestedTypes) FixReferences(nested);
-            foreach (FieldDefinition field in type.Fields) FixReferences(field, type);
-            foreach (MethodDefinition meth in type.Methods) FixReferences(meth, type);
-            foreach (EventDefinition evt in type.Events) FixReferences(evt, type);
-            foreach (PropertyDefinition prop in type.Properties) FixReferences(prop, type);
+            foreach (TypeDefinition nested in type.NestedTypes)
+                FixReferences(nested);
+            foreach (FieldDefinition field in type.Fields)
+                FixReferences(field, type);
+            foreach (MethodDefinition meth in type.Methods)
+                FixReferences(meth, type);
+            foreach (EventDefinition evt in type.Events)
+                FixReferences(evt, type);
+            foreach (PropertyDefinition prop in type.Properties)
+                FixReferences(prop, type);
 
             // FixReferences(type.SecurityDeclarations);
             FixReferences(type.Interfaces, type);
@@ -96,6 +102,15 @@ namespace ILRepack
             meth.ReturnType = Fix(meth.ReturnType, meth);
             if (meth.HasBody)
                 FixReferences(meth.Body, meth);
+            if (meth.IsAssembly)
+            {
+                // Ensure we do not reduce access if the overridden method is in the same assembly
+                // (reducing access from 'public' to 'internal' works with different assemblies)
+                if (ReflectionHelper.MethodOverridesInternalPublic(meth))
+                {
+                    meth.IsPublic = true;
+                }
+            }
         }
 
         private void FixReferences(MethodBody body, IGenericParameterProvider context)
@@ -202,7 +217,6 @@ namespace ILRepack
             return imported_instance;
         }
 
-
         internal MethodReference Fix(MethodReference method, IGenericParameterProvider context)
         {
             if (method.IsGenericInstance)
@@ -212,7 +226,8 @@ namespace ILRepack
             method.DeclaringType = Fix(method.DeclaringType, context);
             method.ReturnType = Fix(method.ReturnType, method);
             // FixReferences(method.GenericParameters, method);
-            foreach (var p in method.Parameters) FixReferences(p, method);
+            foreach (var p in method.Parameters)
+                FixReferences(p, method);
             return method;
         }
 
@@ -280,8 +295,5 @@ namespace ILRepack
             }
             throw new InvalidOperationException();
         }
-
-
-
     }
 }
