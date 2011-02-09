@@ -267,6 +267,8 @@ namespace ILRepack
                 return new PointerType(fet);
             if (type is ByReferenceType)
                 return new ByReferenceType(fet);
+            if (type is PinnedType)
+                return new PinnedType(fet);
             if (type is SentinelType)
                 return new SentinelType(fet);
             if (type is OptionalModifierType)
