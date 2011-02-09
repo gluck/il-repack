@@ -323,6 +323,17 @@ namespace ILRepack
             }
         }
 
+        // helper
+        private static void Copy<T>(Collection<T> input, Collection<T> output, Action<T, T> action)
+        {
+            if (input.Count != output.Count)
+                throw new InvalidOperationException();
+            for (int i = 0; i < input.Count; i++)
+            {
+                action.Invoke(input[i], output[i]);
+            }
+        }
+
         private void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
         {
             foreach (GenericParameter gp in input)
@@ -331,10 +342,10 @@ namespace ILRepack
 
                 ngp.Attributes = gp.Attributes;
                 output.Add(ngp);
-
-                CopyTypeReferences(gp.Constraints, ngp.Constraints, nt);
-                CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes);
             }
+            // delay copy to ensure all generics parameters are already present
+            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
+            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes));
         }
 
         private void CloneTo(EventDefinition evt, TypeDefinition nt, Collection<EventDefinition> col)
