@@ -110,7 +110,7 @@ namespace ILRepack
 						return true;
 					}
 				}
-				baseType = baseTypeDef.DeclaringType;
+                baseType = baseTypeDef.BaseType;
 			}
 			return false;
 		}
