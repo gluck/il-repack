@@ -207,8 +207,15 @@ namespace ILRepack
             foreach (AssemblyDefinition asm in MergedAssemblies)
             {
                 string mergedAssemblyName = asm.Name.Name;
-                MainModule.AssemblyReferences.Any(
-                    y => y.Name == mergedAssemblyName && MainModule.AssemblyReferences.Remove(y));
+                foreach (var refer in MainModule.AssemblyReferences.ToArray())
+                {
+                    // remove all referenced assemblies with same same, as we didn't bother on the version when merging
+                    // in case we reference same assemblies with different versions, there might be prior errors if we don't merge the 'largest one'
+                    if (refer.Name == mergedAssemblyName)
+                    {
+                        MainModule.AssemblyReferences.Remove(refer);
+                    }
+                }
             }
 
             INFO("Writing output assembly to disk");
