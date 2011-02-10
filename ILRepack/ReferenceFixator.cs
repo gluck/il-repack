@@ -23,10 +23,18 @@ namespace ILRepack
             return Fix(type, null);
         }
 
-        private void FixReferences(FieldReference field, IGenericParameterProvider context)
+        private FieldReference Fix(FieldReference field, IGenericParameterProvider context)
         {
             field.DeclaringType = Fix(field.DeclaringType, context);
+            if (field.DeclaringType.IsDefinition)
+            {
+                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.First(x => x.Name == field.Name);
+                if (def == null)
+                    throw new NullReferenceException();
+                return def;
+            }
             field.FieldType = Fix(field.FieldType, context);
+            return field;
         }
 
         private TypeReference Fix(TypeReference type, IGenericParameterProvider context)
@@ -138,7 +146,7 @@ namespace ILRepack
             switch (instr.OpCode.OperandType)
             {
                 case OperandType.InlineField:
-                    FixReferences((FieldReference)instr.Operand, context);
+                    instr.Operand = Fix((FieldReference)instr.Operand, context);
                     break;
                 case OperandType.InlineMethod:
                     instr.Operand = Fix((MethodReference)instr.Operand, context);
@@ -150,7 +158,7 @@ namespace ILRepack
                     if (instr.Operand is TypeReference)
                         instr.Operand = Fix((TypeReference)instr.Operand, context);
                     else if (instr.Operand is FieldReference)
-                        FixReferences((FieldReference)instr.Operand, context);
+                        instr.Operand = Fix((FieldReference)instr.Operand, context);
                     else if (instr.Operand is MethodReference)
                         instr.Operand = Fix((MethodReference)instr.Operand, context);
                     else
@@ -219,6 +227,15 @@ namespace ILRepack
 
         internal MethodReference Fix(MethodReference method, IGenericParameterProvider context)
         {
+            TypeReference declaringType = Fix(method.DeclaringType, context);
+            if (declaringType.IsDefinition)
+            {
+                MethodDefinition def = ReflectionHelper.FindMethodDefinitionInType((TypeDefinition)declaringType,
+                    method.Name, method.Parameters);
+                if (def == null)
+                    throw new NullReferenceException();
+                return def;
+            }
             if (method.IsGenericInstance)
             {
                 return Fix((GenericInstanceMethod)method, context);
