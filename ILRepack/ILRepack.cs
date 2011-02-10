@@ -13,12 +13,15 @@ namespace ILRepack
         public string OutputFile { get; set; }
         public bool UnionMerge { get; set; }
         public bool LogEnabled { get; set; }
+        public bool LogVerbose { get; set; }
         public Version Version { get; set; }
         public string KeyFile { get; set; }
         public bool MergeDebugInfo { get; set; }
 
         [Obsolete("Not implemented yet")]
         public string LogEnabledFile { get; set; }
+
+        private bool MergeIntoNewAssembly  { get; set; }
 
         public Kind? TargetKind { get; set; }
 
@@ -34,7 +37,10 @@ namespace ILRepack
         {
             // default values
             LogEnabled = true;
+            LogVerbose = false;
+
             MergeDebugInfo = true;
+            MergeIntoNewAssembly = true;
         }
 
         private static bool OptB(string val, bool def)
@@ -54,6 +60,30 @@ namespace ILRepack
             {
                 Console.WriteLine(str.ToString());
             }
+        }
+
+        public void ERROR(string msg)
+        {
+            Log("ERROR: " + msg);
+        }
+
+        public void INFO(string msg)
+        {
+            Log("INFO: " + msg);
+        }
+
+        public void VERBOSE(string msg)
+        {
+            if (LogVerbose)
+            {
+                Log("INFO: " + msg);
+            }
+        }
+
+        public void IGNOREDUP(string ignoredType, object ignoredObject)
+        {
+            // TODO: put on a list and log a summary
+            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
         [STAThread]
@@ -101,7 +131,11 @@ namespace ILRepack
                     mergedDebugInfo = true;
                 }
                 AssemblyDefinition mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                MergedAssemblies.Add(mergeAsm);
+                if (!MergeIntoNewAssembly && (TargetAssemblyDefinition == null))
+                    // first assembly is the target assembly
+                    TargetAssemblyDefinition = mergeAsm;
+                else
+                    MergedAssemblies.Add(mergeAsm);
             }
             // prevent writing PDB if we haven't read any
             MergeDebugInfo = mergedDebugInfo;
@@ -127,13 +161,16 @@ namespace ILRepack
                     case Kind.WinExe: kind = ModuleKind.Windows; break;
                 }
             }
-            TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(OrigMainAssemblyDefinition.Name, OrigMainModule.Name,
-                new ModuleParameters()
-                    {
-                        Kind = kind,
-                        Architecture = OrigMainModule.Architecture,
-                        Runtime = OrigMainModule.Runtime
-                    });
+            if (TargetAssemblyDefinition == null)
+            {
+                TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(OrigMainAssemblyDefinition.Name, OrigMainModule.Name,
+                    new ModuleParameters()
+                        {
+                            Kind = kind,
+                            Architecture = OrigMainModule.Architecture,
+                            Runtime = OrigMainModule.Runtime
+                        });
+            }
             if (Version != null)
                 TargetAssemblyDefinition.Name.Version = Version;
             // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
@@ -185,7 +222,7 @@ namespace ILRepack
                 Import(r, MainModule.Types);
             }
 
-            CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes);
+            CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
             CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
 
             ReferenceFixator fixator = new ReferenceFixator(MainModule);
@@ -247,27 +284,6 @@ namespace ILRepack
                 throw new Exception("Merging failed, see above errors");
         }
 
-        public void ERROR(string msg)
-        {
-            Log("ERROR: " + msg);
-        }
-
-        public void INFO(string msg)
-        {
-            Log("INFO: " + msg);
-        }
-
-        public void VERBOSE(string msg)
-        {
-            Log("INFO: " + msg);
-        }
-
-        public void IGNOREDUP(string ignoredType, object ignoredObject)
-        {
-            // TODO: put on a list and log a summary
-            INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
-        }
-
 
         // Real stuff below //
 
@@ -300,7 +316,7 @@ namespace ILRepack
             if (field.HasLayoutInfo)
                 nf.Offset = field.Offset;
 
-            CopyCustomAttributes(field.CustomAttributes, nf.CustomAttributes);
+            CopyCustomAttributes(field.CustomAttributes, nf.CustomAttributes, nt);
         }
 
         /// <summary>
@@ -314,6 +330,16 @@ namespace ILRepack
             col.Add(pd);
         }
 
+        private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeArgument(Import(arg.Type, context), arg.Value);
+        }
+
+        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
+        }
+
         /// <summary>
         /// Clones a collection of SecurityDeclarations
         /// </summary>
@@ -324,7 +350,22 @@ namespace ILRepack
                 SecurityDeclaration newSec = new SecurityDeclaration(sec.Action);
                 foreach (SecurityAttribute sa in sec.SecurityAttributes)
                 {
-                    newSec.SecurityAttributes.Add(new SecurityAttribute(Import(sa.AttributeType, context)));// TODO: Import AttributeType?
+                    SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
+                    if (sa.HasFields)
+                    {
+                        foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                        {
+                            newSa.Fields.Add(Copy(cana, context));
+                        }
+                    }
+                    if (sa.HasProperties)
+                    {
+                        foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                        {
+                            newSa.Properties.Add(Copy(cana, context));
+                        }
+                    }
+                    newSec.SecurityAttributes.Add(newSa);
                 }
                 output.Add(newSec);
             }
@@ -352,7 +393,7 @@ namespace ILRepack
             }
             // delay copy to ensure all generics parameters are already present
             Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
-            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes));
+            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
         }
 
         private void CloneTo(EventDefinition evt, TypeDefinition nt, Collection<EventDefinition> col)
@@ -378,14 +419,21 @@ namespace ILRepack
                 throw new InvalidOperationException();
             }
 
-            CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes);
+            CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
         }
 
-        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output)
+        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
         {
             foreach (CustomAttribute ca in input)
             {
-                output.Add(new CustomAttribute(Import(ca.Constructor), ca.GetBlob()));
+                CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
+                foreach (var arg in ca.ConstructorArguments)
+                    newCa.ConstructorArguments.Add(Copy(arg, context));
+                foreach (var arg in ca.Fields)
+                    newCa.Fields.Add(Copy(arg, context));
+                foreach (var arg in ca.Fields)
+                    newCa.Fields.Add(Copy(arg, context));
+                output.Add(newCa);
             }
         }
 
@@ -405,8 +453,13 @@ namespace ILRepack
 
             if (context is MethodReference)
                 return MainModule.Import(reference, (MethodReference)context);
-            if (context is TypeReference)
+            else if (context is TypeReference)
                 return MainModule.Import(reference, (TypeReference)context);
+            else if (context == null)
+            {
+                Console.WriteLine("Importing type without context: \"" + reference + "\"");
+                return MainModule.Import(reference);
+            }
             throw new InvalidOperationException();
         }
 
@@ -456,7 +509,7 @@ namespace ILRepack
                 throw new NotSupportedException("Property has other methods");
             }
 
-            CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes);
+            CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
         }
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type)
@@ -483,10 +536,10 @@ namespace ILRepack
                 CloneTo(param, nm, nm.Parameters);
 
             foreach (MethodReference ov in meth.Overrides)
-                nm.Overrides.Add(Import(ov, type));
+                nm.Overrides.Add(Import(ov, nm));
 
-            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, type);
-            CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes);
+            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
+            CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
             if (meth.HasBody)
@@ -655,6 +708,11 @@ namespace ILRepack
                     nt.ClassSize = type.ClassSize;
                     nt.PackingSize = type.PackingSize;
                 }
+                // don't copy these twice if UnionMerge==true
+                // TODO: we can move this down if we chek for duplicates when adding
+                CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
+                CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+                CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             }
             else if (UnionMerge)
             {
@@ -680,10 +738,6 @@ namespace ILRepack
                 CloneTo(evt, nt, nt.Events);
             foreach (PropertyDefinition prop in type.Properties)
                 CloneTo(prop, nt, nt.Properties);
-
-            CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
-            CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes);
         }
     }
 }

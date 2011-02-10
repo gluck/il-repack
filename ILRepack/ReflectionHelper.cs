@@ -45,9 +45,10 @@ namespace ILRepack
 
         public static MethodDefinition FindMethodDefinitionInType(TypeDefinition type, string methodName, Collection<ParameterDefinition> methodParameters)
         {
-            IEnumerable<MethodDefinition> realMds = type.Methods.Where(x => x.Name == methodName && ReflectionHelper.MethodParametersSeemEqual(x.Parameters, methodParameters));
-            if (realMds != null)
+            TypeDefinition t = type;
+            while (t != null)
             {
+                IEnumerable<MethodDefinition> realMds = t.Methods.Where(x => x.Name == methodName && ReflectionHelper.MethodParametersSeemEqual(x.Parameters, methodParameters));
                 if (realMds.Count() == 1)
                 {
                     MethodDefinition realMd = realMds.First();
@@ -56,6 +57,16 @@ namespace ILRepack
                 else if (realMds.Count() > 1)
                 {
                     throw new NotSupportedException();
+                }
+                else if ((t.BaseType != null) && (t.BaseType.IsDefinition))
+                {
+                    // IsDefinition: BaseType is in the same assembly
+                    t = (TypeDefinition)t.BaseType;
+                }
+                else
+                {
+                    // no base type or in other assembly
+                    return null;
                 }
             }
             return null;
