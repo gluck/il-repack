@@ -151,13 +151,23 @@ namespace ILRepack
             meth.ReturnType = Fix(meth.ReturnType, meth);
             if (meth.HasBody)
                 FixReferences(meth.Body, meth);
-            if (meth.IsAssembly)
+            if (meth.IsVirtual)
             {
                 // Ensure we do not reduce access if the overridden method is in the same assembly
                 // (reducing access from 'public' to 'internal' works with different assemblies)
-                if (ReflectionHelper.MethodOverridesInternalPublic(meth))
+                MethodDefinition baseMeth = GetOuterOverridenMethodDef(meth, context);
+                if ((baseMeth != null) && (baseMeth != meth))
                 {
-                    meth.IsPublic = true;
+                    MethodAttributes baseAttrs = baseMeth.Attributes;
+                    MethodAttributes methAttrs = meth.Attributes;
+                    MethodAttributes baseAccess = baseAttrs & MethodAttributes.MemberAccessMask;
+                    MethodAttributes methAccess = methAttrs & MethodAttributes.MemberAccessMask;
+                    if (baseAccess != methAccess)
+                    {
+                        MethodAttributes newMethAttrs = methAttrs & ~MethodAttributes.MemberAccessMask;
+                        newMethAttrs |= baseAccess;
+                        meth.Attributes = newMethAttrs;
+                    }
                 }
             }
         }
@@ -378,6 +388,49 @@ namespace ILRepack
                 return imported_instance;
             }
             throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Returns the base-most MethodDefinition (for implicitly or explicitly overridden methods) in this assembly.
+        /// (Meaning overridden methods in referenced assemblies do not count, therefore it returns a Definition, not a Reference.)
+        /// </summary>
+        public MethodDefinition GetOuterOverridenMethodDef(MethodDefinition meth, IGenericParameterProvider context)
+        {
+            foreach (var ov in meth.Overrides)
+            {
+                MethodReference fixedOv = Fix(ov, context);
+                if (fixedOv.IsDefinition)
+                {
+                    if (fixedOv.Module == meth.Module)
+                    {
+                        // it's a Definition, and in our module
+                        MethodDefinition fixedOvDef = (MethodDefinition)fixedOv;
+                        if (fixedOvDef.IsVirtual)
+                            return GetOuterOverridenMethodDef((MethodDefinition)fixedOv, context);
+                    }
+                }
+            }
+
+            // no explicit overrides found, check implicit overrides
+            TypeReference baseType = meth.DeclaringType.BaseType;
+            if ((baseType != null) && (baseType.Module == meth.Module))
+            {
+                TypeDefinition baseTypeDef = baseType.Resolve();
+                if (baseTypeDef != null)
+                {
+                    if (baseTypeDef.Module == meth.Module)
+                    {
+                        MethodDefinition baseMeth = ReflectionHelper.FindMethodDefinitionInType(baseTypeDef, meth.Name, meth.Parameters);
+                        if (baseMeth != null)
+                        {
+                            if (baseMeth.IsVirtual)
+                                return GetOuterOverridenMethodDef(baseMeth, context);
+                        }
+                    }
+                }
+            }
+            // no overridden method found, return the original method
+            return meth;
         }
     }
 }

@@ -71,59 +71,5 @@ namespace ILRepack
             }
             return null;
         }
-
-        /// <summary>
-        /// Returns true if explicit or implicit overrides of this function are in the same assembly and are public.
-        /// </summary>
-        public static bool MethodOverridesInternalPublic(MethodDefinition meth)
-        {
-            foreach (var ov in meth.Overrides)
-            {
-                if (ov.IsDefinition)
-                {
-                    // are they in the same module
-                    if (ov.Module == meth.Module)
-                    {
-                        MethodDefinition def = (MethodDefinition)ov;
-                        if (def.IsPublic)
-                        {
-                            Console.WriteLine("Explicit override is public: " + def);
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        int i = 0;
-                        i++;
-                    }
-                }
-            }
-            // no matching explicit overrides found, check implicit overrides
-            TypeReference baseType = meth.DeclaringType.BaseType;
-            // iterate over all base types in the same module
-            while ((baseType != null) && (baseType.Module == meth.Module))
-            {
-                TypeDefinition baseTypeDef = baseType.Resolve();
-                if (baseTypeDef == null)
-                {
-                    throw new NotImplementedException(); // TODO: just break;?
-                }
-                if (baseTypeDef.Module != meth.Module)
-                {
-                    break;
-                }
-                MethodDefinition baseMeth = FindMethodDefinitionInType(baseTypeDef, meth.Name, meth.Parameters);
-                if (baseMeth != null)
-                {
-                    if (baseMeth.IsPublic)
-                    {
-                        Console.WriteLine("Explicit override is public: " + baseMeth);
-                        return true;
-                    }
-                }
-                baseType = baseTypeDef.BaseType;
-            }
-            return false;
-        }
     }
 }
