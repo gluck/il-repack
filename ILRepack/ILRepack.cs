@@ -722,7 +722,7 @@ namespace ILRepack
                     default:
                         throw new InvalidOperationException();
                 }
-
+                ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
 
