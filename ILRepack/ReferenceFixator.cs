@@ -23,6 +23,14 @@ namespace ILRepack
             return Fix(type, null);
         }
 
+        private ModuleReference Fix(ModuleReference moduleRef)
+        {
+            ModuleReference nmr = target.ModuleReferences.First(x => x.Name == moduleRef.Name);
+            if (nmr == null)
+                throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
+            return nmr;
+        }
+
         private FieldReference Fix(FieldReference field, IGenericParameterProvider context)
         {
             field.DeclaringType = Fix(field.DeclaringType, context);
@@ -140,7 +148,7 @@ namespace ILRepack
             }
         }
 
-        private void FixReferences(Collection<SecurityDeclaration> securitydeclarations, IGenericParameterProvider context)
+        internal void FixReferences(Collection<SecurityDeclaration> securitydeclarations, IGenericParameterProvider context)
         {
             foreach(SecurityDeclaration sd in securitydeclarations)
             {
@@ -155,6 +163,10 @@ namespace ILRepack
 
         private void FixReferences(MethodDefinition meth, IGenericParameterProvider context)
         {
+            if (meth.HasPInvokeInfo)
+            {
+                meth.PInvokeInfo.Module = Fix(meth.PInvokeInfo.Module);
+            }
             // FixReferences(meth.GenericParameters, meth);
             FixReferences(meth.Parameters, meth);
             FixReferences(meth.Overrides, meth);

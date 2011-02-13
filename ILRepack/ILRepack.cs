@@ -306,6 +306,7 @@ namespace ILRepack
                 fixator.FixReferences(r);
             }
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
+            fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(MainModule.CustomAttributes, null);
 
             // final reference cleanup (Cecil Import automatically added them)
@@ -536,7 +537,7 @@ namespace ILRepack
                 return MainModule.Import(reference, (TypeReference)context);
             else if (context == null)
             {
-                Console.WriteLine("Importing type without context: \"" + reference + "\"");
+                // we come here when importing types used for assembly-level custom attributes
                 return MainModule.Import(reference);
             }
             throw new InvalidOperationException();
@@ -609,7 +610,9 @@ namespace ILRepack
             CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
 
             if (meth.HasPInvokeInfo)
-                nm.PInvokeInfo = meth.PInvokeInfo;
+            {
+                nm.PInvokeInfo = new PInvokeInfo(meth.PInvokeInfo.Attributes, meth.PInvokeInfo.EntryPoint, meth.PInvokeInfo.Module);
+            }
 
             foreach (ParameterDefinition param in meth.Parameters)
                 CloneTo(param, nm, nm.Parameters);
@@ -724,7 +727,7 @@ namespace ILRepack
                     default:
                         throw new InvalidOperationException();
                 }
-
+                ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
 
