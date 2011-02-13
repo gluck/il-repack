@@ -178,11 +178,9 @@ namespace ILRepack
             if (s.IndexOfAny(new []{'*', '?'}) == -1) return new []{s};
             if (Path.GetDirectoryName(s).IndexOfAny(new[] { '*', '?' }) != -1)
                 throw new Exception("Invalid path: " + s);
-            if (Path.IsPathRooted(s))
-            {
-                return Directory.GetFiles(Path.GetDirectoryName(s), Path.GetFileName(s));
-            }
-            return Directory.GetFiles(".", s);
+            string dir = Path.GetDirectoryName(s);
+            if(String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
+            return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
         }
 
         public enum Kind
