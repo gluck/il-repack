@@ -388,12 +388,12 @@ namespace ILRepacking
                 return new SentinelType(fet);
             if (type is OptionalModifierType)
             {
-                TypeReference fmt = ((OptionalModifierType)type).ModifierType;
+                TypeReference fmt = Fix(((OptionalModifierType)type).ModifierType, context);
                 return new OptionalModifierType(fmt, fet);
             }
             if (type is RequiredModifierType)
             {
-                TypeReference fmt = ((RequiredModifierType)type).ModifierType;
+                TypeReference fmt = Fix(((RequiredModifierType)type).ModifierType);
                 return new RequiredModifierType(fmt, fet);
             }
             if (type is GenericInstanceType)
