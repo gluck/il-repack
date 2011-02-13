@@ -33,7 +33,7 @@ namespace ILRepacking
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
 
         // helpers
-        private ModuleDefinition MainModule { get { return TargetAssemblyDefinition.MainModule; } }
+        internal ModuleDefinition MainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
         // Following is null to ensure we don't use it when MergeIntoNewAssembly=false as it
         //  makes no sense (being the second assembly merged in that case, and not the primary)
@@ -73,6 +73,11 @@ namespace ILRepacking
         internal void ERROR(string msg)
         {
             Log("ERROR: " + msg);
+        }
+
+        internal void WARN(string msg)
+        {
+            Log("WARN: " + msg);
         }
 
         internal void INFO(string msg)
@@ -271,8 +276,6 @@ namespace ILRepacking
             // merge types
             foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Types))
             {
-                if (r.FullName == "<Module>")
-                    continue;
                 // TODO: special handling for "<PrivateImplementationDetails>" (always merge this types by adding subtypes) 
                 VERBOSE("- Importing " + r);
                 Import(r, MainModule.Types);
@@ -294,7 +297,7 @@ namespace ILRepacking
                 CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
                 CopyCustomAttributes(OrigMainModule.CustomAttributes, MainModule.CustomAttributes, null);
             }
-            ReferenceFixator fixator = new ReferenceFixator(MainModule);
+            ReferenceFixator fixator = new ReferenceFixator(this);
             if (MergeIntoNewAssembly)
             {
                 CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
@@ -806,8 +809,10 @@ namespace ILRepacking
                 CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
                 CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             }
-            else if (UnionMerge)
+            else if (UnionMerge || type.FullName == "<Module>")
             {
+                // Merging module because IKVM uses this class to store some fields.
+                // Doesn't fully work yet, as IKVM is nice enough to give all the fields the same name...
                 INFO("Merging " + type);
             }
             else

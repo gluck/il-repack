@@ -10,11 +10,11 @@ namespace ILRepacking
 {
     internal class ReferenceFixator
     {
-        private readonly ModuleDefinition target;
+        private readonly ILRepack repack;
 
-        internal ReferenceFixator(ModuleDefinition target)
+        internal ReferenceFixator(ILRepack repack)
         {
-            this.target = target;
+            this.repack = repack;
         }
 
         private TypeReference Fix(TypeReference type)
@@ -24,7 +24,7 @@ namespace ILRepacking
 
         private ModuleReference Fix(ModuleReference moduleRef)
         {
-            ModuleReference nmr = target.ModuleReferences.First(x => x.Name == moduleRef.Name);
+            ModuleReference nmr = repack.MainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
             if (nmr == null)
                 throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
             return nmr;
@@ -77,7 +77,7 @@ namespace ILRepacking
             }
             else
             {
-                var t2 = target.GetType(type.FullName);
+                var t2 = repack.MainModule.GetType(type.FullName);
                 return t2 ?? type;
             }
             return type;
@@ -193,6 +193,11 @@ namespace ILRepacking
                         meth.Attributes = newMethAttrs;
                     }
                 }
+                // this causes peverify issues with IKVM assemblies where java is more flexible such as: (A and B are classes, C interface, B extends A, C)
+                // - protected virtual A::foo() {}
+                // - C::foo();
+                // - public override B::foo() {}
+                // Peverify doesn't complain about this, but it complains if we alter the later to protected
             }
         }
 
@@ -324,18 +329,17 @@ namespace ILRepacking
 
         internal MethodReference Fix(MethodReference method, IGenericParameterProvider context)
         {
-            // if declaring type is in our new merged module, return the definition
             TypeReference declaringType = Fix(method.DeclaringType, context);
             if (method.IsGenericInstance)
             {
                 return Fix((GenericInstanceMethod)method, context);
             }
+            // if declaring type is in our new merged module, return the definition
             if (declaringType.IsDefinition && !method.IsDefinition)
             {
                 MethodDefinition def = ReflectionHelper.FindMethodDefinitionInType((TypeDefinition)declaringType, method);
                 if (def != null)
                     // if not found, the method might be outside of the new assembly (virtual call), so go on below
-
                     return def;
             }
             method.DeclaringType = declaringType;
@@ -343,6 +347,21 @@ namespace ILRepacking
             // FixReferences(method.GenericParameters, method);
             foreach (var p in method.Parameters)
                 FixReferences(p, method);
+            if (!method.IsDefinition && !method.DeclaringType.IsGenericInstance && (method.ReturnType.IsDefinition || method.Parameters.Any(x => x.ParameterType.IsDefinition)))
+            {
+                var culprit = method.ReturnType.IsDefinition
+                                     ? method.ReturnType
+                                     : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
+                // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
+                repack.WARN("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
+                repack.WARN(" - Remove the assembly defining " + culprit + " from the merge");
+                repack.WARN(" - Add assembly defining " + method + " to the merge");
+
+                // one case where it'll work correctly however (but doesn't seem common):
+                // A references B
+                // C references A
+                // C is merged into B
+            }
             return method;
         }
 
