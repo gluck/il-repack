@@ -34,7 +34,11 @@ namespace ILRepacking
 
         // helpers
         private ModuleDefinition MainModule { get { return TargetAssemblyDefinition.MainModule; } }
-        private AssemblyDefinition OrigMainAssemblyDefinition { get { return MergedAssemblies[0]; } }
+
+        // Following is null to ensure we don't use it when MergeIntoNewAssembly=false as it
+        //  makes no sense (being the second assembly merged in that case, and not the primary)
+        private AssemblyDefinition OrigMainAssemblyDefinition { get { return MergeIntoNewAssembly ? MergedAssemblies[0] : null; } } 
+
         private ModuleDefinition OrigMainModule { get { return OrigMainAssemblyDefinition.MainModule; } }
 
         public ILRepack()
@@ -195,18 +199,18 @@ namespace ILRepacking
 
         public void Repack()
         {
-            ModuleKind kind = OrigMainModule.Kind;
-            if (TargetKind.HasValue)
-            {
-                switch (TargetKind.Value)
-                {
-                    case Kind.Dll: kind = ModuleKind.Dll; break;
-                    case Kind.Exe: kind = ModuleKind.Console; break;
-                    case Kind.WinExe: kind = ModuleKind.Windows; break;
-                }
-            }
             if (TargetAssemblyDefinition == null)
             {
+                ModuleKind kind = OrigMainModule.Kind;
+                if (TargetKind.HasValue)
+                {
+                    switch (TargetKind.Value)
+                    {
+                        case Kind.Dll: kind = ModuleKind.Dll; break;
+                        case Kind.Exe: kind = ModuleKind.Console; break;
+                        case Kind.WinExe: kind = ModuleKind.Windows; break;
+                    }
+                }
                 TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(OrigMainAssemblyDefinition.Name, OrigMainModule.Name,
                     new ModuleParameters()
                         {
@@ -285,17 +289,19 @@ namespace ILRepacking
                     CopyCustomAttributes(mod.CustomAttributes, MainModule.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
                 }
             }
-            else
+            else if (MergeIntoNewAssembly)
             {
                 CopyCustomAttributes(OrigMainAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
                 CopyCustomAttributes(OrigMainModule.CustomAttributes, MainModule.CustomAttributes, null);
             }
-            CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
-
             ReferenceFixator fixator = new ReferenceFixator(MainModule);
-            if (OrigMainModule.EntryPoint != null)
+            if (MergeIntoNewAssembly)
             {
-                MainModule.EntryPoint = fixator.Fix(Import(OrigMainAssemblyDefinition.EntryPoint), null).Resolve();
+                CopySecurityDeclarations(OrigMainAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
+                if (OrigMainModule.EntryPoint != null)
+                {
+                    MainModule.EntryPoint = fixator.Fix(Import(OrigMainAssemblyDefinition.EntryPoint), null).Resolve();
+                }
             }
 
             INFO("Fixing references");
