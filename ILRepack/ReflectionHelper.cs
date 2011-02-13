@@ -4,7 +4,7 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-namespace ILRepack
+namespace ILRepacking
 {
     internal static class ReflectionHelper
     {

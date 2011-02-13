@@ -11,3 +11,6 @@ obj
 *.userprefs
 *.xml
 *.gpState
+glob:*.bak
+glob:*.rej
+glob:commands.txt

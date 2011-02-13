@@ -6,7 +6,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 
-namespace ILRepack
+namespace ILRepacking
 {
     public class ILRepack
     {
@@ -28,8 +28,9 @@ namespace ILRepack
 
         public Kind? TargetKind { get; set; }
 
-        private List<AssemblyDefinition> MergedAssemblies;
-        private AssemblyDefinition TargetAssemblyDefinition { get; set; }
+        internal List<string> MergedAssemblyFiles { get; set; }
+        internal List<AssemblyDefinition> MergedAssemblies { get; set; }
+        internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
 
         // helpers
         private ModuleDefinition MainModule { get { return TargetAssemblyDefinition.MainModule; } }
@@ -56,8 +57,8 @@ namespace ILRepack
             if (val == null) return val;
             return val.Substring(val.IndexOf(':') + 1);
         }
-        
-        private void Log(object str)
+
+        internal void Log(object str)
         {
             if (LogEnabled)
             {
@@ -65,17 +66,17 @@ namespace ILRepack
             }
         }
 
-        public void ERROR(string msg)
+        internal void ERROR(string msg)
         {
             Log("ERROR: " + msg);
         }
 
-        public void INFO(string msg)
+        internal void INFO(string msg)
         {
             Log("INFO: " + msg);
         }
 
-        public void VERBOSE(string msg)
+        internal void VERBOSE(string msg)
         {
             if (LogVerbose)
             {
@@ -83,7 +84,7 @@ namespace ILRepack
             }
         }
 
-        public void IGNOREDUP(string ignoredType, object ignoredObject)
+        internal void IGNOREDUP(string ignoredType, object ignoredObject)
         {
             // TODO: put on a list and log a summary
             //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
@@ -122,10 +123,11 @@ namespace ILRepack
 
         public void SetInputAssemblies(string[] assems)
         {
+            MergedAssemblyFiles = assems.SelectMany(x => ResolveFile(x)).ToList();
             MergedAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             bool mergedDebugInfo = false;
-            foreach (string assembly in assems.SelectMany(x=>ResolveFile(x)))
+            foreach (string assembly in MergedAssemblyFiles)
             {
                 INFO("Adding assembly for merge: " + assembly);
                 try
@@ -335,6 +337,10 @@ namespace ILRepack
             if (MergeDebugInfo)
                 parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
+
+            // nice to have, merge .config (assembly configuration file) & .xml (assembly documentation)
+            ConfigMerger.Process(this);
+            DocumentationMerger.Process(this);
             
             // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly

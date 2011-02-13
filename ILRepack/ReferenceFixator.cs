@@ -6,9 +6,8 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 
-namespace ILRepack
+namespace ILRepacking
 {
-    // worse class name ever
     internal class ReferenceFixator
     {
         private readonly ModuleDefinition target;
