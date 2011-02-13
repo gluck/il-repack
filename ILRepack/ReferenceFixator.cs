@@ -26,7 +26,7 @@ namespace ILRepack
         private FieldReference Fix(FieldReference field, IGenericParameterProvider context)
         {
             field.DeclaringType = Fix(field.DeclaringType, context);
-            if (field.DeclaringType.IsDefinition)
+            if (field.DeclaringType.IsDefinition && !field.IsDefinition)
             {
                 FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.First(x => x.Name == field.Name);
                 if (def == null)
@@ -37,10 +37,23 @@ namespace ILRepack
             return field;
         }
 
+        private HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
         private TypeReference Fix(TypeReference type, IGenericParameterProvider context)
         {
-            if (type == null || type.IsDefinition || type.IsGenericParameter)
+            if (type == null || type.IsDefinition)
                 return type;
+
+            if (type.IsGenericParameter)
+            {
+                var genPar = (GenericParameter) type;
+                if (!fixedGenericParameters.Contains(genPar))
+                {
+                    fixedGenericParameters.Add(genPar);
+                    FixReferences(genPar.Constraints, context);
+                    FixReferences(genPar.CustomAttributes, context);
+                }
+                return type;
+            }
 
             if (type is TypeSpecification)
             {
@@ -302,18 +315,17 @@ namespace ILRepack
         {
             // if declaring type is in our new merged module, return the definition
             TypeReference declaringType = Fix(method.DeclaringType, context);
-            if (declaringType.IsDefinition)
-            {
-                MethodDefinition def = ReflectionHelper.FindMethodDefinitionInType((TypeDefinition)declaringType,
-                    method.Name, method.Parameters);
-                if (def != null)
-                    // if not found, the method might be outside of the new assembly (virtual call), so go on below
-                    return def;
-            }
-
             if (method.IsGenericInstance)
             {
                 return Fix((GenericInstanceMethod)method, context);
+            }
+            if (declaringType.IsDefinition && !method.IsDefinition)
+            {
+                MethodDefinition def = ReflectionHelper.FindMethodDefinitionInType((TypeDefinition)declaringType, method);
+                if (def != null)
+                    // if not found, the method might be outside of the new assembly (virtual call), so go on below
+
+                    return def;
             }
             method.DeclaringType = declaringType;
             method.ReturnType = Fix(method.ReturnType, method);
@@ -420,7 +432,7 @@ namespace ILRepack
                 {
                     if (baseTypeDef.Module == meth.Module)
                     {
-                        MethodDefinition baseMeth = ReflectionHelper.FindMethodDefinitionInType(baseTypeDef, meth.Name, meth.Parameters);
+                        MethodDefinition baseMeth = ReflectionHelper.FindMethodDefinitionInType(baseTypeDef, meth);
                         if (baseMeth != null)
                         {
                             if (baseMeth.IsVirtual)
