@@ -37,6 +37,13 @@ namespace ILRepacking
             return ret;
         }
 
+        public string[] Options(string name)
+        {
+            var ret = parameters.Select(x => OptionFinder(name, x)).Where(x=>x!=null).ToArray();
+            parameters.RemoveAll(x => OptionFinder(name, x) != null);
+            return ret;
+        }
+
         public bool OptionBoolean(string name, bool def)
         {
             string val = Option(name);

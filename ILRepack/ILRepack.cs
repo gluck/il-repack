@@ -20,13 +20,13 @@ namespace ILRepacking
         public bool MergeDebugInfo { get; set; }
         public bool CopyAttributes { get; set; }
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
+        public Kind? TargetKind { get; set; }
 
         [Obsolete("Not implemented yet")]
         public string LogFile { get; set; }
+        // end of ILMerge-similar attributes
 
-        private bool MergeIntoNewAssembly  { get; set; }
-
-        public Kind? TargetKind { get; set; }
+        private bool MergeIntoNewAssembly { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
@@ -106,6 +106,11 @@ namespace ILRepacking
         {
             // TODO: verify arguments, more arguments
             CommandLine cmd = new CommandLine(args);
+            if (cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | args.Length == 0)
+            {
+                Usage();
+                Environment.Exit(2);
+            }
             KeyFile = cmd.Option("keyfile");
             LogEnabled = cmd.OptionBoolean("log", LogEnabled);
             OutputFile = cmd.Option("out");
@@ -116,11 +121,7 @@ namespace ILRepacking
             var version = cmd.Option("ver");
             if (!string.IsNullOrEmpty(version))
                 Version = new Version(version);
-            if (cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | args.Length == 0)
-            {
-                Usage();
-                Environment.Exit(2);
-            }
+            SetSearchDirectories(cmd.Options("lib"));
 
             // everything that doesn't start with a '/' must be a file to merge (TODO: verify this)
             SetInputAssemblies(cmd.OtherAguments);
@@ -128,7 +129,7 @@ namespace ILRepacking
 
         private void Usage()
         {
-            Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil - Version " + typeof(ILRepack).Assembly.GetName().Version);
+            Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil 0.9.4.0 - Version " + typeof(ILRepack).Assembly.GetName().Version.ToString(2));
             Console.WriteLine(@"Syntax: ILRepack.exe [/help] [/keyfile:<path>] [/log:true|false] [/ver:M.X.Y.Z] [/union] [/ndebug] [/copyattrs] [/allowmultiple] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
@@ -145,7 +146,16 @@ namespace ILRepacking
             Console.WriteLine(@"Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.");
         }
 
+        // ILMerge-like
+        public void SetSearchDirectories(string[] dirs)
+        {
+            foreach (var dir in dirs)
+            {
+                ((DefaultAssemblyResolver)GlobalAssemblyResolver.Instance).AddSearchDirectory(dir);
+            }
+        }
 
+        // ILMerge-like
         public void SetInputAssemblies(string[] assems)
         {
             MergedAssemblyFiles = assems.SelectMany(x => ResolveFile(x)).ToList();
