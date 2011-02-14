@@ -22,7 +22,7 @@ namespace ILRepacking
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
 
         [Obsolete("Not implemented yet")]
-        public string LogEnabledFile { get; set; }
+        public string LogFile { get; set; }
 
         private bool MergeIntoNewAssembly  { get; set; }
 
@@ -44,22 +44,8 @@ namespace ILRepacking
         public ILRepack()
         {
             // default values
-            LogEnabled = true;
             LogVerbose = false;
-
-            MergeDebugInfo = true;
             MergeIntoNewAssembly = true;
-        }
-
-        private static bool OptB(string val, bool def)
-        {
-            return val == null ? def : Boolean.Parse(OptS(val));
-        }
-
-        private static string OptS(string val)
-        {
-            if (val == null) return val;
-            return val.Substring(val.IndexOf(':') + 1);
         }
 
         internal void Log(object str)
@@ -105,20 +91,7 @@ namespace ILRepacking
             ILRepack repack = new ILRepack();
             try
             {
-                // TODO: verify arguments, more arguments
-                repack.KeyFile = OptS(args.FirstOrDefault(x => x.StartsWith("/keyfile:")));
-                repack.LogEnabled = OptB(args.FirstOrDefault(x => x.StartsWith("/LogEnabled:")), repack.LogEnabled);
-                repack.OutputFile = OptS(args.FirstOrDefault(x => x.StartsWith("/out:")));
-                repack.UnionMerge = args.Any(x => x == "/union");
-                repack.AllowMultipleAssemblyLevelAttributes = args.Any(x => x == "/allowMultiple");
-                repack.CopyAttributes = args.Any(x => x == "/copyattrs");
-                repack.MergeDebugInfo = !args.Any(x => x.StartsWith("/ndebug"));
-                if (args.Any(x => x.StartsWith("/ver:")))
-                {
-                    repack.Version = new Version(OptS(args.First(x => x.StartsWith("/ver:"))));
-                }
-                // everything that doesn't start with a '/' must be a file to merge (TODO: verify this)
-                repack.SetInputAssemblies(args.Where(x => !x.StartsWith("/")).ToArray());
+                repack.ReadArguments(args);
                 repack.Repack();
             }
             catch (Exception e)
@@ -127,6 +100,49 @@ namespace ILRepacking
                 return 1;
             }
             return 0;
+        }
+
+        private void ReadArguments(string[] args)
+        {
+            // TODO: verify arguments, more arguments
+            CommandLine cmd = new CommandLine(args);
+            KeyFile = cmd.Option("keyfile");
+            LogEnabled = cmd.OptionBoolean("log", LogEnabled);
+            OutputFile = cmd.Option("out");
+            UnionMerge = cmd.Modifier("union");
+            AllowMultipleAssemblyLevelAttributes = cmd.Modifier("allowmultiple");
+            CopyAttributes = cmd.Modifier("copyattrs");
+            MergeDebugInfo = !cmd.Modifier("ndebug");
+            var version = cmd.Option("ver");
+            if (!string.IsNullOrEmpty(version))
+                Version = new Version(version);
+            if (cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | args.Length == 0)
+            {
+                Usage();
+                Environment.Exit(2);
+            }
+
+            // everything that doesn't start with a '/' must be a file to merge (TODO: verify this)
+            SetInputAssemblies(cmd.OtherAguments);
+        }
+
+        private void Usage()
+        {
+            Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil - Version " + typeof(ILRepack).Assembly.GetName().Version);
+            Console.WriteLine(@"Syntax: ILRepack.exe [/help] [/keyfile:<path>] [/log:true|false] [/ver:M.X.Y.Z] [/union] [/ndebug] [/copyattrs] [/allowmultiple] /out:<path> <path_to_primary> [<other_assemblies> ...]");
+            Console.WriteLine(@" - /help              displays this usage");
+            Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
+            Console.WriteLine(@" - /log:false         disables logging (default is true)");
+            Console.WriteLine(@" - /ver:M.X.Y.Z       target assembly version");
+            Console.WriteLine(@" - /union             merges types with identical names into one");
+            Console.WriteLine(@" - /ndebug            disables symbol file generation");
+            Console.WriteLine(@" - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)");
+            Console.WriteLine(@" - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)");
+            Console.WriteLine(@" - /out:<path>        target assembly path, symbol/config/doc files will be written here as well");
+            Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
+            Console.WriteLine(@" - <other_assemblies> ...");
+            Console.WriteLine(@"");
+            Console.WriteLine(@"Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.");
         }
 
 
