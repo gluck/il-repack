@@ -112,7 +112,7 @@ namespace ILRepacking
                 Environment.Exit(2);
             }
             KeyFile = cmd.Option("keyfile");
-            LogEnabled = cmd.OptionBoolean("log", LogEnabled);
+            LogEnabled = cmd.OptionBoolean("log", true);
             OutputFile = cmd.Option("out");
             UnionMerge = cmd.Modifier("union");
             AllowMultipleAssemblyLevelAttributes = cmd.Modifier("allowmultiple");
