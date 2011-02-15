@@ -31,6 +31,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using System.Xml;
+
 using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Metadata;
@@ -1929,12 +1931,49 @@ namespace Mono.Cecil {
 			return signature;
 		}
 
-		SignatureWriter GetSecurityDeclarationSignature (SecurityDeclaration declaration)
+		SignatureWriter GetXmlSecurityDeclarationSignature(SecurityDeclaration declaration)
 		{
-			var signature = CreateSignatureWriter ();
-			if (!declaration.resolved) {
-				signature.WriteBytes (declaration.GetBlob ());
+			SecurityAttribute sa = declaration.SecurityAttributes[0];
+			TypeReference attrType = sa.AttributeType;
+			AssemblyNameReference attrAsm = (AssemblyNameReference)attrType.Scope;
+			string className = attrType.FullName + ", " + attrAsm.FullName;
+
+			XmlDocument xmlDoc = new XmlDocument();
+
+			XmlElement permissionSet = xmlDoc.CreateElement("PermissionSet");
+			permissionSet.SetAttribute("class", "System.Security.PermissionSet");
+			permissionSet.SetAttribute("version", "1");
+
+			XmlElement iPermission = xmlDoc.CreateElement("IPermission");
+			iPermission.SetAttribute("class", className);
+			iPermission.SetAttribute("version", "1");
+			foreach (var arg in sa.Properties)
+			{
+				iPermission.SetAttribute(arg.Name, arg.Argument.Value.ToString());
+			}
+
+			permissionSet.AppendChild(iPermission);
+			xmlDoc.AppendChild(permissionSet);
+
+			string xmlDocString = xmlDoc.InnerXml;
+			byte[] bytes = Encoding.Unicode.GetBytes(xmlDocString);
+
+			var signature = CreateSignatureWriter();
+			signature.WriteBytes(bytes);
+			return signature;
+		}
+
+		SignatureWriter GetSecurityDeclarationSignature(SecurityDeclaration declaration)
+		{
+			var signature = CreateSignatureWriter();
+			if (!declaration.resolved)
+			{
+				signature.WriteBytes(declaration.GetBlob());
 				return signature;
+			}
+			if (module.Runtime <= TargetRuntime.Net_1_1)
+			{
+				return GetXmlSecurityDeclarationSignature(declaration);
 			}
 
 			signature.WriteByte ((byte) '.');

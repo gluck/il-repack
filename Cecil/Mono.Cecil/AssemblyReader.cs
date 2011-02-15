@@ -31,6 +31,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using System.Xml;
+
 using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Metadata;
@@ -2407,22 +2409,53 @@ namespace Mono.Cecil {
 			declaration.security_attributes = attributes;
 		}
 
-		void ReadXmlSecurityDeclaration (uint signature, SecurityDeclaration declaration)
+		SecurityAttribute ParseXmlSecurityDeclaration(string xmlString)
 		{
-			var blob = ReadBlob (signature);
-			var attributes = new Collection<SecurityAttribute> (1);
+			XmlDocument xmlDoc = new XmlDocument();
+			xmlDoc.LoadXml(xmlString);
+			XmlNode permissionSet = xmlDoc.SelectSingleNode("/PermissionSet");
+			if (permissionSet == null)
+				return null;
+			XmlNode permissionSetClass = permissionSet.SelectSingleNode("@class"); // check version?
+			if (permissionSetClass == null)
+				return null;
+			if (permissionSetClass.Value != "System.Security.PermissionSet")
+				return null;
+			XmlNode iPermission = permissionSet.SelectSingleNode("IPermission");
+			if (iPermission == null)
+				return null;
+			XmlNode iPermissionClass = iPermission.SelectSingleNode("@class"); // check version?
+			if (iPermissionClass == null)
+				return null;
 
-			var attribute = new SecurityAttribute (
-				module.TypeSystem.LookupType ("System.Security.Permissions", "PermissionSetAttribute"));
+			// Create Namespace & Name from FullName, AssemblyName can be ignored since we look it up.
+			Collection<string> classNamespace = new Collection<string>(iPermissionClass.Value.Split(',')[0].Split('.'));
+			string className = classNamespace[classNamespace.Count - 1];
+			classNamespace.RemoveAt(classNamespace.Count - 1);
+			SecurityAttribute attribute = new SecurityAttribute(module.TypeSystem.LookupType(string.Join(".", classNamespace.ToArray()), className));
+			attribute.properties = new Collection<CustomAttributeNamedArgument>(1);
+			foreach (XmlAttribute xmlAttr in iPermission.Attributes)
+			{
+				if ((xmlAttr.Name != "class") && (xmlAttr.Name != "version"))
+				{
+					attribute.properties.Add(new CustomAttributeNamedArgument(
+						xmlAttr.Name,
+						new CustomAttributeArgument(
+							module.TypeSystem.String,
+							xmlAttr.Value)));
+				}
+			}
+			return attribute;
+		}
 
-			attribute.properties = new Collection<CustomAttributeNamedArgument> (1);
-			attribute.properties.Add (
-				new CustomAttributeNamedArgument (
-					"XML",
-					new CustomAttributeArgument (
-						module.TypeSystem.String,
-						Encoding.Unicode.GetString (blob, 0, blob.Length))));
+		void ReadXmlSecurityDeclaration(uint signature, SecurityDeclaration declaration)
+		{
+			var blob = ReadBlob(signature);
 
+			string xmlString = Encoding.Unicode.GetString(blob, 0, blob.Length);
+			var attributes = new Collection<SecurityAttribute>(1);
+
+			var attribute = ParseXmlSecurityDeclaration(xmlString);
 			attributes.Add (attribute);
 
 			declaration.security_attributes = attributes;
