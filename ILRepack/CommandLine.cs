@@ -37,6 +37,14 @@ namespace ILRepacking
             return ret;
         }
 
+        public bool HasOption(string name)
+        {
+            return parameters.Any(x =>
+                x.ToLower().StartsWith("/" + name) ||
+                x.ToLower().StartsWith("-" + name) ||
+                x.ToLower().StartsWith("--" + name));
+        }
+
         public string[] Options(string name)
         {
             var ret = parameters.Select(x => OptionFinder(name, x)).Where(x=>x!=null).ToArray();
