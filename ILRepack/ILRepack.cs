@@ -480,7 +480,7 @@ namespace ILRepacking
             // merge resources
             foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
             {
-                if (TargetAssemblyDefinition.MainModule.Resources.Any(x => x.Name == r.Name))
+                if (!AllowDuplicateResources && TargetAssemblyDefinition.MainModule.Resources.Any(x => x.Name == r.Name))
                 {
                     // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
                     // TODO: but might have to merge 'ikvm.exports'
