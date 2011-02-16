@@ -14,7 +14,7 @@ namespace ILRepacking
 
         public void AllowDuplicateType(string typeName)
         {
-            _allowedDuplicateTypes[typeName] = typeName;
+            allowedDuplicateTypes[typeName] = typeName;
         }
         public bool AllowDuplicateResources { get; set; }
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
@@ -25,10 +25,10 @@ namespace ILRepacking
         public bool CopyAttributes { get; set; }
         public bool DebugInfo { get; set; }
         public bool DelaySign { get; set; } // UNIMPL, how does this work with cecil?
-        public string ExcludeFile { get; set; } // UNIMPL, see Internalize
+        public string ExcludeFile { get; set; }
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
-        public bool Internalize { get; set; } // UNIMPL
+        public bool Internalize { get; set; }
         public string KeyFile { get; set; }
         public bool Log { get; set; }
         public string LogFile { get; set; }
@@ -68,21 +68,26 @@ namespace ILRepacking
         private bool MergeIntoNewAssembly { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
+        // contains all 'other' assemblies, but not the primary assembly
+        internal List<AssemblyDefinition> OtherAssemblies { get; set; }
+        // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
+        internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
 
         // helpers
         internal ModuleDefinition MainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
         // Following is null to ensure we don't use it when MergeIntoNewAssembly=false as it
         //  makes no sense (being the second assembly merged in that case, and not the primary)
-        private AssemblyDefinition OrigMainAssemblyDefinition { get { return MergeIntoNewAssembly ? MergedAssemblies[0] : null; } } 
+        private AssemblyDefinition OrigMainAssemblyDefinition { get { return MergeIntoNewAssembly ? PrimaryAssemblyDefinition : null; } } 
 
         private ModuleDefinition OrigMainModule { get { return OrigMainAssemblyDefinition.MainModule; } }
 
         private StreamWriter logFile;
 
-        private System.Collections.Hashtable _allowedDuplicateTypes = new System.Collections.Hashtable();
+        private System.Collections.Hashtable allowedDuplicateTypes = new System.Collections.Hashtable();
+        private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
 
         public ILRepack()
         {
@@ -290,7 +295,7 @@ namespace ILRepacking
         private void ReadInputAssemblies()
         {
             MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).ToList();
-            MergedAssemblies = new List<AssemblyDefinition>();
+            OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             bool mergedDebugInfo = false;
             foreach (string assembly in MergedAssemblyFiles)
@@ -330,10 +335,14 @@ namespace ILRepacking
                         if (rp.ReadSymbols)
                             mergedDebugInfo = true;
                         if (!MergeIntoNewAssembly && (TargetAssemblyDefinition == null))
+                        {
                             // first assembly is the target assembly
                             TargetAssemblyDefinition = mergeAsm;
+                        }
+                        else if (PrimaryAssemblyDefinition == null)
+                            PrimaryAssemblyDefinition = mergeAsm;
                         else
-                            MergedAssemblies.Add(mergeAsm);
+                            OtherAssemblies.Add(mergeAsm);
                     }
                 }
                 catch
@@ -344,6 +353,10 @@ namespace ILRepacking
             }
             // prevent writing PDB if we haven't read any
             DebugInfo = mergedDebugInfo;
+
+            MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
+            if (MergeIntoNewAssembly)
+                MergedAssemblies.Add(PrimaryAssemblyDefinition);
         }
 
         private IEnumerable<string> ResolveFile(string s)
@@ -383,6 +396,25 @@ namespace ILRepacking
             {
                 throw new ArgumentException("KeyFile does not exist: \"" + KeyFile + "\".");
             }
+            if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
+            {
+                string[] lines = File.ReadAllLines(ExcludeFile);
+                excludeInternalizeMatches = new List<System.Text.RegularExpressions.Regex>(lines.Length);
+                foreach (string line in lines)
+                    excludeInternalizeMatches.Add(new System.Text.RegularExpressions.Regex(line));
+            }
+        }
+
+        /// <summary>
+        /// Check if a type's FullName matches a Reges to exclude it from internalizing.
+        /// </summary>
+        private bool ExcludeInternalizeMatches(string typeFullName)
+        {
+            string withSquareBrackets = "[" + typeFullName + "]";
+            foreach (System.Text.RegularExpressions.Regex r in excludeInternalizeMatches)
+                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
+                    return true;
+            return false;
         }
 
         /// <summary>
@@ -450,7 +482,7 @@ namespace ILRepacking
             // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
 
             INFO("Processing references");
-            // Add all references to merged assembly (probably not necessary)
+            // Add all AssemblyReferences to merged assembly (probably not necessary)
             foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
             {
                 string name = z.Name;
@@ -494,11 +526,22 @@ namespace ILRepacking
             }
 
             INFO("Processing types");
-            // merge types
-            foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Types))
+            // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
+            if (MergeIntoNewAssembly)
+            {
+                foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
+                {
+                    VERBOSE("- Importing " + r);
+                    Import(r, MainModule.Types, false);
+                }
+            }
+            foreach (var r in OtherAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Types))
             {
                 VERBOSE("- Importing " + r);
-                Import(r, MainModule.Types);
+                bool internalize = Internalize;
+                if (excludeInternalizeMatches != null)
+                    internalize = !ExcludeInternalizeMatches(r.FullName);
+                Import(r, MainModule.Types, internalize);
             }
 
             if (CopyAttributes)
@@ -1029,13 +1072,16 @@ namespace ILRepacking
             return null /*newBody.Instructions.Outside*/;
         }
 
-        internal void Import(TypeDefinition type, Collection<TypeDefinition> col)
+        internal void Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             TypeDefinition nt = MainModule.GetType(type.FullName);
             if (nt == null)
             {
                 nt = new TypeDefinition(type.Namespace, type.Name, type.Attributes);
                 col.Add(nt);
+                // only top-level types are internalized
+                if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
+                    nt.IsPublic = false;
 
                 CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
                 if (type.BaseType != null)
@@ -1062,9 +1108,9 @@ namespace ILRepacking
                 throw new InvalidOperationException("Duplicate type " + type);
             }
 
-            // nested types first
+            // nested types first (are never internalized)
             foreach (TypeDefinition nested in type.NestedTypes)
-                Import(nested, nt.NestedTypes);
+                Import(nested, nt.NestedTypes, false);
             foreach (FieldDefinition field in type.Fields)
                 CloneTo(field, nt);
 
@@ -1090,7 +1136,7 @@ namespace ILRepacking
             if (fullName == "<PrivateImplementationDetails>")
                 return true;
 
-            if (_allowedDuplicateTypes.Contains(fullName))
+            if (allowedDuplicateTypes.Contains(fullName))
                 return true;
 
             return false;
