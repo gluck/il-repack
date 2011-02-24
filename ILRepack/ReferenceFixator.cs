@@ -24,7 +24,7 @@ namespace ILRepacking
 
         private ModuleReference Fix(ModuleReference moduleRef)
         {
-            ModuleReference nmr = repack.MainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
+            ModuleReference nmr = repack.TargetMainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
             if (nmr == null)
                 throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
             return nmr;
@@ -77,7 +77,7 @@ namespace ILRepacking
             }
             else
             {
-                var t2 = repack.MainModule.GetType(type.FullName);
+                var t2 = repack.TargetMainModule.GetType(type.FullName);
                 return t2 ?? type;
             }
             return type;
@@ -429,6 +429,7 @@ namespace ILRepacking
 
                 return imported_instance;
             }
+            // TODO: what about FunctionPointerType?
             throw new InvalidOperationException();
         }
 
