@@ -24,7 +24,7 @@ namespace ILRepacking
         public bool Closed { get; set; } // UNIMPL
         public bool CopyAttributes { get; set; }
         public bool DebugInfo { get; set; }
-        public bool DelaySign { get; set; } // UNIMPL, how does this work with cecil?
+        public bool DelaySign { get; set; }
         public string ExcludeFile { get; set; }
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
@@ -601,10 +601,23 @@ namespace ILRepacking
             var parameters = new WriterParameters();
             if (KeyFile != null && File.Exists(KeyFile))
             {
+                System.Reflection.StrongNameKeyPair snkp;
                 using (var stream = new FileStream(KeyFile, FileMode.Open))
                 {
-                    parameters.StrongNameKeyPair = new System.Reflection.StrongNameKeyPair(stream);
+                    snkp = new System.Reflection.StrongNameKeyPair(stream);
                 }
+                if (DelaySign)
+                {
+                    TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
+                    TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
+                }
+                else
+                    parameters.StrongNameKeyPair = snkp;
+            }
+            else
+            {
+                TargetAssemblyDefinition.Name.PublicKey = null;
+                TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
             // write PDB/MDB?
             if (DebugInfo)
