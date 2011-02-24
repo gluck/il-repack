@@ -56,8 +56,8 @@ namespace ILRepacking
         }
         public bool StrongNameLost { get; private set; }
         public Kind? TargetKind { get; set; }
-        public string TargetPlatformDirectory { get; set; } // UNIMPL, not supported by cecil?
-        public string TargetPlatformVersion { get; set; } // TODO: not working yet
+        public string TargetPlatformDirectory { get; set; }
+        public string TargetPlatformVersion { get; set; }
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
         public bool XmlDocumentation { get; set; }
@@ -493,7 +493,7 @@ namespace ILRepacking
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
                     VERBOSE("- add reference " + z);
-                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(z);
+                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(platformFixer.FixPlatformVersion(z));
                 }
             }
 

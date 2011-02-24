@@ -63,105 +63,124 @@ namespace ILRepacking
             }
         }
 
+        private AssemblyDefinition TryGetPlatformAssembly(AssemblyNameReference sourceAssemblyName)
+        {
+            try
+            {
+                string platformFile = Path.Combine(targetPlatformDirectory, sourceAssemblyName.Name + ".dll");
+                AssemblyDefinition platformAsm = null;
+                platformAsm = (AssemblyDefinition)platformAssemblies[platformFile];
+                if (platformAsm == null)
+                {
+                    if (File.Exists(platformFile))
+                    {
+                        // file exists, must be a platform file so exchange it // TODO: is this OK?
+                        platformAsm = AssemblyDefinition.ReadAssembly(platformFile);
+                        platformAssemblies[platformFile] = platformAsm;
+                    }
+                }
+                return platformAsm;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public AssemblyNameReference FixPlatformVersion(AssemblyNameReference assyName)
+        {
+            if (targetPlatformDirectory == null)
+                return assyName;
+
+            AssemblyDefinition fixedDef = TryGetPlatformAssembly(assyName);
+            if (fixedDef != null)
+                return fixedDef.Name;
+
+            return assyName;
+        }
+
         public TypeReference FixPlatformVersion(TypeReference reference)
         {
+            if (targetPlatformDirectory == null)
+                return reference;
+
             AssemblyNameReference scopeAsm = reference.Scope as AssemblyNameReference;
             if (scopeAsm != null)
             {
-                if (targetPlatformDirectory != null)
+                AssemblyDefinition platformAsm = TryGetPlatformAssembly(scopeAsm);
+                if (platformAsm != null)
                 {
-                    string platformFile = Path.Combine(targetPlatformDirectory, scopeAsm.Name + ".dll");
-                    AssemblyDefinition platformAsm = null;
-                    platformAsm = (AssemblyDefinition)platformAssemblies[platformFile];
-                    if (platformAsm == null)
+                    TypeReference newTypeRef;
+                    if (reference is TypeSpecification)
                     {
-                        if (File.Exists(platformFile))
+                        TypeSpecification refSpec = reference as TypeSpecification;
+                        TypeReference fet = FixPlatformVersion(refSpec.ElementType);
+                        if (reference is ArrayType)
                         {
-                            // file exists, must be a platform file so exchange it // TODO: is this OK?
-                            platformAsm = AssemblyDefinition.ReadAssembly(platformFile);
-                            platformAssemblies[platformFile] = platformAsm;
-                        }
-                    }
-                    if (platformAsm != null)
-                    {
-                        TypeReference newTypeRef;
-                        if (reference is TypeSpecification)
-                        {
-                            TypeSpecification refSpec = reference as TypeSpecification;
-                            TypeReference fet = FixPlatformVersion(refSpec.ElementType);
-                            if (reference is ArrayType)
-                            {
-                                var array = (ArrayType)reference;
-                                var imported_array = new ArrayType(fet);
-                                if (array.IsVector)
-                                    return imported_array;
-
-                                var dimensions = array.Dimensions;
-                                var imported_dimensions = imported_array.Dimensions;
-
-                                imported_dimensions.Clear();
-
-                                for (int i = 0; i < dimensions.Count; i++)
-                                {
-                                    var dimension = dimensions[i];
-
-                                    imported_dimensions.Add(new ArrayDimension(dimension.LowerBound, dimension.UpperBound));
-                                }
-
+                            var array = (ArrayType)reference;
+                            var imported_array = new ArrayType(fet);
+                            if (array.IsVector)
                                 return imported_array;
-                            }
-                            else if (reference is PointerType)
-                                return new PointerType(fet);
-                            else if (reference is ByReferenceType)
-                                return new ByReferenceType(fet);
-                            else if (reference is PinnedType)
-                                return new PinnedType(fet);
-                            else if (reference is SentinelType)
-                                return new SentinelType(fet);
-                            else if (reference is OptionalModifierType)
-                            {
-                                TypeReference fmt = FixPlatformVersion(((OptionalModifierType)reference).ModifierType);
-                                return new OptionalModifierType(fmt, fet);
-                            }
-                            else if (reference is RequiredModifierType)
-                            {
-                                TypeReference fmt = FixPlatformVersion(((RequiredModifierType)reference).ModifierType);
-                                return new RequiredModifierType(fmt, fet);
-                            }
-                            else if (reference is GenericInstanceType)
-                            {
-                                var instance = (GenericInstanceType)reference;
-                                var element_type = FixPlatformVersion(instance.ElementType);
-                                var imported_instance = new GenericInstanceType(element_type);
 
-                                var arguments = instance.GenericArguments;
-                                var imported_arguments = imported_instance.GenericArguments;
+                            var dimensions = array.Dimensions;
+                            var imported_dimensions = imported_array.Dimensions;
 
-                                for (int i = 0; i < arguments.Count; i++)
-                                    imported_arguments.Add(FixPlatformVersion(arguments[i]));
+                            imported_dimensions.Clear();
 
-                                return imported_instance;
+                            for (int i = 0; i < dimensions.Count; i++)
+                            {
+                                var dimension = dimensions[i];
+
+                                imported_dimensions.Add(new ArrayDimension(dimension.LowerBound, dimension.UpperBound));
                             }
-                            else if (reference is FunctionPointerType)
-                                throw new NotImplementedException();
-                            else
-                                throw new InvalidOperationException();
+
+                            return imported_array;
                         }
-                        else
+                        else if (reference is PointerType)
+                            return new PointerType(fet);
+                        else if (reference is ByReferenceType)
+                            return new ByReferenceType(fet);
+                        else if (reference is PinnedType)
+                            return new PinnedType(fet);
+                        else if (reference is SentinelType)
+                            return new SentinelType(fet);
+                        else if (reference is OptionalModifierType)
+                            return new OptionalModifierType(FixPlatformVersion(((OptionalModifierType)reference).ModifierType), fet);
+                        else if (reference is RequiredModifierType)
+                            return new RequiredModifierType(FixPlatformVersion(((RequiredModifierType)reference).ModifierType), fet);
+                        else if (reference is GenericInstanceType)
                         {
-                            newTypeRef = new TypeReference(reference.Namespace, reference.Name, reference.Module,
-                                platformAsm.Name);
+                            var instance = (GenericInstanceType)reference;
+                            var element_type = FixPlatformVersion(instance.ElementType);
+                            var imported_instance = new GenericInstanceType(element_type);
+
+                            var arguments = instance.GenericArguments;
+                            var imported_arguments = imported_instance.GenericArguments;
+
+                            for (int i = 0; i < arguments.Count; i++)
+                                imported_arguments.Add(FixPlatformVersion(arguments[i]));
+
+                            return imported_instance;
                         }
-                        foreach (var gp in reference.GenericParameters)
+                        else if (reference is FunctionPointerType)
                             throw new NotImplementedException();
-                        newTypeRef.IsValueType = reference.IsValueType;
-                        if (reference.DeclaringType != null)
-                            newTypeRef.DeclaringType = FixPlatformVersion(reference.DeclaringType);
-                        return newTypeRef;
+                        else
+                            throw new InvalidOperationException();
                     }
+                    else
+                    {
+                        newTypeRef = new TypeReference(reference.Namespace, reference.Name, reference.Module,
+                            platformAsm.Name);
+                    }
+                    foreach (var gp in reference.GenericParameters)
+                        throw new NotImplementedException();
+                    newTypeRef.IsValueType = reference.IsValueType;
+                    if (reference.DeclaringType != null)
+                        newTypeRef.DeclaringType = FixPlatformVersion(reference.DeclaringType);
+                    return newTypeRef;
                 }
             }
-            else
+            else if(!(reference.Scope is ModuleDefinition)) // this means the scope is merged -> don't try to change
             {
                 if (reference.Scope != null)
                     Console.WriteLine("PlatformFixer found unknown scope \"" + reference.Scope + "\".");
@@ -173,18 +192,15 @@ namespace ILRepacking
         {
             if (targetPlatformDirectory == null)
                 return reference;
+
             MethodReference fixedRef = new MethodReference(reference.Name, FixPlatformVersion(reference.ReturnType), FixPlatformVersion(reference.DeclaringType));
             fixedRef.HasThis = reference.HasThis;
             fixedRef.ExplicitThis = reference.ExplicitThis;
             fixedRef.CallingConvention = reference.CallingConvention;
             foreach (ParameterDefinition pd in reference.Parameters)
-            {
                 fixedRef.Parameters.Add(FixPlatformVersion(pd));
-            }
             foreach (GenericParameter gp in reference.GenericParameters)
-            {
                 reference.GenericParameters.Add(FixPlatformVersion(gp, fixedRef));
-            }
             return fixedRef;
         }
 
@@ -192,6 +208,7 @@ namespace ILRepacking
         {
             if (targetPlatformDirectory == null)
                 return reference;
+
             FieldReference fixedRef = new FieldReference(reference.Name, FixPlatformVersion(reference.FieldType), FixPlatformVersion(reference.DeclaringType));
             return fixedRef;
         }
@@ -201,9 +218,7 @@ namespace ILRepacking
             ParameterDefinition npd = new ParameterDefinition(pd.Name, pd.Attributes, FixPlatformVersion(pd.ParameterType));
             npd.Constant = pd.Constant;
             foreach (CustomAttribute ca in pd.CustomAttributes)
-            {
                 npd.CustomAttributes.Add(FixPlatformVersion(ca));
-            }
             npd.MarshalInfo = pd.MarshalInfo;
             return npd;
         }
@@ -213,18 +228,12 @@ namespace ILRepacking
             GenericParameter ngp = new GenericParameter(gp.Name, gpp);
             ngp.Attributes = gp.Attributes;
             foreach (TypeReference tr in gp.Constraints)
-            {
                 ngp.Constraints.Add(FixPlatformVersion(tr));
-            }
             foreach (CustomAttribute ca in gp.CustomAttributes)
-            {
                 ngp.CustomAttributes.Add(FixPlatformVersion(ca));
-            }
             ngp.DeclaringType = FixPlatformVersion(gp.DeclaringType);
             foreach (GenericParameter gp1 in gp.GenericParameters)
-            {
                 ngp.GenericParameters.Add(FixPlatformVersion(gp1, ngp));
-            }
             return ngp;
         }
 
@@ -232,17 +241,11 @@ namespace ILRepacking
         {
             CustomAttribute nca = new CustomAttribute(FixPlatformVersion(ca.Constructor));
             foreach (CustomAttributeArgument caa in ca.ConstructorArguments)
-            {
                 nca.ConstructorArguments.Add(FixPlatformVersion(caa));
-            }
             foreach (CustomAttributeNamedArgument cana in ca.Fields)
-            {
                 nca.Fields.Add(FixPlatformVersion(cana));
-            }
             foreach (CustomAttributeNamedArgument cana in ca.Properties)
-            {
                 nca.Properties.Add(FixPlatformVersion(cana));
-            }
             return nca;
         }
 
