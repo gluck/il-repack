@@ -288,15 +288,32 @@ namespace ILRepacking
         private void Usage()
         {
             Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil 0.9.4.0 - Version " + typeof(ILRepack).Assembly.GetName().Version.ToString(2));
-            Console.WriteLine(@"Syntax: ILRepack.exe [/help] [/keyfile:<path>] [/log:true|false] [/ver:M.X.Y.Z] [/union] [/ndebug] [/copyattrs] [/allowmultiple] /out:<path> <path_to_primary> [<other_assemblies> ...]");
+            Console.WriteLine(@"Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
-            Console.WriteLine(@" - /log:[logfile]     enable logging (to a file, if given) (default is disables)");
+            Console.WriteLine(@" - /log:<logfile>     enable logging (to a file, if given) (default is disabled)");
             Console.WriteLine(@" - /ver:M.X.Y.Z       target assembly version");
             Console.WriteLine(@" - /union             merges types with identical names into one");
             Console.WriteLine(@" - /ndebug            disables symbol file generation");
             Console.WriteLine(@" - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)");
+            Console.WriteLine(@" - /attr:<path>       take assembly attributes from the given assembly file");
             Console.WriteLine(@" - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)");
+            Console.WriteLine(@" - /target:kind       specify target assembly kind (library, exe, winexe supported, default is same as first assembly)");
+            Console.WriteLine(@" - /targetplatform:P  specify target platform (v1, v1.1, v2, v4 supported)");
+            Console.WriteLine(@" - /xmldocs           merges XML documentation as well");
+            Console.WriteLine(@" - /lib:<path>        adds the path to the search directories for referenced assemblies (can be specified multiple times)");
+            Console.WriteLine(@" - /internalize       sets all types but the ones from the first assembly 'internal'");
+            Console.WriteLine(@" - /delaysign         sets the key, but don't sign the assembly");
+            
+            Console.WriteLine(@" - /usefullpublickeyforreferences - NOT IMPLEMENTED");
+            Console.WriteLine(@" - /align             - NOT IMPLEMENTED");
+            Console.WriteLine(@" - /closed            - NOT IMPLEMENTED");
+            
+            Console.WriteLine(@" - /allowdup:Type     allows the specified type for being duplicated in input assemblies");
+            Console.WriteLine(@" - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)");
+            Console.WriteLine(@" - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)");
+            Console.WriteLine(@" - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies");
+            Console.WriteLine(@" - /verbose           shows more logs");
             Console.WriteLine(@" - /out:<path>        target assembly path, symbol/config/doc files will be written here as well");
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
             Console.WriteLine(@" - <other_assemblies> ...");
