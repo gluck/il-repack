@@ -14,6 +14,7 @@
 //   limitations under the License.
 //
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -39,7 +40,7 @@ namespace ILRepacking
         public bool Closed { get; set; } // UNIMPL
         public bool CopyAttributes { get; set; }
         public bool DebugInfo { get; set; }
-        public bool DelaySign { get; set; } // UNIMPL, how does this work with cecil?
+        public bool DelaySign { get; set; }
         public string ExcludeFile { get; set; }
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
@@ -71,8 +72,8 @@ namespace ILRepacking
         }
         public bool StrongNameLost { get; private set; }
         public Kind? TargetKind { get; set; }
-        public string TargetPlatformDirectory { get; set; } // UNIMPL, not supported by cecil?
-        public string TargetPlatformVersion { get; set; } // TODO: not working yet
+        public string TargetPlatformDirectory { get; set; }
+        public string TargetPlatformVersion { get; set; }
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
         public bool XmlDocumentation { get; set; }
@@ -98,6 +99,8 @@ namespace ILRepacking
 
         private System.Collections.Hashtable allowedDuplicateTypes = new System.Collections.Hashtable();
         private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
+
+        PlatformFixer platformFixer;
 
         public ILRepack()
         {
@@ -285,32 +288,15 @@ namespace ILRepacking
         private void Usage()
         {
             Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil 0.9.4.0 - Version " + typeof(ILRepack).Assembly.GetName().Version.ToString(2));
-            Console.WriteLine(@"Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
+            Console.WriteLine(@"Syntax: ILRepack.exe [/help] [/keyfile:<path>] [/log:true|false] [/ver:M.X.Y.Z] [/union] [/ndebug] [/copyattrs] [/allowmultiple] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
-            Console.WriteLine(@" - /log:[logfile]     enable logging (to a file, if given) (default is disabled)");
+            Console.WriteLine(@" - /log:[logfile]     enable logging (to a file, if given) (default is disables)");
             Console.WriteLine(@" - /ver:M.X.Y.Z       target assembly version");
             Console.WriteLine(@" - /union             merges types with identical names into one");
             Console.WriteLine(@" - /ndebug            disables symbol file generation");
             Console.WriteLine(@" - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)");
-            Console.WriteLine(@" - /attr:<path>       take assembly attributes from the given assembly file");
             Console.WriteLine(@" - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)");
-            Console.WriteLine(@" - /target:kind       specify target assembly kind (library, exe, winexe supported, default is same as first assembly)");
-            Console.WriteLine(@" - /targetplatform:P  specify target platform (v1, v1.1, v2, v4 supported)");
-            Console.WriteLine(@" - /xmldocs           merges XML documentation as well");
-            Console.WriteLine(@" - /lib:<path>        adds the path to the search directories for referenced assemblies (can be specified multiple times)");
-
-            Console.WriteLine(@" - /usefullpublickeyforreferences [NOT IMPLEMENTED]");
-            Console.WriteLine(@" - /internalize       [NOT IMPLEMENTED]");
-            Console.WriteLine(@" - /delaysign         [NOT IMPLEMENTED]");
-            Console.WriteLine(@" - /align             [NOT IMPLEMENTED]");
-            Console.WriteLine(@" - /closed            [NOT IMPLEMENTED]");
-
-            Console.WriteLine(@" - /allowdup:Type     allows the specified type for being duplicated in input assemblies");
-            Console.WriteLine(@" - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)");
-            Console.WriteLine(@" - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)");
-            Console.WriteLine(@" - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies");
-            Console.WriteLine(@" - /verbose           shows more logs");
             Console.WriteLine(@" - /out:<path>        target assembly path, symbol/config/doc files will be written here as well");
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
             Console.WriteLine(@" - <other_assemblies> ...");
@@ -425,6 +411,24 @@ namespace ILRepacking
             }
         }
 
+        protected TargetRuntime ParseTargetPlatform()
+        {
+            TargetRuntime runtime = PrimaryAssemblyMainModule.Runtime;
+            if (TargetPlatformVersion != null)
+            {
+                switch (TargetPlatformVersion)
+                {
+                    case "v1": runtime = TargetRuntime.Net_1_0; break;
+                    case "v1.1": runtime = TargetRuntime.Net_1_1; break;
+                    case "v2": runtime = TargetRuntime.Net_2_0; break;
+                    case "v4": runtime = TargetRuntime.Net_4_0; break;
+                    default: throw new ArgumentException("Invalid TargetPlatformVersion: \"" + TargetPlatformVersion + "\".");
+                }
+                platformFixer.ParseTargetPlatformDirectory(runtime, TargetPlatformDirectory);
+            }
+            return runtime;
+        }
+
         /// <summary>
         /// Check if a type's FullName matches a Reges to exclude it from internalizing.
         /// </summary>
@@ -447,6 +451,7 @@ namespace ILRepacking
             ParseProperties();
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
+            platformFixer = new PlatformFixer(PrimaryAssemblyDefinition.MainModule.Runtime);
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 
             ModuleKind kind = PrimaryAssemblyMainModule.Kind;
@@ -459,18 +464,7 @@ namespace ILRepacking
                     case Kind.WinExe: kind = ModuleKind.Windows; break;
                 }
             }
-            TargetRuntime runtime = PrimaryAssemblyMainModule.Runtime;
-            if (TargetPlatformVersion != null)
-            {
-                switch (TargetPlatformVersion)
-                {
-                    case "v1": runtime = TargetRuntime.Net_1_0; break;
-                    case "v1.1": runtime = TargetRuntime.Net_1_1; break;
-                    case "v2": runtime = TargetRuntime.Net_2_0; break;
-                    case "v4": runtime = TargetRuntime.Net_4_0; break;
-                    default: throw new ArgumentException("Invalid TargetPlatformVersion: \"" + TargetPlatformVersion + "\".");
-                }
-            }
+            TargetRuntime runtime = ParseTargetPlatform();
 
             // change assembly's name to correspond to the file we create
             string mainModuleName = Path.GetFileNameWithoutExtension(OutputFile);
@@ -500,6 +494,22 @@ namespace ILRepacking
             if (Version != null)
                 TargetAssemblyDefinition.Name.Version = Version;
             // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
+            System.Reflection.StrongNameKeyPair snkp = null;
+            if (KeyFile != null && File.Exists(KeyFile))
+            {
+                using (var stream = new FileStream(KeyFile, FileMode.Open))
+                {
+                    snkp = new System.Reflection.StrongNameKeyPair(stream);
+                }
+                TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
+                TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
+                TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
+            }
+            else
+            {
+                TargetAssemblyDefinition.Name.PublicKey = null;
+                TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
+            }
 
             INFO("Processing references");
             // Add all AssemblyReferences to merged assembly (probably not necessary)
@@ -514,7 +524,8 @@ namespace ILRepacking
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
                     VERBOSE("- add reference " + z);
-                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(z);
+                    AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
+                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(fixedRef);
                 }
             }
 
@@ -602,6 +613,7 @@ namespace ILRepacking
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
             fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes, null);
+            fixator.FixReferences(TargetAssemblyMainModule.Resources);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)
@@ -620,13 +632,8 @@ namespace ILRepacking
 
             INFO("Writing output assembly to disk");
             var parameters = new WriterParameters();
-            if (KeyFile != null && File.Exists(KeyFile))
-            {
-                using (var stream = new FileStream(KeyFile, FileMode.Open))
-                {
-                    parameters.StrongNameKeyPair = new System.Reflection.StrongNameKeyPair(stream);
-                }
-            }
+            if ((snkp != null) && !DelaySign)
+                parameters.StrongNameKeyPair = snkp;
             // write PDB/MDB?
             if (DebugInfo)
                 parameters.WriteSymbols = true;
@@ -729,25 +736,33 @@ namespace ILRepacking
         {
             foreach (SecurityDeclaration sec in input)
             {
-                SecurityDeclaration newSec = new SecurityDeclaration(sec.Action);
-                foreach (SecurityAttribute sa in sec.SecurityAttributes)
+                SecurityDeclaration newSec;
+                if (PermissionsetHelper.IsXmlPermissionSet(sec))
                 {
-                    SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
-                    if (sa.HasFields)
+                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
+                }
+                else
+                {
+                    newSec = new SecurityDeclaration(sec.Action);
+                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
                     {
-                        foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                        SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
+                        if (sa.HasFields)
                         {
-                            newSa.Fields.Add(Copy(cana, context));
+                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                            {
+                                newSa.Fields.Add(Copy(cana, context));
+                            }
                         }
-                    }
-                    if (sa.HasProperties)
-                    {
-                        foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                        if (sa.HasProperties)
                         {
-                            newSa.Properties.Add(Copy(cana, context));
+                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                            {
+                                newSa.Properties.Add(Copy(cana, context));
+                            }
                         }
+                        newSec.SecurityAttributes.Add(newSa);
                     }
-                    newSec.SecurityAttributes.Add(newSa);
                 }
                 output.Add(newSec);
             }
@@ -844,40 +859,47 @@ namespace ILRepacking
             if (type != null)
                 return type;
 
+            TypeReference importReference = platformFixer.FixPlatformVersion(reference);
+
             if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
             else if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
             else if (context == null)
             {
                 // we come here when importing types used for assembly-level custom attributes
-                return TargetAssemblyMainModule.Import(reference);
+                return TargetAssemblyMainModule.Import(importReference);
             }
             throw new InvalidOperationException();
         }
 
         private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
         {
+            FieldReference importReference = platformFixer.FixPlatformVersion(reference);
+
             if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
             if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
             throw new InvalidOperationException();
         }
 
         private MethodReference Import(MethodReference reference)
         {
-            return TargetAssemblyMainModule.Import(reference);
+            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
+            return TargetAssemblyMainModule.Import(importReference);
         }
 
         private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
         {
             // If this is a Method/TypeDefinition, it will be corrected to a definition again later
 
+            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
+
             if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
             if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
+                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
             throw new InvalidOperationException();
         }
 
@@ -1093,6 +1115,7 @@ namespace ILRepacking
             {
                 nt = new TypeDefinition(type.Namespace, type.Name, type.Attributes);
                 col.Add(nt);
+
                 // only top-level types are internalized
                 if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
                     nt.IsPublic = false;

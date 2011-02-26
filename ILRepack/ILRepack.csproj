@@ -71,6 +71,8 @@
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
     <Compile Include="ILRepack.cs" />
+    <Compile Include="PermissionsetHelper.cs" />
+    <Compile Include="PlatformFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReferenceFixator.cs" />
     <Compile Include="ReflectionHelper.cs" />
