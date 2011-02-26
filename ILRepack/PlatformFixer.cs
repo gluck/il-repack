@@ -195,11 +195,6 @@ namespace ILRepacking
                     return newTypeRef;
                 }
             }
-            else if(!(reference.Scope is ModuleDefinition)) // this means the scope is merged -> don't try to change
-            {
-                if (reference.Scope != null)
-                    Console.WriteLine("PlatformFixer found unknown scope \"" + reference.Scope + "\".");
-            }
             return reference;
         }
 
