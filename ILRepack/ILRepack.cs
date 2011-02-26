@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -479,6 +480,22 @@ namespace ILRepacking
             if (Version != null)
                 TargetAssemblyDefinition.Name.Version = Version;
             // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
+            System.Reflection.StrongNameKeyPair snkp = null;
+            if (KeyFile != null && File.Exists(KeyFile))
+            {
+                using (var stream = new FileStream(KeyFile, FileMode.Open))
+                {
+                    snkp = new System.Reflection.StrongNameKeyPair(stream);
+                }
+                TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
+                TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
+                TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
+            }
+            else
+            {
+                TargetAssemblyDefinition.Name.PublicKey = null;
+                TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
+            }
 
             INFO("Processing references");
             // Add all AssemblyReferences to merged assembly (probably not necessary)
@@ -493,7 +510,8 @@ namespace ILRepacking
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
                     VERBOSE("- add reference " + z);
-                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(platformFixer.FixPlatformVersion(z));
+                    AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
+                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(fixedRef);
                 }
             }
 
@@ -581,6 +599,7 @@ namespace ILRepacking
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
             fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(TargetMainModule.CustomAttributes, null);
+            fixator.FixReferences(TargetMainModule.Resources);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)
@@ -599,26 +618,8 @@ namespace ILRepacking
 
             INFO("Writing output assembly to disk");
             var parameters = new WriterParameters();
-            if (KeyFile != null && File.Exists(KeyFile))
-            {
-                System.Reflection.StrongNameKeyPair snkp;
-                using (var stream = new FileStream(KeyFile, FileMode.Open))
-                {
-                    snkp = new System.Reflection.StrongNameKeyPair(stream);
-                }
-                if (DelaySign)
-                {
-                    TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
-                    TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
-                }
-                else
-                    parameters.StrongNameKeyPair = snkp;
-            }
-            else
-            {
-                TargetAssemblyDefinition.Name.PublicKey = null;
-                TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
-            }
+            if ((snkp != null) && !DelaySign)
+                parameters.StrongNameKeyPair = snkp;
             // write PDB/MDB?
             if (DebugInfo)
                 parameters.WriteSymbols = true;
@@ -721,25 +722,33 @@ namespace ILRepacking
         {
             foreach (SecurityDeclaration sec in input)
             {
-                SecurityDeclaration newSec = new SecurityDeclaration(sec.Action);
-                foreach (SecurityAttribute sa in sec.SecurityAttributes)
+                SecurityDeclaration newSec;
+                if (PermissionsetHelper.IsXmlPermissionSet(sec))
                 {
-                    SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
-                    if (sa.HasFields)
+                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetMainModule);
+                }
+                else
+                {
+                    newSec = new SecurityDeclaration(sec.Action);
+                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
                     {
-                        foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                        SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
+                        if (sa.HasFields)
                         {
-                            newSa.Fields.Add(Copy(cana, context));
+                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                            {
+                                newSa.Fields.Add(Copy(cana, context));
+                            }
                         }
-                    }
-                    if (sa.HasProperties)
-                    {
-                        foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                        if (sa.HasProperties)
                         {
-                            newSa.Properties.Add(Copy(cana, context));
+                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                            {
+                                newSa.Properties.Add(Copy(cana, context));
+                            }
                         }
+                        newSec.SecurityAttributes.Add(newSa);
                     }
-                    newSec.SecurityAttributes.Add(newSa);
                 }
                 output.Add(newSec);
             }

@@ -11,6 +11,7 @@ namespace ILRepacking
     internal class ReferenceFixator
     {
         private readonly ILRepack repack;
+        private string targetAssemblyPublicKeyBlobString;
 
         internal ReferenceFixator(ILRepack repack)
         {
@@ -52,7 +53,7 @@ namespace ILRepacking
 
             if (type.IsGenericParameter)
             {
-                var genPar = (GenericParameter) type;
+                var genPar = (GenericParameter)type;
                 if (!fixedGenericParameters.Contains(genPar))
                 {
                     fixedGenericParameters.Add(genPar);
@@ -133,7 +134,7 @@ namespace ILRepacking
 
         private void FixReferences(Collection<CustomAttributeArgument> args, IGenericParameterProvider context)
         {
-            for(int i = 0; i < args.Count; i++)
+            for (int i = 0; i < args.Count; i++)
             {
                 args[i] = Fix(args[i], context);
             }
@@ -149,13 +150,55 @@ namespace ILRepacking
 
         internal void FixReferences(Collection<SecurityDeclaration> securitydeclarations, IGenericParameterProvider context)
         {
-            foreach(SecurityDeclaration sd in securitydeclarations)
+            if (securitydeclarations.Count > 0)
             {
-                foreach (SecurityAttribute sa in sd.SecurityAttributes)
+                foreach (SecurityDeclaration sd in securitydeclarations)
                 {
-                    sa.AttributeType = Fix(sa.AttributeType, context);
-                    FixReferences(sa.Fields, context);
-                    FixReferences(sa.Properties, context);
+                    foreach (SecurityAttribute sa in sd.SecurityAttributes)
+                    {
+                        sa.AttributeType = Fix(sa.AttributeType, context);
+                        FixReferences(sa.Fields, context);
+                        if (sa.HasFields)
+                            throw new NotSupportedException();
+                        FixReferences(sa.Properties, context);
+                        if (sa.HasProperties)
+                        {
+                            foreach (var prop in sa.Properties.ToArray())
+                            {
+                                switch (prop.Name)
+                                {
+                                    case ("PublicKeyBlob"):
+                                        if (repack.TargetAssemblyDefinition.Name.HasPublicKey)
+                                        {
+                                            if (targetAssemblyPublicKeyBlobString == null)
+                                                foreach (byte b in repack.TargetAssemblyDefinition.Name.PublicKey)
+                                                    targetAssemblyPublicKeyBlobString += b.ToString("X").PadLeft(2, '0');
+                                            if (prop.Argument.Type.FullName != "System.String")
+                                                throw new NotSupportedException("Invalid type of argument, expected string");
+                                            CustomAttributeNamedArgument newProp = new CustomAttributeNamedArgument(prop.Name,
+                                                new CustomAttributeArgument(prop.Argument.Type, targetAssemblyPublicKeyBlobString));
+                                            sa.Properties.Remove(prop);
+                                            sa.Properties.Add(newProp);
+                                        }
+                                        else
+                                        {
+                                            repack.WARN("SecurityPermission with PublicKeyBlob found but target has no strong name!");
+                                        }
+                                        break;
+                                    default:
+                                        repack.WARN("SecurityPermission: Unknown property name \"" + prop.Name + "\" (value: \"" + prop.Argument.Value + "\")");
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if ((repack.TargetMainModule.Runtime == TargetRuntime.Net_1_0) || (repack.TargetMainModule.Runtime == TargetRuntime.Net_1_1))
+                {
+                    SecurityDeclaration[] sdArray = securitydeclarations.ToArray();
+                    securitydeclarations.Clear();
+                    foreach (SecurityDeclaration sd in sdArray)
+                        securitydeclarations.Add(PermissionsetHelper.Permission2XmlSet(sd, repack.TargetMainModule));
                 }
             }
         }
@@ -251,7 +294,7 @@ namespace ILRepacking
 
         internal void FixReferences(Collection<CustomAttribute> attributes, IGenericParameterProvider context)
         {
-            foreach(CustomAttribute attribute in attributes)
+            foreach (CustomAttribute attribute in attributes)
             {
                 attribute.Constructor = Fix(attribute.Constructor, context);
                 FixReferences(attribute.ConstructorArguments, context);
@@ -474,6 +517,12 @@ namespace ILRepacking
             }
             // no overridden method found, return the original method
             return meth;
+        }
+
+        public void FixReferences(Collection<Resource> resources)
+        {
+            // TODO: check if merged resources contain binary-formatted objects of merged types.
+            // These don't work any more as the BinaryFormatter tries to load the old assembly.
         }
     }
 }
