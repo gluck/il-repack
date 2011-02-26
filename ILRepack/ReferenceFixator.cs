@@ -25,7 +25,7 @@ namespace ILRepacking
 
         private ModuleReference Fix(ModuleReference moduleRef)
         {
-            ModuleReference nmr = repack.TargetMainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
+            ModuleReference nmr = repack.TargetAssemblyMainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
             if (nmr == null)
                 throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
             return nmr;
@@ -78,7 +78,7 @@ namespace ILRepacking
             }
             else
             {
-                var t2 = repack.TargetMainModule.GetType(type.FullName);
+                var t2 = repack.TargetAssemblyMainModule.GetType(type.FullName);
                 return t2 ?? type;
             }
             return type;
@@ -193,12 +193,12 @@ namespace ILRepacking
                         }
                     }
                 }
-                if ((repack.TargetMainModule.Runtime == TargetRuntime.Net_1_0) || (repack.TargetMainModule.Runtime == TargetRuntime.Net_1_1))
+                if ((repack.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_0) || (repack.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_1))
                 {
                     SecurityDeclaration[] sdArray = securitydeclarations.ToArray();
                     securitydeclarations.Clear();
                     foreach (SecurityDeclaration sd in sdArray)
-                        securitydeclarations.Add(PermissionsetHelper.Permission2XmlSet(sd, repack.TargetMainModule));
+                        securitydeclarations.Add(PermissionsetHelper.Permission2XmlSet(sd, repack.TargetAssemblyMainModule));
                 }
             }
         }
