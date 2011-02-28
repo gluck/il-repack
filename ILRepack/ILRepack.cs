@@ -846,8 +846,8 @@ namespace ILRepacking
             foreach (CustomAttribute ca in input)
             {
                 var caType = ca.AttributeType;
-                if ((allowMultiple /* && TODO: type allows multiple */) ||
-                    !output.Any(attr => ReflectionHelper.AreSame(attr.AttributeType, caType)))
+                if (!output.Any(attr => ReflectionHelper.AreSame(attr.AttributeType, caType)) ||
+                    (allowMultiple && CustomAttributeTypeAllowsMultiple(caType)))
                 {
                     CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
                     foreach (var arg in ca.ConstructorArguments)
@@ -860,6 +860,25 @@ namespace ILRepacking
 
                 }
             }
+        }
+
+        private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
+        {
+            TypeDefinition typeDef = type.Resolve();
+            if (typeDef != null)
+            {
+                var ca = typeDef.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.AttributeUsageAttribute");
+                if (ca != null)
+                {
+                    var prop = ca.Properties.FirstOrDefault(y => y.Name == "AllowMultiple");
+                    if (prop.Argument.Value is bool)
+                    {
+                        return (bool)prop.Argument.Value;
+                    }
+                }
+            }
+            // default is false
+            return false;
         }
 
         private void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
