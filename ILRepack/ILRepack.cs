@@ -1015,7 +1015,7 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(
+                nb.Variables.Add(new VariableDefinition(var.Name, 
                     Import(var.VariableType, parent)));
 
             foreach (Instruction instr in body.Instructions)
