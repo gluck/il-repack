@@ -854,8 +854,8 @@ namespace ILRepacking
                         newCa.ConstructorArguments.Add(Copy(arg, context));
                     foreach (var arg in ca.Fields)
                         newCa.Fields.Add(Copy(arg, context));
-                    foreach (var arg in ca.Fields)
-                        newCa.Fields.Add(Copy(arg, context));
+                    foreach (var arg in ca.Properties)
+                        newCa.Properties.Add(Copy(arg, context));
                     output.Add(newCa);
 
                 }
