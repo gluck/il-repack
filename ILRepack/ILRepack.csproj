@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -124,7 +124,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>$(TargetPath) "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll
+    <PostBuildEvent>$(TargetPath) /wildcards "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll
 ..\ILRepack.exe "/out:..\ILRepack2.exe" ..\ILRepack.exe</PostBuildEvent>
   </PropertyGroup>
 </Project>
