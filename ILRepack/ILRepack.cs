@@ -1127,7 +1127,6 @@ namespace ILRepacking
                         break;
                     case ExceptionHandlerType.Filter:
                         neh.FilterStart = GetInstruction(body, nb, eh.FilterStart);
-                        neh.FilterEnd = GetInstruction(body, nb, eh.FilterEnd);
                         break;
                 }
 
