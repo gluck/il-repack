@@ -18,9 +18,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
+using MethodBody = Mono.Cecil.Cil.MethodBody;
 
 namespace ILRepacking
 {
@@ -81,6 +85,7 @@ namespace ILRepacking
         // end of ILMerge-similar attributes
 
         public bool LogVerbose { get; set; }
+        public bool NoRepackRes { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
@@ -268,6 +273,7 @@ namespace ILRepacking
             if (!string.IsNullOrEmpty(version))
                 Version = new Version(version);
             XmlDocumentation = cmd.Modifier("xmldocs");
+            NoRepackRes = cmd.Modifier("norepackres");
 
             SetSearchDirectories(cmd.Options("lib"));
 
@@ -304,6 +310,7 @@ namespace ILRepacking
             Console.WriteLine(@" - /lib:<path>        adds the path to the search directories for referenced assemblies (can be specified multiple times)");
             Console.WriteLine(@" - /internalize       sets all types but the ones from the first assembly 'internal'");
             Console.WriteLine(@" - /delaysign         sets the key, but don't sign the assembly");
+            Console.WriteLine(@" - /noRepackRes       do not add the resource 'ILRepack.List with all merged assembly names");
             
             Console.WriteLine(@" - /usefullpublickeyforreferences - NOT IMPLEMENTED");
             Console.WriteLine(@" - /align             - NOT IMPLEMENTED");
@@ -318,7 +325,7 @@ namespace ILRepacking
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
             Console.WriteLine(@" - <other_assemblies> ...");
             Console.WriteLine(@"");
-            Console.WriteLine(@"Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.");
+            Console.WriteLine(@"Note: for compatibility purposes, all options are case insensitive, and can be specified using '/', '-' or '--' prefix.");
         }
 
         private void ReadInputAssemblies()
@@ -501,11 +508,11 @@ namespace ILRepacking
             else
             {
                 // TODO: does this work or is there more to do?
-                TargetAssemblyDefinition.MainModule.Kind = kind;
-                TargetAssemblyDefinition.MainModule.Runtime = runtime;
+                TargetAssemblyMainModule.Kind = kind;
+                TargetAssemblyMainModule.Runtime = runtime;
 
                 TargetAssemblyDefinition.Name.Name = mainModuleName;
-                TargetAssemblyDefinition.MainModule.Name = mainModuleName;
+                TargetAssemblyMainModule.Name = mainModuleName;
             }
 
             if (Version != null)
@@ -520,12 +527,12 @@ namespace ILRepacking
                 }
                 TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
                 TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
-                TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
+                TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
             }
             else
             {
                 TargetAssemblyDefinition.Name.PublicKey = null;
-                TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
+                TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
 
             INFO("Processing references");
@@ -535,14 +542,14 @@ namespace ILRepacking
                 string name = z.Name;
                 if (!MergedAssemblies.Any(y => y.Name.Name == name) &&
                     TargetAssemblyDefinition.Name.Name != name &&
-                    !TargetAssemblyDefinition.MainModule.AssemblyReferences.Any(y => y.Name == name))
+                    !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name))
                 {
                     // TODO: fix .NET runtime references?
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
                     VERBOSE("- add reference " + z);
                     AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
-                    TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(fixedRef);
+                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
                 }
             }
 
@@ -550,26 +557,47 @@ namespace ILRepacking
             foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
             {
                 string name = z.Name;
-                if (!TargetAssemblyDefinition.MainModule.ModuleReferences.Any(y => y.Name == name))
+                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
                 {
-                    TargetAssemblyDefinition.MainModule.ModuleReferences.Add(z);
+                    TargetAssemblyMainModule.ModuleReferences.Add(z);
                 }
             }
 
             INFO("Processing resources");
             // merge resources
+            List<string> repackList = null;
+            EmbeddedResource repackListRes = null;
+            if (!NoRepackRes)
+            {
+                repackList = MergedAssemblies.Select(a => a.FullName).ToList();
+                repackListRes = GetRepackListResource(repackList);
+                TargetAssemblyMainModule.Resources.Add(repackListRes);
+            }
             foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
             {
-                if (!AllowDuplicateResources && TargetAssemblyDefinition.MainModule.Resources.Any(x => x.Name == r.Name))
+                if (!NoRepackRes && r.Name == "ILRepack.List" && r is EmbeddedResource)
                 {
-                    // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                    // TODO: but might have to merge 'ikvm.exports'
-                    VERBOSE("- Ignoring duplicate resource " + r.Name);
+                    // Merge r into repackList
+                    string[] others = (string[])new BinaryFormatter().Deserialize(((EmbeddedResource)r).GetResourceStream());
+                    repackList = repackList.Union(others).ToList();
+                    EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
+                    TargetAssemblyMainModule.Resources.Remove(repackListRes);
+                    TargetAssemblyMainModule.Resources.Add(repackListRes2);
+                    repackListRes = repackListRes2;
                 }
                 else
                 {
-                    VERBOSE("- Importing " + r.Name);
-                    TargetAssemblyDefinition.MainModule.Resources.Add(r);
+                    if (!AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
+                    {
+                        // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
+                        // TODO: but might have to merge 'ikvm.exports'
+                        VERBOSE("- Ignoring duplicate resource " + r.Name);
+                    }
+                    else
+                    {
+                        VERBOSE("- Importing " + r.Name);
+                        TargetAssemblyMainModule.Resources.Add(r);
+                    }
                 }
             }
 
@@ -676,6 +704,17 @@ namespace ILRepacking
             }
             if (failed)
                 throw new Exception("Merging failed, see above errors");
+        }
+
+        private EmbeddedResource GetRepackListResource(List<string> repackList)
+        {
+            repackList.Sort();
+            EmbeddedResource repackListRes;
+            var stream = new MemoryStream();
+            new BinaryFormatter().Serialize(stream, repackList.ToArray());
+            stream.Seek(0, 0);
+            repackListRes = new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream);
+            return repackListRes;
         }
 
         // Real stuff below //
@@ -864,6 +903,11 @@ namespace ILRepacking
 
         private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
         {
+            if (type.FullName == "IKVM.Attributes.JavaModuleAttribute" || type.FullName == "IKVM.Attributes.PackageListAttribute")
+            {
+                // IKVM module attributes, although they don't allow multiple, IKVM supports the attribute being specified multiple times
+                return true;
+            }
             TypeDefinition typeDef = type.Resolve();
             if (typeDef != null)
             {
