@@ -70,6 +70,7 @@
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
+    <Compile Include="DuplicateHandler.cs" />
     <Compile Include="ILRepack.cs" />
     <Compile Include="PermissionsetHelper.cs" />
     <Compile Include="PlatformFixer.cs" />
