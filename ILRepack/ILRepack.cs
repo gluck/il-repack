@@ -861,11 +861,11 @@ namespace ILRepacking
             EventDefinition ed = new EventDefinition(evt.Name, evt.Attributes, Import(evt.EventType, nt));
             col.Add(ed);
             if (evt.AddMethod != null)
-                ed.AddMethod = nt.Methods.Where(x => x.FullName == evt.AddMethod.FullName).First();
+                ed.AddMethod = FindMethodInNewType(nt, evt.AddMethod);
             if (evt.RemoveMethod != null)
-                ed.RemoveMethod = nt.Methods.Where(x => x.FullName == evt.RemoveMethod.FullName).First();
+                ed.RemoveMethod = FindMethodInNewType(nt, evt.RemoveMethod);
             if (evt.InvokeMethod != null)
-                ed.InvokeMethod = nt.Methods.Where(x => x.FullName == evt.InvokeMethod.FullName).First();
+                ed.InvokeMethod = FindMethodInNewType(nt, evt.InvokeMethod);
             if (evt.HasOtherMethods)
             {
                 // TODO
@@ -873,6 +873,17 @@ namespace ILRepacking
             }
 
             CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
+        }
+
+        private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
+        {
+            var meths = nt.Methods.Where(x => x.FullName == methodDefinition.FullName);
+            var ret = meths.FirstOrDefault();
+            if (ret == null)
+            {
+                WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
+            }
+            return ret;
         }
 
         private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
@@ -995,9 +1006,9 @@ namespace ILRepacking
             PropertyDefinition pd = new PropertyDefinition(prop.Name, prop.Attributes, Import(prop.PropertyType, nt));
             col.Add(pd);
             if (prop.SetMethod != null)
-                pd.SetMethod = nt.Methods.Where(x => x.FullName == prop.SetMethod.FullName).First();
+                pd.SetMethod = FindMethodInNewType(nt, prop.SetMethod);
             if (prop.GetMethod != null)
-                pd.GetMethod = nt.Methods.Where(x => x.FullName == prop.GetMethod.FullName).First();
+                pd.GetMethod = FindMethodInNewType(nt, prop.GetMethod);
             if (prop.HasOtherMethods)
             {
                 // TODO
