@@ -27,10 +27,13 @@ namespace ILRepacking
     {
         private readonly ILRepack repack;
         private string targetAssemblyPublicKeyBlobString;
+        private HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
+        private DuplicateHandler duplicateHandler;
 
-        internal ReferenceFixator(ILRepack repack)
+        public ReferenceFixator(ILRepack iLRepack, DuplicateHandler duplicateHandler)
         {
-            this.repack = repack;
+            this.repack = iLRepack;
+            this.duplicateHandler = duplicateHandler;
         }
 
         private TypeReference Fix(TypeReference type)
@@ -60,7 +63,6 @@ namespace ILRepacking
             return field;
         }
 
-        private HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
         private TypeReference Fix(TypeReference type, IGenericParameterProvider context)
         {
             if (type == null || type.IsDefinition)
@@ -93,6 +95,7 @@ namespace ILRepacking
             }
             else
             {
+                type = duplicateHandler.Rename(type);
                 var t2 = repack.TargetAssemblyMainModule.GetType(type.FullName);
                 return t2 ?? type;
             }

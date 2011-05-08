@@ -106,6 +106,7 @@ namespace ILRepacking
         private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
 
         PlatformFixer platformFixer;
+        DuplicateHandler duplicateHandler;
 
         public ILRepack()
         {
@@ -476,6 +477,7 @@ namespace ILRepacking
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
             platformFixer = new PlatformFixer(PrimaryAssemblyDefinition.MainModule.Runtime);
+            duplicateHandler = new DuplicateHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 
             ModuleKind kind = PrimaryAssemblyMainModule.Kind;
@@ -608,13 +610,23 @@ namespace ILRepacking
                 VERBOSE("- Importing " + r);
                 Import(r, TargetAssemblyMainModule.Types, false);
             }
-            foreach (var r in OtherAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Types))
+            ReferenceFixator fixator = new ReferenceFixator(this, duplicateHandler);
+            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
             {
-                VERBOSE("- Importing " + r);
-                bool internalize = Internalize;
-                if (excludeInternalizeMatches != null)
-                    internalize = !ExcludeInternalizeMatches(r.FullName);
-                Import(r, TargetAssemblyMainModule.Types, internalize);
+                duplicateHandler.Reset();
+                List<TypeDefinition> importedTypes = new List<TypeDefinition>();
+                foreach (var r in m.Types)
+                {
+                    VERBOSE("- Importing " + r);
+                    bool internalize = Internalize;
+                    if (excludeInternalizeMatches != null)
+                        internalize = !ExcludeInternalizeMatches(r.FullName);
+                    importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
+                }
+                foreach (var t in importedTypes)
+                {
+                    fixator.FixReferences(t);
+                }
             }
 
             if (CopyAttributes)
@@ -641,7 +653,6 @@ namespace ILRepacking
                 CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
             }
-            ReferenceFixator fixator = new ReferenceFixator(this);
             CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
             if (PrimaryAssemblyMainModule.EntryPoint != null)
             {
@@ -877,7 +888,9 @@ namespace ILRepacking
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
         {
-            var meths = nt.Methods.Where(x => x.FullName == methodDefinition.FullName);
+            var meths = nt.FullName == methodDefinition.DeclaringType.FullName ?
+                nt.Methods.Where(x => x.FullName == methodDefinition.FullName) :
+                nt.Methods.Where(x => x.Name == methodDefinition.Name); // for renames (could check parameters as well)
             var ret = meths.FirstOrDefault();
             if (ret == null)
             {
@@ -946,20 +959,23 @@ namespace ILRepacking
 
         private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
         {
+            reference = duplicateHandler.Rename(reference);
+
+            // first a shortcut, avoids fixing references afterwards (but completely optional)
             TypeDefinition type = TargetAssemblyMainModule.GetType(reference.FullName);
             if (type != null)
                 return type;
 
-            TypeReference importReference = platformFixer.FixPlatformVersion(reference);
+            reference = platformFixer.FixPlatformVersion(reference);
 
             if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
+                return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
             else if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
+                return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
             else if (context == null)
             {
                 // we come here when importing types used for assembly-level custom attributes
-                return TargetAssemblyMainModule.Import(importReference);
+                return TargetAssemblyMainModule.Import(reference);
             }
             throw new InvalidOperationException();
         }
@@ -1198,32 +1214,19 @@ namespace ILRepacking
             return null /*newBody.Instructions.Outside*/;
         }
 
-        internal void Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
+        internal TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             TypeDefinition nt = TargetAssemblyMainModule.GetType(type.FullName);
             if (nt == null)
             {
-                nt = new TypeDefinition(type.Namespace, type.Name, type.Attributes);
-                col.Add(nt);
-
-                // only top-level types are internalized
-                if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
-                    nt.IsPublic = false;
-
-                CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
-                if (type.BaseType != null)
-                    nt.BaseType = Import(type.BaseType, nt);
-
-                if (type.HasLayoutInfo)
-                {
-                    nt.ClassSize = type.ClassSize;
-                    nt.PackingSize = type.PackingSize;
-                }
-                // don't copy these twice if UnionMerge==true
-                // TODO: we can move this down if we chek for duplicates when adding
-                CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-                CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
-                CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
+                nt = CreateType(type, col, internalize, null);
+            }
+            else if (type.FullName != "<Module>" && !type.IsPublic)
+            {
+                // rename it
+                string other = duplicateHandler.Get(type.FullName, type.Name);
+                INFO("Renaming " + type.FullName + " into " + other);
+                nt = CreateType(type, col, internalize, other);
             }
             else if (UnionMerge || DuplicateTypeAllowed(type.FullName))
             {
@@ -1249,6 +1252,33 @@ namespace ILRepacking
                 CloneTo(evt, nt, nt.Events);
             foreach (PropertyDefinition prop in type.Properties)
                 CloneTo(prop, nt, nt.Properties);
+            return nt;
+        }
+
+        private TypeDefinition CreateType(TypeDefinition type, Collection<TypeDefinition> col, bool internalize, string rename)
+        {
+            TypeDefinition nt = new TypeDefinition(type.Namespace, rename ?? type.Name, type.Attributes);
+            col.Add(nt);
+
+            // only top-level types are internalized
+            if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
+                nt.IsPublic = false;
+
+            CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
+            if (type.BaseType != null)
+                nt.BaseType = Import(type.BaseType, nt);
+
+            if (type.HasLayoutInfo)
+            {
+                nt.ClassSize = type.ClassSize;
+                nt.PackingSize = type.PackingSize;
+            }
+            // don't copy these twice if UnionMerge==true
+            // TODO: we can move this down if we chek for duplicates when adding
+            CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
+            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
+            return nt;
         }
 
         private bool DuplicateTypeAllowed(string fullName)
