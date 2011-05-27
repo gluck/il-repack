@@ -86,6 +86,7 @@ namespace ILRepacking
 
         public bool LogVerbose { get; set; }
         public bool NoRepackRes { get; set; }
+        public bool KeepOtherVersionReferences { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
@@ -275,6 +276,7 @@ namespace ILRepacking
                 Version = new Version(version);
             XmlDocumentation = cmd.Modifier("xmldocs");
             NoRepackRes = cmd.Modifier("norepackres");
+            KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
             SetSearchDirectories(cmd.Options("lib"));
 
@@ -674,12 +676,11 @@ namespace ILRepacking
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)
             {
-                string mergedAssemblyName = asm.Name.Name;
                 foreach (var refer in TargetAssemblyMainModule.AssemblyReferences.ToArray())
                 {
                     // remove all referenced assemblies with same same, as we didn't bother on the version when merging
                     // in case we reference same assemblies with different versions, there might be prior errors if we don't merge the 'largest one'
-                    if (refer.Name == mergedAssemblyName)
+                    if (KeepOtherVersionReferences ? refer.FullName == asm.FullName : refer.Name == asm.Name.Name)
                     {
                         TargetAssemblyMainModule.AssemblyReferences.Remove(refer);
                     }
@@ -707,7 +708,7 @@ namespace ILRepacking
             AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate));
             // lazy match on the name (not full) to catch requirements about merging different versions
             bool failed = false;
-            foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => x.Name == y.Name.Name)))
+            foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
             {
                 // failed
                 ERROR("Merged assembly still references " + a.FullName);
@@ -957,14 +958,25 @@ namespace ILRepacking
             }
         }
 
+        public bool IsMerged(TypeReference reference)
+        {
+            var refer = reference.Scope as AssemblyNameReference;
+            // don't fix reference to an unmerged type (even if a merged one exists with same name)
+
+            return refer != null && MergedAssemblies.Any(x => KeepOtherVersionReferences ? x.FullName == refer.FullName : x.Name.Name == refer.Name);
+        }
+
         private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
         {
             reference = duplicateHandler.Rename(reference);
 
-            // first a shortcut, avoids fixing references afterwards (but completely optional)
-            TypeDefinition type = TargetAssemblyMainModule.GetType(reference.FullName);
-            if (type != null)
-                return type;
+            if (IsMerged(reference))
+            {
+                // first a shortcut, avoids fixing references afterwards (but completely optional)
+                TypeDefinition type = TargetAssemblyMainModule.GetType(reference.FullName);
+                if (type != null)
+                    return type;
+            }
 
             reference = platformFixer.FixPlatformVersion(reference);
 

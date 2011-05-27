@@ -96,6 +96,16 @@ namespace ILRepacking
             else
             {
                 type = duplicateHandler.Rename(type);
+                return FixImpl(type);
+            }
+            return type;
+        }
+
+        private TypeReference FixImpl(TypeReference type)
+        {
+            // don't fix reference to an unmerged type (even if a merged one exists with same name)
+            if (repack.IsMerged(type))
+            {
                 var t2 = repack.TargetAssemblyMainModule.GetType(type.FullName);
                 return t2 ?? type;
             }
