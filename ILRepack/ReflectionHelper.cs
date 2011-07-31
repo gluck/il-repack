@@ -29,15 +29,16 @@ namespace ILRepacking
             TypeDefinition t = type;
             while (t != null)
             {
-                IEnumerable<MethodDefinition> realMds = t.Methods.Where(x => x.Name == method.Name && AreSame(x.Parameters, method.Parameters) && AreSame(x.ReturnType, method.ReturnType));
-                if (realMds.Count() == 1)
+                MethodDefinition firstMd =
+                  t.Methods.Where(
+                    x => x.Name == method.Name && 
+                         AreSame(x.Parameters, method.Parameters) &&
+                         AreSame(x.ReturnType, method.ReturnType)
+                  ).FirstOrDefault();
+
+                if (firstMd != null)
                 {
-                    MethodDefinition realMd = realMds.First();
-                    return realMd;
-                }
-                if (realMds.Count() > 1)
-                {
-                    throw new NotSupportedException();
+                  return firstMd;
                 }
                 if ((t.BaseType != null) && (t.BaseType.IsDefinition))
                 {

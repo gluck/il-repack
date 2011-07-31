@@ -25,6 +25,7 @@ using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
+using System.Threading;
 
 namespace ILRepacking
 {
@@ -50,6 +51,8 @@ namespace ILRepacking
         public string[] InputAssemblies { get; set; }
         public bool Internalize { get; set; }
         public string KeyFile { get; set; }
+        public bool Parallel { get; set; }
+        public bool PauseBeforeExit { get; set; }
         public bool Log { get; set; }
         public string LogFile { get; set; }
         public void Merge()
@@ -107,6 +110,7 @@ namespace ILRepacking
         private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
 
         PlatformFixer platformFixer;
+        private HashSet<string> mergeAsmNames;
         DuplicateHandler duplicateHandler;
 
         public ILRepack()
@@ -184,19 +188,29 @@ namespace ILRepacking
         public static int Main(string[] args)
         {
             ILRepack repack = new ILRepack();
+            int rc = -1;
             try
             {
                 repack.ReadArguments(args);
                 repack.Repack();
+                rc = 0;
             }
             catch (Exception e)
             {
                 repack.LogOutput(e);
                 repack.CloseLogFile();
-                return 1;
+                rc = 1;
             }
-            repack.CloseLogFile();
-            return 0;
+            finally
+            {
+                repack.CloseLogFile();
+                if (repack.PauseBeforeExit)
+                {
+                  Console.WriteLine("Press Any Key To Continue");
+                  Console.ReadKey(true);            
+                }
+            }
+            return rc;
         }
 
         void Exit(int exitCode)
@@ -219,6 +233,8 @@ namespace ILRepacking
             AllowMultipleAssemblyLevelAttributes = cmd.Modifier("allowmultiple");
             AllowWildCards = cmd.Modifier("wildcards");
             AllowZeroPeKind = cmd.Modifier("zeropekind");
+            Parallel = cmd.Modifier("parallel");
+            PauseBeforeExit = cmd.Modifier("pause");
             AttributeFile = cmd.Option("attr");
             Closed = cmd.Modifier("closed");
             CopyAttributes = cmd.Modifier("copyattrs");
@@ -323,6 +339,8 @@ namespace ILRepacking
             Console.WriteLine(@" - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)");
             Console.WriteLine(@" - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)");
             Console.WriteLine(@" - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies");
+            Console.WriteLine(@" - /parallel          use as many CPUs as possible to merge the assemblies");
+            Console.WriteLine(@" - /pause             pause execution once completed (good for debugging)");
             Console.WriteLine(@" - /verbose           shows more logs");
             Console.WriteLine(@" - /out:<path>        target assembly path, symbol/config/doc files will be written here as well");
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
@@ -369,15 +387,13 @@ namespace ILRepacking
                     }
                     if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                         throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                    
+                    if (rp.ReadSymbols)
+                        mergedDebugInfo = true;
+                    if (PrimaryAssemblyDefinition == null)
+                        PrimaryAssemblyDefinition = mergeAsm;
                     else
-                    {
-                        if (rp.ReadSymbols)
-                            mergedDebugInfo = true;
-                        if (PrimaryAssemblyDefinition == null)
-                            PrimaryAssemblyDefinition = mergeAsm;
-                        else
-                            OtherAssemblies.Add(mergeAsm);
-                    }
+                        OtherAssemblies.Add(mergeAsm);
                 }
                 catch
                 {
@@ -391,6 +407,82 @@ namespace ILRepacking
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
             MergedAssemblies.Add(PrimaryAssemblyDefinition);
         }
+
+        private void ReadInputAssembliesParallel()
+        {
+            INFO("Reading in Parallel");
+            MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).ToList();
+
+            // TODO: this could be parallelized to gain speed
+            bool mergedDebugInfo = false;
+            AssemblyDefinition[] readAsms = new AssemblyDefinition[MergedAssemblyFiles.Count];
+            int remain = MergedAssemblyFiles.Count;
+            EventWaitHandle evt = new ManualResetEvent(false);
+            for (int i = 0; i < MergedAssemblyFiles.Count; i++)
+            {
+                int idx = i;
+                string assembly = MergedAssemblyFiles[idx];
+                ThreadPool.QueueUserWorkItem((WaitCallback)((_) =>
+                {
+                    INFO("Adding assembly for merge: " + assembly);
+                    try
+                    {
+                        ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
+                        // read PDB/MDB?
+                        if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(Path.ChangeExtension(assembly, "mdb"))))
+                        {
+                            rp.ReadSymbols = true;
+                        }
+                        AssemblyDefinition mergeAsm;
+                        try
+                        {
+                            mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                        }
+                        catch
+                        {
+                            // cope with invalid symbol file
+                            if (rp.ReadSymbols)
+                            {
+                                rp.ReadSymbols = false;
+                                mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                                INFO("Failed to load debug information for " + assembly);
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
+                        if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
+                            throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+
+                        if (rp.ReadSymbols)
+                            mergedDebugInfo = true;
+                        readAsms[idx] = mergeAsm;
+                    }
+                    catch
+                    {
+                        ERROR("Failed to load assembly " + assembly);
+                        throw;
+                    }
+                    finally
+                    {
+                        if (Interlocked.Decrement(ref remain) == 0)
+                            evt.Set();
+                    }
+                }));
+            }
+
+            evt.WaitOne();
+
+            // prevent writing PDB if we haven't read any
+            DebugInfo = mergedDebugInfo;
+
+            MergedAssemblies = new List<AssemblyDefinition>(readAsms);
+            PrimaryAssemblyDefinition = readAsms[0];
+            OtherAssemblies = new List<AssemblyDefinition>(readAsms);
+            OtherAssemblies.RemoveAt(0);
+        }
+
 
         private IEnumerable<string> ResolveFile(string s)
         {
@@ -477,7 +569,15 @@ namespace ILRepacking
             InitializeLogFile();
             ParseProperties();
             // Read input assemblies only after all properties are set.
-            ReadInputAssemblies();
+            if (Parallel)  
+                ReadInputAssembliesParallel();
+            else
+                ReadInputAssemblies();
+            var asmNames = KeepOtherVersionReferences ? 
+              MergedAssemblies.Select(x => x.FullName) : 
+              MergedAssemblies.Select(x => x.Name.Name);
+          
+            mergeAsmNames = new HashSet<string>(asmNames);
             platformFixer = new PlatformFixer(PrimaryAssemblyDefinition.MainModule.Runtime);
             duplicateHandler = new DuplicateHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
@@ -889,13 +989,14 @@ namespace ILRepacking
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
         {
+            var methFullName = methodDefinition.FullName;
             var meths = nt.FullName == methodDefinition.DeclaringType.FullName ?
-                nt.Methods.Where(x => x.FullName == methodDefinition.FullName) :
+                nt.Methods.Where(x => x.FullName == methFullName) :
                 nt.Methods.Where(x => x.Name == methodDefinition.Name); // for renames (could check parameters as well)
             var ret = meths.FirstOrDefault();
             if (ret == null)
             {
-                WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
+                WARN("Method '" + methFullName + "' not found in merged type '" + nt.FullName + "'");
             }
             return ret;
         }
@@ -963,7 +1064,12 @@ namespace ILRepacking
             var refer = reference.Scope as AssemblyNameReference;
             // don't fix reference to an unmerged type (even if a merged one exists with same name)
 
-            return refer != null && MergedAssemblies.Any(x => KeepOtherVersionReferences ? x.FullName == refer.FullName : x.Name.Name == refer.Name);
+            if (refer == null)
+                return false;
+
+            return KeepOtherVersionReferences ? 
+                mergeAsmNames.Contains(refer.FullName) : 
+                mergeAsmNames.Contains(refer.Name);
         }
 
         private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
@@ -1046,11 +1152,15 @@ namespace ILRepacking
             CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
         }
 
-        private void CloneTo(MethodDefinition meth, TypeDefinition type)
+        private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
         {
             // ignore duplicate method
-            if (type.Methods.Any(x => (x.Name == meth.Name) && (x.Parameters.Count == meth.Parameters.Count) &&
-                (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
+            if (!typeJustCreated && 
+                type.Methods.Count > 0 &&
+                type.Methods.Any(x => 
+                  (x.Name == meth.Name) && 
+                  (x.Parameters.Count == meth.Parameters.Count) &&
+                  (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
             {
                 IGNOREDUP("method", meth);
                 return;
@@ -1229,9 +1339,11 @@ namespace ILRepacking
         internal TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             TypeDefinition nt = TargetAssemblyMainModule.GetType(type.FullName);
+            bool justCreatedType = false;
             if (nt == null)
             {
                 nt = CreateType(type, col, internalize, null);
+                justCreatedType = true;
             }
             else if (type.FullName != "<Module>" && !type.IsPublic)
             {
@@ -1239,6 +1351,7 @@ namespace ILRepacking
                 string other = duplicateHandler.Get(type.FullName, type.Name);
                 INFO("Renaming " + type.FullName + " into " + other);
                 nt = CreateType(type, col, internalize, other);
+                justCreatedType = true;
             }
             else if (UnionMerge || DuplicateTypeAllowed(type.FullName))
             {
@@ -1258,7 +1371,7 @@ namespace ILRepacking
 
             // methods before fields / events
             foreach (MethodDefinition meth in type.Methods)
-                CloneTo(meth, nt);
+                CloneTo(meth, nt, justCreatedType);
 
             foreach (EventDefinition evt in type.Events)
                 CloneTo(evt, nt, nt.Events);
