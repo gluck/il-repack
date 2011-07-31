@@ -49,8 +49,8 @@ namespace ILRepacking
                 if (!Directory.Exists(targetPlatformDirectory))
                     throw new ArgumentException("Platform directory not found: \"" + targetPlatformDirectory + "\".");
                 // TODO: only tested for Windows, not for Mono!
-                if (!File.Exists(Path.Combine(targetPlatformDirectory, "mscorlib.dll")))
-                    throw new ArgumentException("Invalid platform directory: \"" + targetPlatformDirectory + "\" (mscorlib.dll not found).");
+//if (!File.Exists(Path.Combine(targetPlatformDirectory, "mscorlib.dll")))
+  //                  throw new ArgumentException("Invalid platform directory: \"" + targetPlatformDirectory + "\" (mscorlib.dll not found).");
             }
         }
 
@@ -188,7 +188,7 @@ namespace ILRepacking
                             platformAsm.Name);
                     }
                     foreach (var gp in reference.GenericParameters)
-                        throw new NotImplementedException();
+                        newTypeRef.GenericParameters.Add(FixPlatformVersion(gp, newTypeRef));
                     newTypeRef.IsValueType = reference.IsValueType;
                     if (reference.DeclaringType != null)
                         newTypeRef.DeclaringType = FixPlatformVersion(reference.DeclaringType);
@@ -198,10 +198,35 @@ namespace ILRepacking
             return reference;
         }
 
+
+        MethodSpecification FixPlatformVersionOnMethodSpecification(MethodReference method)
+        {
+            if (!method.IsGenericInstance)
+                throw new NotSupportedException();
+
+            var instance = (GenericInstanceMethod)method;
+            var element_method = FixPlatformVersion(instance.ElementMethod);
+            var imported_instance = new GenericInstanceMethod(element_method);
+
+            var arguments = instance.GenericArguments;
+            var imported_arguments = imported_instance.GenericArguments;
+
+            for (int i = 0; i < arguments.Count; i++)
+                imported_arguments.Add(FixPlatformVersion(arguments[i]));
+
+            return imported_instance;
+        }
+
+
         public MethodReference FixPlatformVersion(MethodReference reference)
         {
             if (targetPlatformDirectory == null)
                 return reference;
+
+            if (reference.IsGenericInstance)
+            {
+                return FixPlatformVersionOnMethodSpecification(reference);
+            }
 
             MethodReference fixedRef = new MethodReference(reference.Name, FixPlatformVersion(reference.ReturnType), FixPlatformVersion(reference.DeclaringType));
             fixedRef.HasThis = reference.HasThis;
@@ -210,7 +235,7 @@ namespace ILRepacking
             foreach (ParameterDefinition pd in reference.Parameters)
                 fixedRef.Parameters.Add(FixPlatformVersion(pd));
             foreach (GenericParameter gp in reference.GenericParameters)
-                reference.GenericParameters.Add(FixPlatformVersion(gp, fixedRef));
+                fixedRef.GenericParameters.Add(FixPlatformVersion(gp, fixedRef));
             return fixedRef;
         }
 
@@ -241,7 +266,8 @@ namespace ILRepacking
                 ngp.Constraints.Add(FixPlatformVersion(tr));
             foreach (CustomAttribute ca in gp.CustomAttributes)
                 ngp.CustomAttributes.Add(FixPlatformVersion(ca));
-            ngp.DeclaringType = FixPlatformVersion(gp.DeclaringType);
+            if (gp.DeclaringType != null )
+                ngp.DeclaringType = FixPlatformVersion(gp.DeclaringType);
             foreach (GenericParameter gp1 in gp.GenericParameters)
                 ngp.GenericParameters.Add(FixPlatformVersion(gp1, ngp));
             return ngp;
