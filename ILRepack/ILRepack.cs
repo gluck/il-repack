@@ -884,6 +884,8 @@ namespace ILRepacking
             ParameterDefinition pd = new ParameterDefinition(param.Name, param.Attributes, Import(param.ParameterType, context));
             if (param.HasMarshalInfo)
                 pd.MarshalInfo = param.MarshalInfo;
+            if (param.HasCustomAttributes)
+                CopyCustomAttributes(param.CustomAttributes, pd.CustomAttributes, context);
             col.Add(pd);
         }
 
@@ -1006,6 +1008,18 @@ namespace ILRepacking
             CopyCustomAttributes(input, output, true, context);
         }
 
+        private CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
+        {
+            CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
+            foreach (var arg in ca.ConstructorArguments)
+                newCa.ConstructorArguments.Add(Copy(arg, context));
+            foreach (var arg in ca.Fields)
+                newCa.Fields.Add(Copy(arg, context));
+            foreach (var arg in ca.Properties)
+                newCa.Properties.Add(Copy(arg, context));
+            return newCa;
+        }
+
         private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
         {
             foreach (CustomAttribute ca in input)
@@ -1014,15 +1028,7 @@ namespace ILRepacking
                 if (!output.Any(attr => ReflectionHelper.AreSame(attr.AttributeType, caType)) ||
                     (allowMultiple && CustomAttributeTypeAllowsMultiple(caType)))
                 {
-                    CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
-                    foreach (var arg in ca.ConstructorArguments)
-                        newCa.ConstructorArguments.Add(Copy(arg, context));
-                    foreach (var arg in ca.Fields)
-                        newCa.Fields.Add(Copy(arg, context));
-                    foreach (var arg in ca.Properties)
-                        newCa.Properties.Add(Copy(arg, context));
-                    output.Add(newCa);
-
+                    output.Add(Copy(ca, context));
                 }
             }
         }
