@@ -234,6 +234,15 @@ namespace Mono.Cecil {
 			set { attributes = value; }
 		}
 
+        const string rsrc_section = ".rsrc";
+		public void ImportWin32Resources(ModuleDefinition source) {
+            Section rsrc = source.Image.GetSection(rsrc_section);
+            var raw_resources = new byte[rsrc.Data.Length];
+            Buffer.BlockCopy(rsrc.Data, 0, raw_resources, 0, rsrc.Data.Length);
+            Win32Resources = raw_resources;
+		    Win32RVA = rsrc.VirtualAddress;
+		}
+
 		public string FullyQualifiedName {
 			get { return fq_name; }
 		}
@@ -407,7 +416,17 @@ namespace Mono.Cecil {
 			set { entry_point = value; }
 		}
 
-		internal ModuleDefinition ()
+        internal byte[] Win32Resources
+	    {
+	        get; set;
+	    }
+
+        internal System.UInt32 Win32RVA
+	    {
+            get; set;
+        }
+
+	    internal ModuleDefinition ()
 		{
 			this.MetadataSystem = new MetadataSystem ();
 			this.token = new MetadataToken (TokenType.Module, 1);

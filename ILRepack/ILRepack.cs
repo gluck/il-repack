@@ -578,7 +578,7 @@ namespace ILRepacking
               MergedAssemblies.Select(x => x.Name.Name);
           
             mergeAsmNames = new HashSet<string>(asmNames);
-            platformFixer = new PlatformFixer(PrimaryAssemblyDefinition.MainModule.Runtime);
+            platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
             duplicateHandler = new DuplicateHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 
@@ -608,6 +608,7 @@ namespace ILRepacking
                             Architecture = PrimaryAssemblyMainModule.Architecture,
                             Runtime = runtime
                         });
+                TargetAssemblyMainModule.ImportWin32Resources(PrimaryAssemblyMainModule);
             }
             else
             {

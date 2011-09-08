@@ -28,10 +28,6 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <SccProjectName>&lt;Project Location In Database&gt;</SccProjectName>
-    <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
-    <SccAuxPath>&lt;Source Control Database&gt;</SccAuxPath>
-    <SccProvider>Mercurial Source Control Package</SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -133,7 +129,9 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>$(TargetPath) /wildcards "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll
-..\ILRepack.exe "/out:..\ILRepack2.exe" ..\ILRepack.exe</PostBuildEvent>
+    <PostBuildEvent>
+      $(TargetPath) /log /wildcards "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll
+      ..\ILRepack.exe /log "/out:..\ILRepack2.exe" ..\ILRepack.exe
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
