@@ -25,33 +25,11 @@ namespace ILRepacking
     {
         internal static MethodDefinition FindMethodDefinitionInType(TypeDefinition type, MethodReference method)
         {
-
-            TypeDefinition t = type;
-            while (t != null)
-            {
-                MethodDefinition firstMd =
-                  t.Methods.Where(
+            return type.Methods.Where(
                     x => x.Name == method.Name && 
                          AreSame(x.Parameters, method.Parameters) &&
                          AreSame(x.ReturnType, method.ReturnType)
                   ).FirstOrDefault();
-
-                if (firstMd != null)
-                {
-                  return firstMd;
-                }
-                if ((t.BaseType != null) && (t.BaseType.IsDefinition))
-                {
-                    // IsDefinition: BaseType is in the same assembly
-                    t = (TypeDefinition)t.BaseType;
-                }
-                else
-                {
-                    // no base type or in other assembly
-                    return null;
-                }
-            }
-            return null;
         }
 
         // nasty copy from MetadataResolver.cs for now
@@ -141,5 +119,170 @@ namespace ILRepacking
             return a.FullName == b.FullName;
         }
 
+    }
+
+
+
+    /// <summary>
+    /// Resolution of overrides and implements of methods.
+    /// Copied and modified from http://markmail.org/message/srpyljbjtaskoahk
+    /// Which was copied and modified from Mono's Mono.Linker.Steps.TypeMapStep
+    /// </summary>
+    public class MethodMatcher
+    {
+        private readonly Action<MethodDefinition> _an;
+
+        public MethodMatcher(Action<MethodDefinition> an)
+        {
+            _an = an;
+        }
+
+        public void MapVirtualMethod(MethodDefinition method)
+        {
+            MapVirtualBaseMethod(method);
+            MapVirtualInterfaceMethod(method.DeclaringType, method);
+        }
+
+        void MapVirtualBaseMethod(MethodDefinition method)
+        {
+            MethodDefinition @base = GetBaseMethodInTypeHierarchy(method);
+            if (@base == null)
+                return;
+
+            _an(@base);
+        }
+
+        void MapVirtualInterfaceMethod(TypeDefinition type, MethodDefinition method)
+        {
+            foreach (var @base in GetBaseMethodInInterfaceHierarchy(type, method))
+                _an(@base);
+        }
+
+        static MethodDefinition GetBaseMethodInTypeHierarchy(MethodDefinition method)
+        {
+            TypeDefinition @base = GetBaseType(method.DeclaringType);
+            while (@base != null)
+            {
+                MethodDefinition baseMethod = TryMatchMethod(@base, method);
+                if (baseMethod != null)
+                    return baseMethod;
+
+                @base = GetBaseType(@base);
+            }
+
+            return null;
+        }
+
+        static IEnumerable<MethodDefinition> GetBaseMethodInInterfaceHierarchy(TypeDefinition type, MethodDefinition method)
+        {
+            foreach (TypeReference interfaceRef in type.Interfaces)
+            {
+                TypeDefinition @interface = interfaceRef.Resolve();
+                if (@interface == null)
+                    continue;
+
+                MethodDefinition baseMethod = TryMatchMethod(@interface, method);
+                if (baseMethod != null)
+                    yield return baseMethod;
+
+                foreach (var md in GetBaseMethodInInterfaceHierarchy(@interface, method))
+                    yield return md;
+            }
+        }
+
+        static MethodDefinition TryMatchMethod(TypeDefinition type, MethodDefinition method)
+        {
+            if (!type.HasMethods)
+                return null;
+
+            foreach (MethodDefinition candidate in type.Methods)
+                if (MethodMatch(candidate, method))
+                    return candidate;
+
+            return null;
+        }
+
+        static bool MethodMatch(MethodDefinition candidate, MethodDefinition method)
+        {
+            if (!candidate.IsVirtual)
+                return false;
+
+            if (candidate.Name != method.Name)
+                return false;
+
+            if (!TypeMatch(candidate.ReturnType, method.ReturnType))
+                return false;
+
+            if (candidate.Parameters.Count != method.Parameters.Count)
+                return false;
+
+            for (int i = 0; i < candidate.Parameters.Count; i++)
+                if (!TypeMatch(candidate.Parameters[i].ParameterType, method.Parameters[i].ParameterType))
+                    return false;
+
+            return true;
+        }
+        
+        static bool TypeMatch(IModifierType a, IModifierType b)
+        {
+            if (!TypeMatch(a.ModifierType, b.ModifierType))
+                return false;
+
+            return TypeMatch(a.ElementType, b.ElementType);
+        }
+        
+
+        static bool TypeMatch(TypeSpecification a, TypeSpecification b)
+        {
+            if (a.IsGenericInstance)
+                return TypeMatch((GenericInstanceType)a, (GenericInstanceType)b);
+
+            if (a.IsRequiredModifier || a.IsOptionalModifier)
+                return TypeMatch((IModifierType)a, (IModifierType)b);
+
+            return TypeMatch(a.ElementType, b.ElementType);
+        }
+
+        static bool TypeMatch(GenericInstanceType a, GenericInstanceType b)
+        {
+            if (!TypeMatch(a.ElementType, b.ElementType))
+                return false;
+
+            if (a.GenericArguments.Count != b.GenericArguments.Count)
+                return false;
+
+            if (a.GenericArguments.Count == 0)
+                return true;
+
+            for (int i = 0; i < a.GenericArguments.Count; i++)
+                if (!TypeMatch(a.GenericArguments[i], b.GenericArguments[i]))
+                    return false;
+
+            return true;
+        }
+
+        static bool TypeMatch(TypeReference a, TypeReference b)
+        {
+            if (a is GenericParameter)
+                return true; // not exact, but a guess is enough for us
+
+            if (a is TypeSpecification || b is TypeSpecification)
+            {
+                if (a.GetType() != b.GetType())
+                    return false;
+
+                return TypeMatch((TypeSpecification)a, (TypeSpecification)b);
+            }
+
+            return a.FullName == b.FullName;
+        }
+
+        static TypeDefinition GetBaseType(TypeDefinition type)
+        {
+            if (type == null || type.BaseType == null || !type.BaseType.IsDefinition)
+                return null;
+
+            return (TypeDefinition) type.BaseType;
+        }
     }
 }

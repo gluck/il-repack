@@ -241,24 +241,11 @@ namespace ILRepacking
             meth.ReturnType = Fix(meth.ReturnType, meth);
             if (meth.HasBody)
                 FixReferences(meth.Body, meth);
-            if (meth.IsVirtual)
+            if (meth.IsVirtual && !meth.IsNewSlot)
             {
                 // Ensure we do not reduce access if the overridden method is in the same assembly
                 // (reducing access from 'public' to 'internal' works with different assemblies)
-                MethodDefinition baseMeth = GetOuterOverridenMethodDef(meth, context);
-                if ((baseMeth != null) && (baseMeth != meth))
-                {
-                    MethodAttributes baseAttrs = baseMeth.Attributes;
-                    MethodAttributes methAttrs = meth.Attributes;
-                    MethodAttributes baseAccess = baseAttrs & MethodAttributes.MemberAccessMask;
-                    MethodAttributes methAccess = methAttrs & MethodAttributes.MemberAccessMask;
-                    if (baseAccess != methAccess)
-                    {
-                        MethodAttributes newMethAttrs = methAttrs & ~MethodAttributes.MemberAccessMask;
-                        newMethAttrs |= baseAccess;
-                        meth.Attributes = newMethAttrs;
-                    }
-                }
+                FixOverridenMethodDef(meth, context);
                 // this causes peverify issues with IKVM assemblies where java is more flexible such as: (A and B are classes, C interface, B extends A, C)
                 // - protected virtual A::foo() {}
                 // - C::foo();
@@ -499,11 +486,28 @@ namespace ILRepacking
             throw new InvalidOperationException();
         }
 
+        void Fix(MethodDefinition @base, MethodDefinition over)
+        {
+            if ((@base != null) && (@base != over))
+            {
+                MethodAttributes baseAttrs = @base.Attributes;
+                MethodAttributes methAttrs = over.Attributes;
+                MethodAttributes baseAccess = baseAttrs & MethodAttributes.MemberAccessMask;
+                MethodAttributes methAccess = methAttrs & MethodAttributes.MemberAccessMask;
+                if (baseAccess != methAccess)
+                {
+                    MethodAttributes newMethAttrs = methAttrs & ~MethodAttributes.MemberAccessMask;
+                    newMethAttrs |= baseAccess;
+                    over.Attributes = newMethAttrs;
+                }
+            }
+        }
+
         /// <summary>
         /// Returns the base-most MethodDefinition (for implicitly or explicitly overridden methods) in this assembly.
         /// (Meaning overridden methods in referenced assemblies do not count, therefore it returns a Definition, not a Reference.)
         /// </summary>
-        public MethodDefinition GetOuterOverridenMethodDef(MethodDefinition meth, IGenericParameterProvider context)
+        public void FixOverridenMethodDef(MethodDefinition meth, IGenericParameterProvider context)
         {
             foreach (var ov in meth.Overrides)
             {
@@ -515,31 +519,17 @@ namespace ILRepacking
                         // it's a Definition, and in our module
                         MethodDefinition fixedOvDef = (MethodDefinition)fixedOv;
                         if (fixedOvDef.IsVirtual)
-                            return GetOuterOverridenMethodDef((MethodDefinition)fixedOv, context);
+                            Fix((MethodDefinition) fixedOv, meth);
                     }
                 }
             }
 
             // no explicit overrides found, check implicit overrides
-            TypeReference baseType = meth.DeclaringType.BaseType;
-            if ((baseType != null) && (baseType.Module == meth.Module))
-            {
-                TypeDefinition baseTypeDef = baseType.Resolve();
-                if (baseTypeDef != null)
-                {
-                    if (baseTypeDef.Module == meth.Module)
-                    {
-                        MethodDefinition baseMeth = ReflectionHelper.FindMethodDefinitionInType(baseTypeDef, meth);
-                        if (baseMeth != null)
-                        {
-                            if (baseMeth.IsVirtual)
-                                return GetOuterOverridenMethodDef(baseMeth, context);
-                        }
-                    }
-                }
-            }
-            // no overridden method found, return the original method
-            return meth;
+            new MethodMatcher(x =>
+                              {
+                                  if (x.IsVirtual)
+                                      Fix(x, meth);
+                              }).MapVirtualMethod(meth);
         }
 
         public void FixReferences(Collection<Resource> resources)
