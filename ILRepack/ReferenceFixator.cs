@@ -471,8 +471,7 @@ namespace ILRepacking
             if (type is GenericInstanceType)
             {
                 var instance = (GenericInstanceType)type;
-                var element_type = Fix(instance.ElementType, context);
-                var imported_instance = new GenericInstanceType(element_type);
+                var imported_instance = new GenericInstanceType(fet);
 
                 var arguments = instance.GenericArguments;
                 var imported_arguments = imported_instance.GenericArguments;

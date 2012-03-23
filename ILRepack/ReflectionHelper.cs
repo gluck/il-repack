@@ -279,10 +279,11 @@ namespace ILRepacking
 
         static TypeDefinition GetBaseType(TypeDefinition type)
         {
-            if (type == null || type.BaseType == null || !type.BaseType.IsDefinition)
+            if (type == null || type.BaseType == null)
                 return null;
-
-            return (TypeDefinition) type.BaseType;
+            // Class<String> -> Class<T>
+            var type2 = type.BaseType.GetElementType();
+            return type2 as TypeDefinition;
         }
     }
 }
