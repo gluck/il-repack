@@ -118,6 +118,9 @@ namespace ILRepacking
 
             type.BaseType = Fix(type.BaseType, type);
 
+            // interfaces before mathos, because methods will have to go through them
+            FixReferences(type.Interfaces, type);
+
             // nested types first
             foreach (TypeDefinition nested in type.NestedTypes)
                 FixReferences(nested);
@@ -131,7 +134,6 @@ namespace ILRepacking
                 FixReferences(prop, type);
 
             FixReferences(type.SecurityDeclarations, type);
-            FixReferences(type.Interfaces, type);
             FixReferences(type.CustomAttributes, type);
         }
 
@@ -524,11 +526,9 @@ namespace ILRepacking
             }
 
             // no explicit overrides found, check implicit overrides
-            new MethodMatcher(x =>
-                              {
-                                  if (x.IsVirtual)
-                                      Fix(x, meth);
-                              }).MapVirtualMethod(meth);
+            MethodDefinition @base = MethodMatcher.MapVirtualMethod(meth);
+            if (@base != null && @base.IsVirtual)
+                Fix(@base, meth);
         }
 
         public void FixReferences(Collection<Resource> resources)

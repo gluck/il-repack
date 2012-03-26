@@ -130,32 +130,9 @@ namespace ILRepacking
     /// </summary>
     public class MethodMatcher
     {
-        private readonly Action<MethodDefinition> _an;
-
-        public MethodMatcher(Action<MethodDefinition> an)
+        public static MethodDefinition MapVirtualMethod(MethodDefinition method)
         {
-            _an = an;
-        }
-
-        public void MapVirtualMethod(MethodDefinition method)
-        {
-            MapVirtualBaseMethod(method);
-            MapVirtualInterfaceMethod(method.DeclaringType, method);
-        }
-
-        void MapVirtualBaseMethod(MethodDefinition method)
-        {
-            MethodDefinition @base = GetBaseMethodInTypeHierarchy(method);
-            if (@base == null)
-                return;
-
-            _an(@base);
-        }
-
-        void MapVirtualInterfaceMethod(TypeDefinition type, MethodDefinition method)
-        {
-            foreach (var @base in GetBaseMethodInInterfaceHierarchy(type, method))
-                _an(@base);
+            return GetBaseMethodInTypeHierarchy(method);
         }
 
         static MethodDefinition GetBaseMethodInTypeHierarchy(MethodDefinition method)
@@ -171,23 +148,6 @@ namespace ILRepacking
             }
 
             return null;
-        }
-
-        static IEnumerable<MethodDefinition> GetBaseMethodInInterfaceHierarchy(TypeDefinition type, MethodDefinition method)
-        {
-            foreach (TypeReference interfaceRef in type.Interfaces)
-            {
-                TypeDefinition @interface = interfaceRef.Resolve();
-                if (@interface == null)
-                    continue;
-
-                MethodDefinition baseMethod = TryMatchMethod(@interface, method);
-                if (baseMethod != null)
-                    yield return baseMethod;
-
-                foreach (var md in GetBaseMethodInInterfaceHierarchy(@interface, method))
-                    yield return md;
-            }
         }
 
         static MethodDefinition TryMatchMethod(TypeDefinition type, MethodDefinition method)
