@@ -152,8 +152,17 @@ namespace ILRepacking
 
         private CustomAttributeArgument Fix(CustomAttributeArgument arg, IGenericParameterProvider context)
         {
-            CustomAttributeArgument ret = new CustomAttributeArgument(Fix(arg.Type, context), arg.Value);
+            CustomAttributeArgument ret = new CustomAttributeArgument(Fix(arg.Type, context), FixCustomAttributeValue(arg.Value, context));
             return ret;
+        }
+
+        private object FixCustomAttributeValue(object obj, IGenericParameterProvider context)
+        {
+            if (obj is TypeReference)
+                return Fix((TypeReference) obj, context);
+            if (obj is CustomAttributeArgument[])
+                return ((CustomAttributeArgument[])obj).Select(a => Fix(a, context)).ToArray();
+            return obj;
         }
 
         private CustomAttributeNamedArgument Fix(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)

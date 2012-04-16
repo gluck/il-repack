@@ -892,7 +892,16 @@ namespace ILRepacking
 
         private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
         {
-            return new CustomAttributeArgument(Import(arg.Type, context), arg.Value);
+            return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
+        }
+
+        private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
+        {
+            if (obj is TypeReference)
+                return Import((TypeReference)obj, context);
+            if (obj is CustomAttributeArgument[])
+                return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
+            return obj;
         }
 
         private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
