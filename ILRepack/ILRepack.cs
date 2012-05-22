@@ -362,7 +362,7 @@ namespace ILRepacking
                 {
                     ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
                     // read PDB/MDB?
-                    if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(Path.ChangeExtension(assembly, "mdb"))))
+                    if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                     {
                         rp.ReadSymbols = true;
                     }
