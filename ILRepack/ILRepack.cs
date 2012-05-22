@@ -883,6 +883,8 @@ namespace ILRepacking
         private void CloneTo(ParameterDefinition param, MethodDefinition context, Collection<ParameterDefinition> col)
         {
             ParameterDefinition pd = new ParameterDefinition(param.Name, param.Attributes, Import(param.ParameterType, context));
+            if (param.HasConstant)
+              pd.Constant = param.Constant;
             if (param.HasMarshalInfo)
                 pd.MarshalInfo = param.MarshalInfo;
             if (param.HasCustomAttributes)
