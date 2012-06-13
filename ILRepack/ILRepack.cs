@@ -1206,6 +1206,8 @@ namespace ILRepacking
             CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
+            CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
+
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
 
