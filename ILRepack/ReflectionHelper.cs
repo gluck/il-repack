@@ -25,11 +25,12 @@ namespace ILRepacking
     {
         internal static MethodDefinition FindMethodDefinitionInType(TypeDefinition type, MethodReference method)
         {
-            return type.Methods.Where(
+			return type.Methods.FirstOrDefault(
                     x => x.Name == method.Name && 
                          AreSame(x.Parameters, method.Parameters) &&
-                         AreSame(x.ReturnType, method.ReturnType)
-                  ).FirstOrDefault();
+                         AreSame(x.ReturnType, method.ReturnType) &&
+						 x.GenericParameters.Count == method.GenericParameters.Count
+                  );
         }
 
         // nasty copy from MetadataResolver.cs for now
