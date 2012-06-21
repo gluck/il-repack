@@ -6,7 +6,7 @@ ILRepack is meant at replacing [ILMerge](http://www.microsoft.com/downloads/deta
 The former being closed-source, impossible to customize, slow, resource consuming and many more.
 The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
 
-Here we're using latest (slightly modified) Cecil sources (0.9)~~, hence making the operation FAST (for real)~~ _(no longer true, but probably ain't because of Cecil)_.
+Here we're using latest (slightly modified) Cecil sources (0.9), you can find the fork [here](https://github.com/gluck/cecil).
 
 Syntax
 ------
