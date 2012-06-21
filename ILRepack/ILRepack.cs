@@ -69,7 +69,7 @@ namespace ILRepacking
         {
             foreach (var dir in dirs)
             {
-                ((DefaultAssemblyResolver)GlobalAssemblyResolver.Instance).AddSearchDirectory(dir);
+                globalAssemblyResolver.AddSearchDirectory(dir);
             }
         }
         public void SetTargetPlatform(string targetPlatformVersion, string targetPlatformDirectory)
@@ -105,6 +105,7 @@ namespace ILRepacking
         private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
         private StreamWriter logFile;
+        private readonly DefaultAssemblyResolver globalAssemblyResolver = new DefaultAssemblyResolver();
 
         private System.Collections.Hashtable allowedDuplicateTypes = new System.Collections.Hashtable();
         private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
@@ -361,6 +362,7 @@ namespace ILRepacking
                 try
                 {
                     ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
+                    rp.AssemblyResolver = globalAssemblyResolver;
                     // read PDB/MDB?
                     if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                     {
