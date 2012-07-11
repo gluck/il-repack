@@ -68,6 +68,7 @@
     <Compile Include="DocumentationMerger.cs" />
     <Compile Include="DuplicateHandler.cs" />
     <Compile Include="ILRepack.cs" />
+    <Compile Include="MethodMatcher.cs" />
     <Compile Include="PermissionsetHelper.cs" />
     <Compile Include="PlatformFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

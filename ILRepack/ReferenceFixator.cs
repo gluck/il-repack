@@ -27,13 +27,11 @@ namespace ILRepacking
     {
         private readonly ILRepack repack;
         private string targetAssemblyPublicKeyBlobString;
-        private HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
-        private DuplicateHandler duplicateHandler;
+        private readonly HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
 
-        public ReferenceFixator(ILRepack iLRepack, DuplicateHandler duplicateHandler)
+        public ReferenceFixator(ILRepack iLRepack)
         {
             this.repack = iLRepack;
-            this.duplicateHandler = duplicateHandler;
         }
 
         private TypeReference Fix(TypeReference type)
@@ -81,34 +79,18 @@ namespace ILRepacking
             }
 
             if (type is TypeSpecification)
-            {
                 return Fix((TypeSpecification)type, context);
-            }
+            
+            var t2 = repack.GetMergedTypeFromTypeRef(type);
+            if (t2 != null)
+                return t2;
+            
             if (type.IsNested)
-            {
                 type.DeclaringType = Fix(type.DeclaringType, context);
-                // might need to do more
-                if (type.DeclaringType is TypeDefinition)
-                {
-                    return ((TypeDefinition)type.DeclaringType).NestedTypes.First(x => x.FullName == type.FullName);
-                }
-            }
-            else
-            {
-                type = duplicateHandler.Rename(type);
-                return FixImpl(type);
-            }
-            return type;
-        }
 
-        private TypeReference FixImpl(TypeReference type)
-        {
-            // don't fix reference to an unmerged type (even if a merged one exists with same name)
-            if (repack.IsMerged(type))
-            {
-                var t2 = repack.TargetAssemblyMainModule.GetType(type.FullName);
-                return t2 ?? type;
-            }
+            if (type.DeclaringType is TypeDefinition)
+                return ((TypeDefinition)type.DeclaringType).NestedTypes.FirstOrDefault(x => x.FullName == type.FullName);
+            
             return type;
         }
 
@@ -401,16 +383,16 @@ namespace ILRepacking
             // if declaring type is in our new merged module, return the definition
             if (declaringType.IsDefinition && !method.IsDefinition)
             {
-                MethodDefinition def = ReflectionHelper.FindMethodDefinitionInType((TypeDefinition)declaringType, method);
+                MethodDefinition def = new ReflectionHelper(repack).FindMethodDefinitionInType((TypeDefinition)declaringType, method);
                 if (def != null)
-                    // if not found, the method might be outside of the new assembly (virtual call), so go on below
                     return def;
             }
             method.DeclaringType = declaringType;
             method.ReturnType = Fix(method.ReturnType, method);
-            // FixReferences(method.GenericParameters, method);
             foreach (var p in method.Parameters)
                 FixReferences(p, method);
+            // FixReferences(method.GenericParameters, method);
+
             if (!method.IsDefinition && !method.DeclaringType.IsGenericInstance && (method.ReturnType.IsDefinition || method.Parameters.Any(x => x.ParameterType.IsDefinition)))
             {
                 var culprit = method.ReturnType.IsDefinition

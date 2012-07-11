@@ -35,7 +35,14 @@ namespace ILRepacking
 
         public void AllowDuplicateType(string typeName)
         {
-            allowedDuplicateTypes[typeName] = typeName;
+            if (typeName.EndsWith(".*"))
+            {
+                allowedDuplicateNameSpaces.Add(typeName.Substring(0, typeName.Length-2));
+            }
+            else
+            {
+                allowedDuplicateTypes[typeName] = typeName;
+            }
         }
         public bool AllowDuplicateResources { get; set; }
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
@@ -107,7 +114,8 @@ namespace ILRepacking
         private StreamWriter logFile;
         private readonly DefaultAssemblyResolver globalAssemblyResolver = new DefaultAssemblyResolver();
 
-        private System.Collections.Hashtable allowedDuplicateTypes = new System.Collections.Hashtable();
+        private readonly Hashtable allowedDuplicateTypes = new Hashtable();
+        private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
 
         PlatformFixer platformFixer;
@@ -361,8 +369,7 @@ namespace ILRepacking
                 INFO("Adding assembly for merge: " + assembly);
                 try
                 {
-                    ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
-                    rp.AssemblyResolver = globalAssemblyResolver;
+                    ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
                     // read PDB/MDB?
                     if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                     {
@@ -429,7 +436,7 @@ namespace ILRepacking
                     INFO("Adding assembly for merge: " + assembly);
                     try
                     {
-                        ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate);
+                        ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
                         // read PDB/MDB?
                         if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(Path.ChangeExtension(assembly, "mdb"))))
                         {
@@ -715,10 +722,9 @@ namespace ILRepacking
                 VERBOSE("- Importing " + r);
                 Import(r, TargetAssemblyMainModule.Types, false);
             }
-            ReferenceFixator fixator = new ReferenceFixator(this, duplicateHandler);
+            ReferenceFixator fixator = new ReferenceFixator(this);
             foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
             {
-                duplicateHandler.Reset();
                 List<TypeDefinition> importedTypes = new List<TypeDefinition>();
                 foreach (var r in m.Types)
                 {
@@ -727,10 +733,6 @@ namespace ILRepacking
                     if (excludeInternalizeMatches != null)
                         internalize = !ExcludeInternalizeMatches(r.FullName);
                     importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
-                }
-                foreach (var t in importedTypes)
-                {
-                    fixator.FixReferences(t);
                 }
             }
 
@@ -1005,14 +1007,10 @@ namespace ILRepacking
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
         {
-            var methFullName = methodDefinition.FullName;
-            var meths = nt.FullName == methodDefinition.DeclaringType.FullName ?
-                nt.Methods.Where(x => x.FullName == methFullName) :
-                nt.Methods.Where(x => x.Name == methodDefinition.Name); // for renames (could check parameters as well)
-            var ret = meths.FirstOrDefault();
+            var ret = new ReflectionHelper(this).FindMethodDefinitionInType(nt, methodDefinition);
             if (ret == null)
             {
-                WARN("Method '" + methFullName + "' not found in merged type '" + nt.FullName + "'");
+                WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
             }
             return ret;
         }
@@ -1039,7 +1037,7 @@ namespace ILRepacking
             foreach (CustomAttribute ca in input)
             {
                 var caType = ca.AttributeType;
-                if (!output.Any(attr => ReflectionHelper.AreSame(attr.AttributeType, caType)) ||
+                if (!output.Any(attr => new ReflectionHelper(this).AreSame(attr.AttributeType, caType)) ||
                     (allowMultiple && CustomAttributeTypeAllowsMultiple(caType)))
                 {
                     output.Add(Copy(ca, context));
@@ -1092,25 +1090,30 @@ namespace ILRepacking
                 mergeAsmNames.Contains(refer.Name);
         }
 
-        private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
+        public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
         {
-            reference = duplicateHandler.Rename(reference);
-
-            if (IsMerged(reference))
+            TypeDefinition type = duplicateHandler.GetRenamedType(reference);
+            if (type == null && IsMerged(reference))
             {
                 // first a shortcut, avoids fixing references afterwards (but completely optional)
-                TypeDefinition type = TargetAssemblyMainModule.GetType(reference.FullName);
-                if (type != null)
-                    return type;
+                type = TargetAssemblyMainModule.GetType(reference.FullName);
             }
+            return type;
+        }
+
+        private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
+        {
+            TypeDefinition type = GetMergedTypeFromTypeRef(reference);
+            if (type != null)
+                return type;
 
             reference = platformFixer.FixPlatformVersion(reference);
 
             if (context is MethodReference)
                 return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
-            else if (context is TypeReference)
+            if (context is TypeReference)
                 return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
-            else if (context == null)
+            if (context == null)
             {
                 // we come here when importing types used for assembly-level custom attributes
                 return TargetAssemblyMainModule.Import(reference);
@@ -1367,15 +1370,20 @@ namespace ILRepacking
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
-            else if (type.FullName != "<Module>" && !type.IsPublic)
+            else if (DuplicateTypeAllowed(type))
+            {
+                INFO("Merging " + type);
+            }
+            else if (!type.IsPublic)
             {
                 // rename it
-                string other = duplicateHandler.Get(type.FullName, type.Name);
+                string other = "<" + Guid.NewGuid() + ">" + type.Name;
                 INFO("Renaming " + type.FullName + " into " + other);
                 nt = CreateType(type, col, internalize, other);
+                duplicateHandler.StoreRenamedType(type, nt);
                 justCreatedType = true;
             }
-            else if (UnionMerge || DuplicateTypeAllowed(type.FullName))
+            else if (UnionMerge)
             {
                 INFO("Merging " + type);
             }
@@ -1428,19 +1436,27 @@ namespace ILRepacking
             return nt;
         }
 
-        private bool DuplicateTypeAllowed(string fullName)
+        private bool DuplicateTypeAllowed(TypeDefinition type)
         {
+            string fullName = type.FullName;
             // Merging module because IKVM uses this class to store some fields.
             // Doesn't fully work yet, as IKVM is nice enough to give all the fields the same name...
             if (fullName == "<Module>")
                 return true;
 
-            // Merge should be OK since member's names are pretty unique,
-            // but renaming duplicate members would be safer...
-            if (fullName == "<PrivateImplementationDetails>")
+            if (allowedDuplicateTypes.Contains(fullName))
                 return true;
 
-            if (allowedDuplicateTypes.Contains(fullName))
+            var top = type;
+            while (top.IsNested)
+                top = top.DeclaringType;
+            string nameSpace = top.Namespace;
+            if (!String.IsNullOrEmpty(nameSpace) && allowedDuplicateNameSpaces.Any(s => s == nameSpace || nameSpace.StartsWith(s + ".")))
+                return true;
+
+            // Merge should be OK since member's names are pretty unique,
+            // but renaming duplicate members would be safer...
+            if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
                 return true;
 
             return false;

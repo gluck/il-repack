@@ -9,25 +9,33 @@ namespace ILRepacking
 {
     class DuplicateHandler
     {
-        private IDictionary<string, string> renames = new Dictionary<string, string>();
-        internal TypeReference Rename(TypeReference r)
+        private readonly IDictionary<string, TypeDefinition> renames = new Dictionary<string, TypeDefinition>();
+        internal TypeDefinition GetRenamedType(TypeReference r)
         {
-            string other;
-            if (renames.TryGetValue(r.FullName, out other))
+            TypeDefinition other;
+            if (renames.TryGetValue(GetTypeKey(r), out other))
             {
-                r.Name = other;
+                return other;
             }
-            return r;
+            return null;
         }
-        internal void Reset()
+        internal void StoreRenamedType(TypeDefinition orig, TypeDefinition renamed)
         {
-            renames.Clear();
+            renames[GetTypeKey(orig)] = renamed;
         }
-        internal string Get(string fullName, string name)
+        internal static string GetTypeKey(TypeReference reference)
         {
-            string other = "<" + Guid.NewGuid() + ">" + name;
-            renames[fullName] = other;
-            return other;
+            var scope = reference.Scope;
+            string scopeStr = null;
+            if (scope is AssemblyNameReference)
+            {
+                scopeStr = ((AssemblyNameReference) scope).Name;
+            }
+            if (scope is ModuleDefinition)
+            {
+                scopeStr = ((ModuleDefinition)scope).Assembly.Name.Name;
+            }
+            return scopeStr + reference.FullName;
         }
     }
 }
