@@ -96,11 +96,11 @@ namespace ILRepacking
 
         internal void FixReferences(TypeDefinition type)
         {
-            // FixReferences(type.GenericParameters, type);
+            FixReferences(type.GenericParameters, type);
 
             type.BaseType = Fix(type.BaseType, type);
 
-            // interfaces before mathos, because methods will have to go through them
+            // interfaces before methods, because methods will have to go through them
             FixReferences(type.Interfaces, type);
 
             // nested types first
@@ -225,7 +225,7 @@ namespace ILRepacking
             {
                 meth.PInvokeInfo.Module = Fix(meth.PInvokeInfo.Module);
             }
-            // FixReferences(meth.GenericParameters, meth);
+            FixReferences(meth.GenericParameters, meth);
             FixReferences(meth.Parameters, meth);
             FixReferences(meth.Overrides, meth);
             FixReferences(meth.SecurityDeclarations, meth);
@@ -322,6 +322,14 @@ namespace ILRepacking
             }
         }
 
+        private void FixReferences(Collection<GenericParameter> parameters, IGenericParameterProvider context)
+        {
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                FixReferences(parameters[i], context);
+            }
+        }
+
 #if DEBUG
         private bool AssertIsDefinitionIfNotNull(MethodDefinition mehod)
         {
@@ -359,6 +367,12 @@ namespace ILRepacking
             FixReferences(definition.CustomAttributes, context);
         }
 
+        private void FixReferences(GenericParameter definition, IGenericParameterProvider context)
+        {
+            FixReferences(definition.Constraints, context);
+            FixReferences(definition.CustomAttributes, context);
+        }
+
         private GenericInstanceMethod Fix(GenericInstanceMethod method, IGenericParameterProvider context)
         {
             var element_method = Fix(method.ElementMethod, context);
@@ -389,11 +403,14 @@ namespace ILRepacking
             }
             method.DeclaringType = declaringType;
             method.ReturnType = Fix(method.ReturnType, method);
-            foreach (var p in method.Parameters)
-                FixReferences(p, method);
-            // FixReferences(method.GenericParameters, method);
 
-            if (!method.IsDefinition && !method.DeclaringType.IsGenericInstance && (method.ReturnType.IsDefinition || method.Parameters.Any(x => x.ParameterType.IsDefinition)))
+            FixReferences(method.Parameters, method);
+            FixReferences(method.GenericParameters, method);
+
+            if (!method.IsDefinition &&
+                !method.DeclaringType.IsGenericInstance &&
+                !method.DeclaringType.IsArray &&
+                (method.ReturnType.IsDefinition || method.Parameters.Any(x => x.ParameterType.IsDefinition)))
             {
                 var culprit = method.ReturnType.IsDefinition
                                      ? method.ReturnType
@@ -521,9 +538,5 @@ namespace ILRepacking
             if (@base != null && @base.IsVirtual)
                 Fix(@base, meth);
         }
-
-        public void FixReferences(Collection<Resource> resources)
-        {
-            // TODO: check if merged resources contain binary-formatted objects of merged types.            // These don't work any more as the BinaryFormatter tries to load the old assembly.        }
     }
 }

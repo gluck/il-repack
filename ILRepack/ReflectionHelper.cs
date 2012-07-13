@@ -130,5 +130,24 @@ namespace ILRepacking
             return a.FullName == b.FullName;
         }
 
+        internal bool AreSame(Collection<CustomAttributeArgument> a, Collection<CustomAttributeArgument> b)
+        {
+            if (a.Count != b.Count)
+                return false;
+            for (int i = 0; i < a.Count; i++)
+            {
+                var argA = a[i];
+                var argB = b[i];
+                if (!AreSame(argA.Type, argB.Type))
+                    return false;
+                if (argA.Value == argB.Value)
+                    continue;
+                if (argA.Value == null)
+                    return false;
+                if (!argA.Value.Equals(argB.Value))
+                    return false;
+            }
+            return true;
+        }
     }
 }

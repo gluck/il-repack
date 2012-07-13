@@ -74,6 +74,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReferenceFixator.cs" />
     <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="ResReader.cs" />
+    <Compile Include="SerReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\cecil\Mono.Cecil.csproj">

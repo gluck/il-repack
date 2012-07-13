@@ -19,7 +19,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security;
+using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -29,6 +33,18 @@ using System.Threading;
 
 namespace ILRepacking
 {
+    public class RepackAssemblyResolver : DefaultAssemblyResolver
+    {
+        public void RegisterAssemblies(List<AssemblyDefinition> mergedAssemblies)
+        {
+            foreach (var assemblyDefinition in mergedAssemblies)
+            {
+                base.RegisterAssembly(assemblyDefinition);
+            }
+        }
+    }
+
+
     public class ILRepack
     {
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
@@ -112,15 +128,17 @@ namespace ILRepacking
         private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
         private StreamWriter logFile;
-        private readonly DefaultAssemblyResolver globalAssemblyResolver = new DefaultAssemblyResolver();
+        private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
-        private List<System.Text.RegularExpressions.Regex> excludeInternalizeMatches;
+        private List<Regex> excludeInternalizeMatches;
+        private ReflectionHelper reflectionHelper;
+        private static Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
 
-        PlatformFixer platformFixer;
+        private PlatformFixer platformFixer;
         private HashSet<string> mergeAsmNames;
-        DuplicateHandler duplicateHandler;
+        private DuplicateHandler duplicateHandler;
 
         public ILRepack()
         {
@@ -438,7 +456,7 @@ namespace ILRepacking
                     {
                         ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
                         // read PDB/MDB?
-                        if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(Path.ChangeExtension(assembly, "mdb"))))
+                        if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                         {
                             rp.ReadSymbols = true;
                         }
@@ -533,9 +551,9 @@ namespace ILRepacking
             if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
             {
                 string[] lines = File.ReadAllLines(ExcludeFile);
-                excludeInternalizeMatches = new List<System.Text.RegularExpressions.Regex>(lines.Length);
+                excludeInternalizeMatches = new List<Regex>(lines.Length);
                 foreach (string line in lines)
-                    excludeInternalizeMatches.Add(new System.Text.RegularExpressions.Regex(line));
+                    excludeInternalizeMatches.Add(new Regex(line));
             }
         }
 
@@ -563,7 +581,7 @@ namespace ILRepacking
         private bool ExcludeInternalizeMatches(string typeFullName)
         {
             string withSquareBrackets = "[" + typeFullName + "]";
-            foreach (System.Text.RegularExpressions.Regex r in excludeInternalizeMatches)
+            foreach (Regex r in excludeInternalizeMatches)
                 if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
                     return true;
             return false;
@@ -575,6 +593,7 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
+            reflectionHelper = new ReflectionHelper(this);
             InitializeLogFile();
             ParseProperties();
             // Read input assemblies only after all properties are set.
@@ -582,6 +601,7 @@ namespace ILRepacking
                 ReadInputAssembliesParallel();
             else
                 ReadInputAssemblies();
+            globalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
             var asmNames = KeepOtherVersionReferences ? 
               MergedAssemblies.Select(x => x.FullName) : 
               MergedAssemblies.Select(x => x.Name.Name);
@@ -632,12 +652,12 @@ namespace ILRepacking
             if (Version != null)
                 TargetAssemblyDefinition.Name.Version = Version;
             // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
-            System.Reflection.StrongNameKeyPair snkp = null;
+            StrongNameKeyPair snkp = null;
             if (KeyFile != null && File.Exists(KeyFile))
             {
                 using (var stream = new FileStream(KeyFile, FileMode.Open))
                 {
-                    snkp = new System.Reflection.StrongNameKeyPair(stream);
+                    snkp = new StrongNameKeyPair(stream);
                 }
                 TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
                 TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
@@ -649,118 +669,12 @@ namespace ILRepacking
                 TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
 
-            INFO("Processing references");
-            // Add all AssemblyReferences to merged assembly (probably not necessary)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
-            {
-                string name = z.Name;
-                if (!MergedAssemblies.Any(y => y.Name.Name == name) &&
-                    TargetAssemblyDefinition.Name.Name != name &&
-                    !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name))
-                {
-                    // TODO: fix .NET runtime references?
-                    // - to target a specific runtime version or
-                    // - to target a single version if merged assemblies target different versions
-                    VERBOSE("- add reference " + z);
-                    AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
-                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
-                }
-            }
+            RepackReferences();
+            RepackTypes();
+            RepackResources();
+            RepackAttributes();
 
-            // add all module references (pinvoke dlls)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
-            {
-                string name = z.Name;
-                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
-                {
-                    TargetAssemblyMainModule.ModuleReferences.Add(z);
-                }
-            }
-
-            INFO("Processing resources");
-            // merge resources
-            List<string> repackList = null;
-            EmbeddedResource repackListRes = null;
-            if (!NoRepackRes)
-            {
-                repackList = MergedAssemblies.Select(a => a.FullName).ToList();
-                repackListRes = GetRepackListResource(repackList);
-                TargetAssemblyMainModule.Resources.Add(repackListRes);
-            }
-            foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
-            {
-                if (!NoRepackRes && r.Name == "ILRepack.List" && r is EmbeddedResource)
-                {
-                    // Merge r into repackList
-                    string[] others = (string[])new BinaryFormatter().Deserialize(((EmbeddedResource)r).GetResourceStream());
-                    repackList = repackList.Union(others).ToList();
-                    EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
-                    TargetAssemblyMainModule.Resources.Remove(repackListRes);
-                    TargetAssemblyMainModule.Resources.Add(repackListRes2);
-                    repackListRes = repackListRes2;
-                }
-                else
-                {
-                    if (!AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
-                    {
-                        // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                        // TODO: but might have to merge 'ikvm.exports'
-                        VERBOSE("- Ignoring duplicate resource " + r.Name);
-                    }
-                    else
-                    {
-                        VERBOSE("- Importing " + r.Name);
-                        TargetAssemblyMainModule.Resources.Add(r);
-                    }
-                }
-            }
-
-            INFO("Processing types");
-            // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
-            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
-            {
-                VERBOSE("- Importing " + r);
-                Import(r, TargetAssemblyMainModule.Types, false);
-            }
-            ReferenceFixator fixator = new ReferenceFixator(this);
-            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
-            {
-                List<TypeDefinition> importedTypes = new List<TypeDefinition>();
-                foreach (var r in m.Types)
-                {
-                    VERBOSE("- Importing " + r);
-                    bool internalize = Internalize;
-                    if (excludeInternalizeMatches != null)
-                        internalize = !ExcludeInternalizeMatches(r.FullName);
-                    importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
-                }
-            }
-
-            if (CopyAttributes)
-            {
-                foreach (var ass in MergedAssemblies)
-                {
-                    CopyCustomAttributes(ass.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
-                }
-                foreach (var mod in MergedAssemblies.SelectMany(x => x.Modules))
-                {
-                    CopyCustomAttributes(mod.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
-                }
-            }
-            else if (AttributeFile != null)
-            {
-                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(AttributeFile);
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            else
-            {
-                CopyCustomAttributes(PrimaryAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
+            var fixator = new ReferenceFixator(this);
             if (PrimaryAssemblyMainModule.EntryPoint != null)
             {
                 TargetAssemblyMainModule.EntryPoint = fixator.Fix(Import(PrimaryAssemblyDefinition.EntryPoint), null).Resolve();
@@ -776,7 +690,6 @@ namespace ILRepacking
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
             fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes, null);
-            fixator.FixReferences(TargetAssemblyMainModule.Resources);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)
@@ -823,15 +736,280 @@ namespace ILRepacking
                 throw new Exception("Merging failed, see above errors");
         }
 
+        private void RepackAttributes()
+        {
+            if (CopyAttributes)
+            {
+                CleanupAttributes(typeof (CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
+                CleanupAttributes(typeof (SecurityTransparentAttribute).FullName, null);
+                CleanupAttributes(typeof (SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+                CleanupAttributes(typeof (AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+                CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
+                RemoveAttributes(typeof (InternalsVisibleToAttribute).FullName, ca =>
+                                                                                {
+                                                                                    String name = (string)ca.ConstructorArguments[0].Value;
+                                                                                    int idx;
+                                                                                    if ((idx = name.IndexOf(", PublicKey=")) != -1)
+                                                                                    {
+                                                                                        name = name.Substring(0, idx);
+                                                                                    }
+                                                                                    return MergedAssemblies.Any(x => x.Name.Name == name);
+                                                                                });
+                RemoveAttributes(typeof (AssemblyDelaySignAttribute).FullName, null);
+                RemoveAttributes(typeof (AssemblyKeyFileAttribute).FullName, null);
+                RemoveAttributes(typeof (AssemblyKeyNameAttribute).FullName, null);
+                foreach (var ass in MergedAssemblies)
+                {
+                    CopyCustomAttributes(ass.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
+                }
+                foreach (var mod in MergedAssemblies.SelectMany(x => x.Modules))
+                {
+                    CopyCustomAttributes(mod.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
+                }
+            }
+            else if (AttributeFile != null)
+            {
+                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(AttributeFile);
+                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
+                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
+                // TODO: should copy Win32 resources, too
+            }
+            else
+            {
+                CopyCustomAttributes(PrimaryAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
+                CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
+                // TODO: should copy Win32 resources, too
+            }
+            CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
+        }
+
+        private void RepackTypes()
+        {
+            INFO("Processing types");
+            // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
+            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
+            {
+                VERBOSE("- Importing " + r);
+                Import(r, TargetAssemblyMainModule.Types, false);
+            }
+            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
+            {
+                List<TypeDefinition> importedTypes = new List<TypeDefinition>();
+                foreach (var r in m.Types)
+                {
+                    VERBOSE("- Importing " + r);
+                    bool internalize = Internalize;
+                    if (excludeInternalizeMatches != null)
+                    {
+                        internalize = !ExcludeInternalizeMatches(r.FullName);
+                    }
+                    importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
+                }
+            }
+        }
+
+        private void RepackReferences()
+        {
+            INFO("Processing references");
+            // Add all AssemblyReferences to merged assembly (probably not necessary)
+            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
+            {
+                string name = z.Name;
+                if (!MergedAssemblies.Any(y => y.Name.Name == name) && TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name))
+                {
+                    // TODO: fix .NET runtime references?
+                    // - to target a specific runtime version or
+                    // - to target a single version if merged assemblies target different versions
+                    VERBOSE("- add reference " + z);
+                    AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
+                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
+                }
+            }
+
+            // add all module references (pinvoke dlls)
+            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
+            {
+                string name = z.Name;
+                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
+                {
+                    TargetAssemblyMainModule.ModuleReferences.Add(z);
+                }
+            }
+        }
+
+        private void RepackResources()
+        {
+            INFO("Processing resources");
+            // merge resources
+            List<string> repackList = null;
+            EmbeddedResource repackListRes = null;
+            if (!NoRepackRes)
+            {
+                repackList = MergedAssemblies.Select(a => a.FullName).ToList();
+                repackListRes = GetRepackListResource(repackList);
+                TargetAssemblyMainModule.Resources.Add(repackListRes);
+            }
+            foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
+            {
+                if (r.Name == "ILRepack.List")
+                {
+                    if (!NoRepackRes && r is EmbeddedResource)
+                    {
+                        // Merge r into repackList
+                        string[] others = (string[]) new BinaryFormatter().Deserialize(((EmbeddedResource) r).GetResourceStream());
+                        repackList = repackList.Union(others).ToList();
+                        EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
+                        TargetAssemblyMainModule.Resources.Remove(repackListRes);
+                        TargetAssemblyMainModule.Resources.Add(repackListRes2);
+                        repackListRes = repackListRes2;
+                    }
+                }
+                else
+                {
+                    if (!AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
+                    {
+                        // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
+                        // TODO: but might have to merge 'ikvm.exports'
+                        WARN("Ignoring duplicate resource " + r.Name);
+                    }
+                    else
+                    {
+                        VERBOSE("- Importing " + r.Name);
+                        var nr = r;
+                        switch (r.ResourceType)
+                        {
+                            case ResourceType.AssemblyLinked:
+                                // TODO
+                                WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
+                                break;
+                            case ResourceType.Linked:
+                                // TODO ? (or not)
+                                break;
+                            case ResourceType.Embedded:
+                                var er = (EmbeddedResource) r;
+                                if (er.Name.EndsWith(".resources"))
+                                {
+                                    nr = FixResxResource(er);
+                                }
+                                break;
+                        }
+                        TargetAssemblyMainModule.Resources.Add(nr);
+                    }
+                }
+            }
+        }
+
+        private Resource FixResxResource(EmbeddedResource er)
+        {
+            MemoryStream stream = (MemoryStream) er.GetResourceStream();
+            var output = new MemoryStream((int) stream.Length);
+            var rw = new ResourceWriter(output);
+            using (var rr = new ResReader(stream))
+            {
+                foreach (var res in rr)
+                {
+                    if (res.type == "ResourceTypeCode.String")
+                    {
+                        string content = (string) rr.GetObject(res);
+                        content = FixStr(content);
+                        rw.AddResource(res.name, content);
+                    }
+                    else
+                    {
+                        string fix = FixStr(res.type);
+                        if (fix == res.type)
+                        {
+                            rw.AddResourceData(res.name, res.type, res.data);
+                        }
+                        else
+                        {
+                            var output2 = new MemoryStream(res.data.Length);
+                            var sr = new SerReader(this, new MemoryStream(res.data), output2);
+                            sr.Stream();
+                            rw.AddResourceData(res.name, fix, output2.ToArray());
+                        }
+                    }
+                }
+            }
+            rw.Generate();
+            output.Position = 0;
+            return new EmbeddedResource(er.Name, er.Attributes, output);
+        }
+
+        internal string FixStr(string content)
+        {
+            if (String.IsNullOrEmpty(content) || content.Length > 512 || content.IndexOf(", ") == -1 || content.StartsWith("System."))
+                return content;
+            // TODO fix "TYPE, ASSEMBLYNAME, CULTURE" pattern
+            // TODO fix "TYPE, ASSEMBLYNAME, VERSION, CULTURE, TOKEN" pattern
+            var match = TYPE_RE.Match(content);
+            if (match.Success)
+            {
+                string type = match.Groups[1].Value;
+                // TODO handle renamed types
+                var td = TargetAssemblyMainModule.GetType(type);
+                if (td != null && MergedAssemblies.Any(x => x.Name.Name == match.Groups[2].Value))
+                {
+                    // TODO no public key token !
+                    return td.FullName + ", " + TargetAssemblyDefinition.FullName;
+                }
+            }
+            return content;
+        }
+
+        internal string FixTypeName(string assemblyName, string typeName)
+        {
+            // TODO handle renames
+            return typeName;
+        }
+
+        internal string FixAssemblyName(string assemblyName)
+        {
+            if (MergedAssemblies.Any(x => x.FullName == assemblyName))
+            {
+                // TODO no public key token !
+                return TargetAssemblyDefinition.FullName;
+            }
+            return assemblyName;
+        }
+
+        private bool RemoveAttributes(string attrTypeName, Func<CustomAttribute, bool> predicate)
+        {
+            bool ret = false;
+            foreach (var ass in MergedAssemblies)
+            {
+                for (int i = 0; i < ass.CustomAttributes.Count; )
+                {
+                    if (ass.CustomAttributes[i].AttributeType.FullName == attrTypeName && (predicate == null || predicate(ass.CustomAttributes[i])))
+                    {
+                        ass.CustomAttributes.RemoveAt(i);
+                        ret = true;
+                        continue;
+                    }
+                    i++;
+                }
+            }
+            return ret;
+        }
+
+        private void CleanupAttributes(string type, Func<CustomAttribute, bool> extra)
+        {
+            if (!MergedAssemblies.All(ass => ass.CustomAttributes.Any(attr => attr.AttributeType.FullName == type && (extra == null || extra(attr)))))
+            {
+                if (RemoveAttributes(type, null))
+                {
+                    WARN("[" + type + "] attribute wasn't merged because of inconsistency accross merged assemblies");
+                }
+            }
+        }
+
         private EmbeddedResource GetRepackListResource(List<string> repackList)
         {
             repackList.Sort();
-            EmbeddedResource repackListRes;
             var stream = new MemoryStream();
             new BinaryFormatter().Serialize(stream, repackList.ToArray());
             stream.Seek(0, 0);
-            repackListRes = new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream);
-            return repackListRes;
+            return new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream);
         }
 
         // Real stuff below //
@@ -1007,7 +1185,7 @@ namespace ILRepacking
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
         {
-            var ret = new ReflectionHelper(this).FindMethodDefinitionInType(nt, methodDefinition);
+            var ret = reflectionHelper.FindMethodDefinitionInType(nt, methodDefinition);
             if (ret == null)
             {
                 WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
@@ -1037,8 +1215,9 @@ namespace ILRepacking
             foreach (CustomAttribute ca in input)
             {
                 var caType = ca.AttributeType;
-                if (!output.Any(attr => new ReflectionHelper(this).AreSame(attr.AttributeType, caType)) ||
-                    (allowMultiple && CustomAttributeTypeAllowsMultiple(caType)))
+                var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
+                if (similarAttributes.Count == 0 || 
+                    (allowMultiple && CustomAttributeTypeAllowsMultiple(caType) && !similarAttributes.Any(x => reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments))))
                 {
                     output.Add(Copy(ca, context));
                 }
@@ -1079,15 +1258,9 @@ namespace ILRepacking
 
         public bool IsMerged(TypeReference reference)
         {
-            var refer = reference.Scope as AssemblyNameReference;
-            // don't fix reference to an unmerged type (even if a merged one exists with same name)
-
-            if (refer == null)
-                return false;
-
-            return KeepOtherVersionReferences ? 
-                mergeAsmNames.Contains(refer.FullName) : 
-                mergeAsmNames.Contains(refer.Name);
+            return KeepOtherVersionReferences ?
+                mergeAsmNames.Contains(DuplicateHandler.GetScopeFullName(reference.Scope)) :
+                mergeAsmNames.Contains(DuplicateHandler.GetScopeName(reference.Scope));
         }
 
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
@@ -1215,6 +1388,7 @@ namespace ILRepacking
 
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
+            meth.Body = null; // frees memory
 
             nm.IsAddOn = meth.IsAddOn;
             nm.IsRemoveOn = meth.IsRemoveOn;
@@ -1236,6 +1410,7 @@ namespace ILRepacking
                 nb.Variables.Add(new VariableDefinition(var.Name, 
                     Import(var.VariableType, parent)));
 
+            nb.Instructions.SetCapacity(body.Instructions.Count);
             foreach (Instruction instr in body.Instructions)
             {
                 Instruction ni;
