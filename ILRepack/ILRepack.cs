@@ -138,7 +138,7 @@ namespace ILRepacking
 
         private PlatformFixer platformFixer;
         private HashSet<string> mergeAsmNames;
-        private DuplicateHandler duplicateHandler;
+        private MappingHandler mappingHandler;
 
         public ILRepack()
         {
@@ -608,7 +608,7 @@ namespace ILRepacking
           
             mergeAsmNames = new HashSet<string>(asmNames);
             platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
-            duplicateHandler = new DuplicateHandler();
+            mappingHandler = new MappingHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 
             ModuleKind kind = PrimaryAssemblyMainModule.Kind;
@@ -1256,22 +1256,9 @@ namespace ILRepacking
             }
         }
 
-        public bool IsMerged(TypeReference reference)
-        {
-            return KeepOtherVersionReferences ?
-                mergeAsmNames.Contains(DuplicateHandler.GetScopeFullName(reference.Scope)) :
-                mergeAsmNames.Contains(DuplicateHandler.GetScopeName(reference.Scope));
-        }
-
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
         {
-            TypeDefinition type = duplicateHandler.GetRenamedType(reference);
-            if (type == null && IsMerged(reference))
-            {
-                // first a shortcut, avoids fixing references afterwards (but completely optional)
-                type = TargetAssemblyMainModule.GetType(reference.FullName);
-            }
-            return type;
+            return mappingHandler.GetRemappedType(reference);
         }
 
         private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
@@ -1282,27 +1269,19 @@ namespace ILRepacking
 
             reference = platformFixer.FixPlatformVersion(reference);
 
-            if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(reference, (MethodReference)context);
-            if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(reference, (TypeReference)context);
             if (context == null)
             {
                 // we come here when importing types used for assembly-level custom attributes
                 return TargetAssemblyMainModule.Import(reference);
             }
-            throw new InvalidOperationException();
+            return TargetAssemblyMainModule.Import(reference, context);
         }
 
         private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
         {
             FieldReference importReference = platformFixer.FixPlatformVersion(reference);
 
-            if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
-            if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
-            throw new InvalidOperationException();
+            return TargetAssemblyMainModule.Import(importReference, context);
         }
 
         private MethodReference Import(MethodReference reference)
@@ -1317,11 +1296,8 @@ namespace ILRepacking
 
             MethodReference importReference = platformFixer.FixPlatformVersion(reference);
 
-            if (context is MethodReference)
-                return TargetAssemblyMainModule.Import(importReference, (MethodReference)context);
-            if (context is TypeReference)
-                return TargetAssemblyMainModule.Import(importReference, (TypeReference)context);
-            throw new InvalidOperationException();
+            return TargetAssemblyMainModule.Import(importReference, context);
+
         }
 
         private void CloneTo(PropertyDefinition prop, TypeDefinition nt, Collection<PropertyDefinition> col)
@@ -1350,7 +1326,7 @@ namespace ILRepacking
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
         {
-            // ignore duplicate method
+            // ignore duplicate method for merged duplicated types
             if (!typeJustCreated && 
                 type.Methods.Count > 0 &&
                 type.Methods.Any(x => 
@@ -1370,9 +1346,7 @@ namespace ILRepacking
             CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
 
             if (meth.HasPInvokeInfo)
-            {
                 nm.PInvokeInfo = new PInvokeInfo(meth.PInvokeInfo.Attributes, meth.PInvokeInfo.EntryPoint, meth.PInvokeInfo.Module);
-            }
 
             foreach (ParameterDefinition param in meth.Parameters)
                 CloneTo(param, nm, nm.Parameters);
@@ -1555,7 +1529,6 @@ namespace ILRepacking
                 string other = "<" + Guid.NewGuid() + ">" + type.Name;
                 INFO("Renaming " + type.FullName + " into " + other);
                 nt = CreateType(type, col, internalize, other);
-                duplicateHandler.StoreRenamedType(type, nt);
                 justCreatedType = true;
             }
             else if (UnionMerge)
@@ -1567,6 +1540,7 @@ namespace ILRepacking
                 ERROR("Duplicate type " + type);
                 throw new InvalidOperationException("Duplicate type " + type);
             }
+            mappingHandler.StoreRemappedType(type, nt);
 
             // nested types first (are never internalized)
             foreach (TypeDefinition nested in type.NestedTypes)

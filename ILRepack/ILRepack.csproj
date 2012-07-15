@@ -66,7 +66,7 @@
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
-    <Compile Include="DuplicateHandler.cs" />
+    <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
     <Compile Include="MethodMatcher.cs" />
     <Compile Include="PermissionsetHelper.cs" />
@@ -135,6 +135,6 @@
     <PostBuildEvent>
       $(TargetPath) /log /wildcards "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll
       ..\ILRepack.exe /log "/out:..\ILRepack2.exe" ..\ILRepack.exe
-    </PostBuildEvent>
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -8,13 +8,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security;
-using System.Text;
-using System;
-using System.IO;
-using System.Text;
-using System.Collections;
-using System.Collections.Generic;
 using System.Security.Permissions;
+using System.Text;
 
 namespace ILRepacking
 {
@@ -286,11 +281,11 @@ namespace ILRepacking
                 // Store current location as start of name section 
                 _nameSectionOffset = _store.BaseStream.Position;
             }
-            catch (EndOfStreamException eof)
+            catch (EndOfStreamException)
             {
                 throw new BadImageFormatException("BadImageFormat_ResourcesHeaderCorrupted");
             }
-            catch (IndexOutOfRangeException e)
+            catch (IndexOutOfRangeException)
             {
                 throw new BadImageFormatException("BadImageFormat_ResourcesHeaderCorrupted");
             }
