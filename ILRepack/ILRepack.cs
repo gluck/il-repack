@@ -635,6 +635,7 @@ namespace ILRepacking
                         {
                             Kind = kind,
                             Architecture = PrimaryAssemblyMainModule.Architecture,
+                            AssemblyResolver = globalAssemblyResolver,
                             Runtime = runtime
                         });
                 TargetAssemblyMainModule.ImportWin32Resources(PrimaryAssemblyMainModule);
@@ -723,7 +724,7 @@ namespace ILRepacking
             
             // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly
-            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate));
+            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver });
             // lazy match on the name (not full) to catch requirements about merging different versions
             bool failed = false;
             foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
@@ -769,7 +770,7 @@ namespace ILRepacking
             }
             else if (AttributeFile != null)
             {
-                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(AttributeFile);
+                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver });
                 CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
                 CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
