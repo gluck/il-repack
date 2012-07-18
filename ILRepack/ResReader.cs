@@ -451,7 +451,7 @@ namespace ILRepacking
                 }
                 Array.Sort(dataPositionsAndNames, (a,b) => a.Key-b.Key);
 
-                for (int i = 0; i < _numResources - 1; i++)
+                for (int i = 0; i < _numResources; i++)
                 {
                     int dataPos = dataPositionsAndNames[i].Key;
                     long nextData = (i < _numResources - 1) ? dataPositionsAndNames[i + 1].Key + _dataSectionOffset : _store.BaseStream.Length;
