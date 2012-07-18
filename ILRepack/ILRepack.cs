@@ -1179,8 +1179,12 @@ namespace ILRepacking
                 ed.InvokeMethod = FindMethodInNewType(nt, evt.InvokeMethod);
             if (evt.HasOtherMethods)
             {
-                // TODO
-                throw new InvalidOperationException();
+                foreach (MethodDefinition meth in evt.OtherMethods)
+                {
+                    var nm = FindMethodInNewType(nt, evt.InvokeMethod);
+                    if (nm != null)
+                        ed.OtherMethods.Add(nm);
+                }
             }
 
             CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
@@ -1320,8 +1324,12 @@ namespace ILRepacking
                 pd.GetMethod = FindMethodInNewType(nt, prop.GetMethod);
             if (prop.HasOtherMethods)
             {
-                // TODO
-                throw new NotSupportedException("Property has other methods");
+                foreach (MethodDefinition meth in prop.OtherMethods)
+                {
+                    var nm = FindMethodInNewType(nt, prop.InvokeMethod);
+                    if (nm != null)
+                        pd.OtherMethods.Add(nm);
+                }
             }
 
             CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
