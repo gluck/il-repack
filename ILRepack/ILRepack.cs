@@ -1084,6 +1084,8 @@ namespace ILRepacking
         {
             if (obj is TypeReference)
                 return Import((TypeReference)obj, context);
+            if (obj is CustomAttributeArgument)
+                return Copy((CustomAttributeArgument)obj, context);
             if (obj is CustomAttributeArgument[])
                 return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
             return obj;

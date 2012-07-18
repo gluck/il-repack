@@ -142,6 +142,8 @@ namespace ILRepacking
         {
             if (obj is TypeReference)
                 return Fix((TypeReference) obj, context);
+            if (obj is CustomAttributeArgument)
+                return Fix((CustomAttributeArgument)obj, context);
             if (obj is CustomAttributeArgument[])
                 return ((CustomAttributeArgument[])obj).Select(a => Fix(a, context)).ToArray();
             return obj;
