@@ -1181,7 +1181,7 @@ namespace ILRepacking
             {
                 foreach (MethodDefinition meth in evt.OtherMethods)
                 {
-                    var nm = FindMethodInNewType(nt, evt.InvokeMethod);
+                    var nm = FindMethodInNewType(nt, meth);
                     if (nm != null)
                         ed.OtherMethods.Add(nm);
                 }
@@ -1326,7 +1326,7 @@ namespace ILRepacking
             {
                 foreach (MethodDefinition meth in prop.OtherMethods)
                 {
-                    var nm = FindMethodInNewType(nt, prop.InvokeMethod);
+                    var nm = FindMethodInNewType(nt, meth);
                     if (nm != null)
                         pd.OtherMethods.Add(nm);
                 }
