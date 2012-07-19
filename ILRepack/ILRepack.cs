@@ -844,6 +844,8 @@ namespace ILRepacking
             // merge resources
             List<string> repackList = null;
             EmbeddedResource repackListRes = null;
+            Dictionary<string, List<int>> ikvmExportsLists = null;
+            EmbeddedResource ikvmExports = null;
             if (!NoRepackRes)
             {
                 repackList = MergedAssemblies.Select(a => a.FullName).ToList();
@@ -856,13 +858,14 @@ namespace ILRepacking
                 {
                     if (!NoRepackRes && r is EmbeddedResource)
                     {
-                        // Merge r into repackList
-                        string[] others = (string[]) new BinaryFormatter().Deserialize(((EmbeddedResource) r).GetResourceStream());
-                        repackList = repackList.Union(others).ToList();
-                        EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
-                        TargetAssemblyMainModule.Resources.Remove(repackListRes);
-                        TargetAssemblyMainModule.Resources.Add(repackListRes2);
-                        repackListRes = repackListRes2;
+                        MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)r);
+                    }
+                }
+                else if (r.Name == "ikvm.exports")
+                {
+                    if (r is EmbeddedResource)
+                    {
+                        MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)r);
                     }
                 }
                 else
@@ -870,7 +873,6 @@ namespace ILRepacking
                     if (!AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
                     {
                         // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                        // TODO: but might have to merge 'ikvm.exports'
                         WARN("Ignoring duplicate resource " + r.Name);
                     }
                     else
@@ -897,6 +899,98 @@ namespace ILRepacking
                         TargetAssemblyMainModule.Resources.Add(nr);
                     }
                 }
+            }
+        }
+
+        private void MergeRepackListResource(ref List<string> repackList, ref EmbeddedResource repackListRes, EmbeddedResource r)
+        {
+            var others = (string[])new BinaryFormatter().Deserialize(r.GetResourceStream());
+            repackList = repackList.Union(others).ToList();
+            EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
+            TargetAssemblyMainModule.Resources.Remove(repackListRes);
+            TargetAssemblyMainModule.Resources.Add(repackListRes2);
+            repackListRes = repackListRes2;
+        }
+
+        private void MergeIkvmExportsResource(ref Dictionary<string, List<int>> lists, ref EmbeddedResource existing, EmbeddedResource extra)
+        {
+            if (existing == null)
+            {
+                lists = ExtractIkvmExportsLists(extra);
+                TargetAssemblyMainModule.Resources.Add(existing = extra);
+            }
+            else
+            {
+                TargetAssemblyMainModule.Resources.Remove(existing);
+                var lists2 = ExtractIkvmExportsLists(extra);
+                foreach (KeyValuePair<string, List<int>> kv in lists2)
+                {
+                    List<int> v;
+                    if (!lists.TryGetValue(kv.Key, out v))
+                    {
+                        lists.Add(kv.Key, kv.Value);
+                    }
+                    else if (v != null)
+                    {
+                        if (kv.Value == null) // wildcard export
+                            lists[kv.Key] = null;
+                        else
+                            lists[kv.Key] = v.Union(kv.Value).ToList();
+                    }
+                }
+                existing = GenerateIkvmExports(lists);
+                TargetAssemblyMainModule.Resources.Add(existing);
+            }
+        }
+
+        private static Dictionary<string, List<int>> ExtractIkvmExportsLists(EmbeddedResource extra)
+        {
+            Dictionary<string, List<int>> ikvmExportsLists = new Dictionary<string, List<int>>();
+            BinaryReader rdr = new BinaryReader(extra.GetResourceStream());
+            int assemblyCount = rdr.ReadInt32();
+            for (int i = 0; i < assemblyCount; i++)
+            {
+                var str = rdr.ReadString();
+                int typeCount = rdr.ReadInt32();
+                if (typeCount == 0)
+                {
+                    ikvmExportsLists.Add(str, null);
+                }
+                else
+                {
+                    var types = new List<int>();
+                    ikvmExportsLists.Add(str, types);
+                    for (int j = 0; j < typeCount; j++)
+                        types.Add(rdr.ReadInt32());
+                }
+            }
+            return ikvmExportsLists;
+        }
+
+        private static EmbeddedResource GenerateIkvmExports(Dictionary<string, List<int>> lists)
+        {
+            using (var stream = new MemoryStream())
+            {
+                var bw = new BinaryWriter(stream);
+                bw.Write(lists.Count);
+                foreach (KeyValuePair<string, List<int>> kv in lists)
+                {
+                    bw.Write(kv.Key);
+                    if (kv.Value == null)
+                    {
+                        // wildcard export
+                        bw.Write(0);
+                    }
+                    else
+                    {
+                        bw.Write(kv.Value.Count);
+                        foreach (int hash in kv.Value)
+                        {
+                            bw.Write(hash);
+                        }
+                    }
+                }
+                return new EmbeddedResource("ikvm.exports", ManifestResourceAttributes.Public, stream.ToArray());
             }
         }
 
