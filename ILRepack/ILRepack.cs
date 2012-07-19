@@ -1101,10 +1101,11 @@ namespace ILRepacking
         private EmbeddedResource GetRepackListResource(List<string> repackList)
         {
             repackList.Sort();
-            var stream = new MemoryStream();
-            new BinaryFormatter().Serialize(stream, repackList.ToArray());
-            stream.Seek(0, 0);
-            return new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream);
+            using (var stream = new MemoryStream())
+            {
+                new BinaryFormatter().Serialize(stream, repackList.ToArray());
+                return new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream.ToArray());
+            }
         }
 
         // Real stuff below //
