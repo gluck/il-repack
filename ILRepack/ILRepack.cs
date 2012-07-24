@@ -26,6 +26,7 @@ using System.Security;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.PE;
 using Mono.Collections.Generic;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
@@ -139,6 +140,7 @@ namespace ILRepacking
         private PlatformFixer platformFixer;
         private HashSet<string> mergeAsmNames;
         private MappingHandler mappingHandler;
+        private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
         public ILRepack()
         {
@@ -638,7 +640,6 @@ namespace ILRepacking
                             AssemblyResolver = globalAssemblyResolver,
                             Runtime = runtime
                         });
-                TargetAssemblyMainModule.ImportWin32Resources(PrimaryAssemblyMainModule);
             }
             else
             {
@@ -649,6 +650,7 @@ namespace ILRepacking
                 TargetAssemblyDefinition.Name.Name = mainModuleName;
                 TargetAssemblyMainModule.Name = mainModuleName;
             }
+            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory, OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
 
             if (Version != null)
                 TargetAssemblyDefinition.Name.Version = Version;
@@ -735,6 +737,62 @@ namespace ILRepacking
             }
             if (failed)
                 throw new Exception("Merging failed, see above errors");
+        }
+
+        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary, IEnumerable<ResourceDirectory> resources)
+        {
+            if (primary == null)
+                return null;
+            foreach (var ass in OtherAssemblies)
+            {
+                MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
+            }
+            return primary;
+        }
+
+        private void MergeDirectory(List<ResourceEntry> parents, ResourceDirectory ret, AssemblyDefinition ass, ResourceDirectory directory)
+        {
+            foreach (var entry in directory.Entries)
+            {
+                var exist = ret.Entries.FirstOrDefault(x => entry.Name == null ? entry.Id == x.Id : entry.Name == x.Name);
+                if (exist == null)
+                    ret.Entries.Add(entry);
+                else
+                    MergeEntry(parents, exist, ass, entry);
+            }
+        }
+
+        private void MergeEntry(List<ResourceEntry> parents, ResourceEntry exist, AssemblyDefinition ass, ResourceEntry entry)
+        {
+            if (exist.Data != null && entry.Data != null)
+            {
+                if (isAspRes(parents, exist))
+                {
+                    aspOffsets[ass] = exist.Data.Length;
+                    byte[] newData = new byte[exist.Data.Length + entry.Data.Length];
+                    Array.Copy(exist.Data, 0, newData, 0, exist.Data.Length);
+                    Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
+                    exist.Data = newData;
+                }
+                else
+                {
+                    WARN("Duplicate Win32 resource, ignoring");
+                }
+                return;
+            }
+            if (exist.Data != null || entry.Data != null)
+            {
+                WARN("Inconsistent Win32 resources, ignoring");
+                return;
+            }
+            parents.Add(exist);
+            MergeDirectory(parents, exist.Directory, ass, entry.Directory);
+            parents.RemoveAt(parents.Count - 1);
+        }
+
+        private bool isAspRes(List<ResourceEntry> parents, ResourceEntry exist)
+        {
+            return exist.Id == 101 && parents.Count == 1 && parents[0].Id == 3771;
         }
 
         private void RepackAttributes()
@@ -1523,6 +1581,7 @@ namespace ILRepacking
                         break;
                     case OperandType.InlineMethod:
                         ni = Instruction.Create(instr.OpCode, Import((MethodReference)instr.Operand, parent));
+                        FixAspNetOffset(nb.Instructions, (MethodReference)instr.Operand, parent);
                         break;
                     case OperandType.InlineType:
                         ni = Instruction.Create(instr.OpCode, Import((TypeReference)instr.Operand, parent));
@@ -1604,6 +1663,20 @@ namespace ILRepacking
                 }
 
                 nb.ExceptionHandlers.Add(neh);
+            }
+        }
+
+        private void FixAspNetOffset(Collection<Instruction> instructions, MethodReference operand, MethodDefinition parent)
+        {
+            if (operand.FullName == "System.Void System.Web.UI.TemplateControl::WriteUTF8ResourceString(System.Web.UI.HtmlTextWriter,System.Int32,System.Int32,System.Boolean)" ||
+                operand.FullName == "System.Web.UI.LiteralControl System.Web.UI.TemplateControl::CreateResourceBasedLiteralControl(System.Int32,System.Int32,System.Boolean)")
+            {
+                int offset;
+                if (aspOffsets.TryGetValue(parent.Module.Assembly, out offset))
+                {
+                    int prev = (int) instructions[instructions.Count - 4].Operand;
+                    instructions[instructions.Count - 4].Operand = prev + offset;
+                }
             }
         }
 
