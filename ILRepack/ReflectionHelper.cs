@@ -136,15 +136,35 @@ namespace ILRepacking
                 return false;
             for (int i = 0; i < a.Count; i++)
             {
-                var argA = a[i];
-                var argB = b[i];
-                if (!AreSame(argA.Type, argB.Type))
+                if (!AreSame(a[i], b[i]))
                     return false;
-                if (argA.Value == argB.Value)
-                    continue;
-                if (argA.Value == null)
+            }
+            return true;
+        }
+
+        internal bool AreSame(CustomAttributeArgument a, CustomAttributeArgument b)
+        {
+            if (!AreSame(a.Type, b.Type))
+                return false;
+            if (a.Value == b.Value)
+                return true;
+            if (a.Value == null)
+                return false;
+            if (!a.Value.Equals(b.Value))
+                return false;
+            return true;
+        }
+
+        internal bool AreSame(Collection<CustomAttributeNamedArgument> a, Collection<CustomAttributeNamedArgument> b)
+        {
+            if (a.Count != b.Count)
+                return false;
+            foreach (var argA in a)
+            {
+                var argB = b.FirstOrDefault(x => x.Name == argA.Name);
+                if (argB.Name == null)
                     return false;
-                if (!argA.Value.Equals(argB.Value))
+                if (!AreSame(argA.Argument, argB.Argument))
                     return false;
             }
             return true;

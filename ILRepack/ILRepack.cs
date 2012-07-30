@@ -1376,11 +1376,20 @@ namespace ILRepacking
             {
                 var caType = ca.AttributeType;
                 var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
-                if (similarAttributes.Count == 0 || 
-                    (allowMultiple && CustomAttributeTypeAllowsMultiple(caType) && !similarAttributes.Any(x => reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments))))
+                if (similarAttributes.Count != 0)
                 {
-                    output.Add(Copy(ca, context));
+                    if (!allowMultiple)
+                        continue;
+                    if (!CustomAttributeTypeAllowsMultiple(caType))
+                        continue;
+                    if (similarAttributes.Any(x =>
+                            reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
+                            reflectionHelper.AreSame(x.Fields, ca.Fields) &&
+                            reflectionHelper.AreSame(x.Properties, ca.Properties)
+                        ))
+                        continue;
                 }
+                output.Add(Copy(ca, context));
             }
         }
 
@@ -1769,7 +1778,7 @@ namespace ILRepacking
             string fullName = type.FullName;
             // Merging module because IKVM uses this class to store some fields.
             // Doesn't fully work yet, as IKVM is nice enough to give all the fields the same name...
-            if (fullName == "<Module>")
+            if (fullName == "<Module>" || fullName == "__<Proxy>")
                 return true;
 
             if (allowedDuplicateTypes.Contains(fullName))
