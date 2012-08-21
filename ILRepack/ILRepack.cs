@@ -1476,10 +1476,32 @@ namespace ILRepacking
         private void CloneTo(PropertyDefinition prop, TypeDefinition nt, Collection<PropertyDefinition> col)
         {
             // ignore duplicate property
-            if (nt.Properties.Any(x => x.Name == prop.Name))
+            var others = nt.Properties.Where(x => x.Name == prop.Name).ToList();
+            if (others.Any())
             {
-                IGNOREDUP("property", prop);
-                return;
+                bool skip = false;
+                if (!IsIndexer(prop) || !IsIndexer(others.First()))
+                {
+                    skip = true;
+                }
+                else
+                {
+                    // "Item" property is used to implement Indexer operators
+                    // It may be specified more than one, with extra arguments to get/set methods
+                    // Note than one may also define a standard "Item" property, in which case he won't be able to define Indexers
+                    
+                    // Here we try to prevent duplicate indexers, but allow to merge non-duplicated ones (e.g. this[int] & this[string] )
+                    var args = ExtractIndexerParameters(prop);
+                    if (others.Any(x => reflectionHelper.AreSame(args, ExtractIndexerParameters(x))))
+                    {
+                        skip = true;
+                    }
+                }
+                if (skip)
+                {
+                    IGNOREDUP("property", prop);
+                    return;
+                }
             }
 
             PropertyDefinition pd = new PropertyDefinition(prop.Name, prop.Attributes, Import(prop.PropertyType, nt));
@@ -1499,6 +1521,23 @@ namespace ILRepacking
             }
 
             CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
+        }
+
+        private static IList<ParameterDefinition> ExtractIndexerParameters(PropertyDefinition prop)
+        {
+            if (prop.GetMethod != null)
+                return prop.GetMethod.Parameters;
+            if (prop.SetMethod != null)
+                return prop.SetMethod.Parameters.ToList().GetRange(0, prop.SetMethod.Parameters.Count-1);
+            return null;
+        }
+
+        private static bool IsIndexer(PropertyDefinition prop)
+        {
+            if (prop.Name != "Item")
+                return false;
+            var parameters = ExtractIndexerParameters(prop);
+            return parameters != null && parameters.Count > 0;
         }
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)

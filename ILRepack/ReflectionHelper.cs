@@ -41,7 +41,7 @@ namespace ILRepacking
         }
 
         // nasty copy from MetadataResolver.cs for now
-        internal bool AreSame(Collection<ParameterDefinition> a, Collection<ParameterDefinition> b)
+        internal bool AreSame(IList<ParameterDefinition> a, IList<ParameterDefinition> b)
         {
             var count = a.Count;
 
