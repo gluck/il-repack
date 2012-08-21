@@ -94,6 +94,23 @@ namespace ILRepacking
             return type;
         }
 
+        internal void FixMethodVisibility(TypeDefinition type)
+        {
+            foreach (TypeDefinition nested in type.NestedTypes)
+                FixMethodVisibility(nested);
+
+            // Ensure we do not reduce access if the overridden method is in the same assembly
+            // (reducing access from 'public' to 'internal' works with different assemblies)
+            // this causes peverify issues with IKVM assemblies where java is more flexible such as: (A and B are classes, C interface, B extends A, C)
+            // - protected virtual A::foo() {}
+            // - C::foo();
+            // - public override B::foo() {}
+            // Peverify doesn't complain about this, but it complains if we alter the later to protected
+
+            foreach (MethodDefinition meth in type.Methods.Where(meth => meth.IsVirtual && !meth.IsNewSlot))
+                FixOverridenMethodDef(meth, type);
+        }
+
         internal void FixReferences(TypeDefinition type)
         {
             FixReferences(type.GenericParameters, type);
@@ -236,17 +253,6 @@ namespace ILRepacking
             meth.ReturnType = Fix(meth.ReturnType, meth);
             if (meth.HasBody)
                 FixReferences(meth.Body, meth);
-            if (meth.IsVirtual && !meth.IsNewSlot)
-            {
-                // Ensure we do not reduce access if the overridden method is in the same assembly
-                // (reducing access from 'public' to 'internal' works with different assemblies)
-                FixOverridenMethodDef(meth, context);
-                // this causes peverify issues with IKVM assemblies where java is more flexible such as: (A and B are classes, C interface, B extends A, C)
-                // - protected virtual A::foo() {}
-                // - C::foo();
-                // - public override B::foo() {}
-                // Peverify doesn't complain about this, but it complains if we alter the later to protected
-            }
         }
 
         private void FixReferences(MethodBody body, IGenericParameterProvider context)

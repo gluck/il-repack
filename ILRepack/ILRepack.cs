@@ -690,6 +690,10 @@ namespace ILRepacking
             {
                 fixator.FixReferences(r);
             }
+            foreach (var r in TargetAssemblyMainModule.Types)
+            {
+                fixator.FixMethodVisibility(r);
+            }
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
             fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes, null);
