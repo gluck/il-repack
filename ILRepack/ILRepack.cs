@@ -28,6 +28,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
+using Mono.Unix.Native;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
 using System.Threading;
@@ -720,6 +721,18 @@ namespace ILRepacking
             if (DebugInfo)
                 parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
+			// If this is an executable and we are on linux/osx we should copy file permissions from
+			// the most probable "source" file
+			if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) {
+				Stat stat;
+				var outFileName = Path.GetFileName(OutputFile);
+				var source = MergedAssemblyFiles.FirstOrDefault(f => Path.GetFileName(f) == outFileName);
+				if (source != null) {
+					INFO("Copying permissions from " + source);
+					Syscall.stat(source, out stat);
+					Syscall.chmod(OutputFile, stat.st_mode);
+				}
+			}
             if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
                 StrongNameLost = true;
 
@@ -1607,7 +1620,7 @@ namespace ILRepacking
 
                 if (instr.OpCode.Code == Code.Calli)
                 {
-                    ni = Instruction.Create(instr.OpCode, (CallSite)instr.Operand);
+                    ni = Instruction.Create(instr.OpCode, (Mono.Cecil.CallSite)instr.Operand);
                 }
                 else switch (instr.OpCode.OperandType)
                 {
