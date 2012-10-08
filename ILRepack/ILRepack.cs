@@ -117,13 +117,14 @@ namespace ILRepacking
         public bool KeepOtherVersionReferences { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
+        internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
-
+		 
         // helpers
         internal ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
@@ -420,8 +421,10 @@ namespace ILRepacking
                     
                     if (rp.ReadSymbols)
                         mergedDebugInfo = true;
-                    if (PrimaryAssemblyDefinition == null)
+                    if (PrimaryAssemblyDefinition == null) {
                         PrimaryAssemblyDefinition = mergeAsm;
+                        PrimaryAssemblyFile = assembly;
+                    }
                     else
                         OtherAssemblies.Add(mergeAsm);
                 }
@@ -721,18 +724,14 @@ namespace ILRepacking
             if (DebugInfo)
                 parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
-			// If this is an executable and we are on linux/osx we should copy file permissions from
-			// the most probable "source" file
-			if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) {
-				Stat stat;
-				var outFileName = Path.GetFileName(OutputFile);
-				var source = MergedAssemblyFiles.FirstOrDefault(f => Path.GetFileName(f) == outFileName);
-				if (source != null) {
-					INFO("Copying permissions from " + source);
-					Syscall.stat(source, out stat);
-					Syscall.chmod(OutputFile, stat.st_mode);
-				}
-			}
+            // If this is an executable and we are on linux/osx we should copy file permissions from
+            // the primary assembly
+            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) {
+                Stat stat;
+                INFO("Copying permissions from " + PrimaryAssemblyFile);
+                Syscall.stat(PrimaryAssemblyFile, out stat);
+                Syscall.chmod(OutputFile, stat.st_mode);
+            }
             if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
                 StrongNameLost = true;
 
