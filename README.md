@@ -7,6 +7,7 @@ The former being closed-source, impossible to customize, slow, resource consumin
 The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
 
 Here we're using latest (slightly modified) Cecil sources (0.9), you can find the fork [here](https://github.com/gluck/cecil).
+Mono.Posix is also required (build only, it gets merged afterwards) for executable bit set on target file.
 
 Syntax
 ------
