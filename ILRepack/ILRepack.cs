@@ -28,6 +28,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
+using Mono.Unix.Native;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
 using System.Threading;
@@ -116,13 +117,14 @@ namespace ILRepacking
         public bool KeepOtherVersionReferences { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
+        internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
-
+		 
         // helpers
         internal ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
@@ -419,8 +421,10 @@ namespace ILRepacking
                     
                     if (rp.ReadSymbols)
                         mergedDebugInfo = true;
-                    if (PrimaryAssemblyDefinition == null)
+                    if (PrimaryAssemblyDefinition == null) {
                         PrimaryAssemblyDefinition = mergeAsm;
+                        PrimaryAssemblyFile = assembly;
+                    }
                     else
                         OtherAssemblies.Add(mergeAsm);
                 }
@@ -720,6 +724,14 @@ namespace ILRepacking
             if (DebugInfo)
                 parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
+            // If this is an executable and we are on linux/osx we should copy file permissions from
+            // the primary assembly
+            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) {
+                Stat stat;
+                INFO("Copying permissions from " + PrimaryAssemblyFile);
+                Syscall.stat(PrimaryAssemblyFile, out stat);
+                Syscall.chmod(OutputFile, stat.st_mode);
+            }
             if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
                 StrongNameLost = true;
 
@@ -1607,7 +1619,7 @@ namespace ILRepacking
 
                 if (instr.OpCode.Code == Code.Calli)
                 {
-                    ni = Instruction.Create(instr.OpCode, (CallSite)instr.Operand);
+                    ni = Instruction.Create(instr.OpCode, (Mono.Cecil.CallSite)instr.Operand);
                 }
                 else switch (instr.OpCode.OperandType)
                 {
