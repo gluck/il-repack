@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4547EE79-6D49-4318-B473-B5BBF73B434C}"
+	ProjectSection(SolutionItems) = preProject
+		ILRepack.nuspec = ILRepack.nuspec
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepack", "ILRepack\ILRepack.csproj", "{4A253A60-D998-4CA2-B9D5-46567A2FBF80}"
 EndProject
