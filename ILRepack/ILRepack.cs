@@ -678,6 +678,7 @@ namespace ILRepacking
 
             RepackReferences();
             RepackTypes();
+            RepackExportedTypes();
             RepackResources();
             RepackAttributes();
 
@@ -879,6 +880,38 @@ namespace ILRepacking
                         internalize = !ExcludeInternalizeMatches(r.FullName);
                     }
                     importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
+                }
+            }
+        }
+
+        private void RepackExportedTypes()
+        {
+            INFO("Processing types");
+            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
+            {
+                VERBOSE("- Importing Exported Type" + r);
+                Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
+            }
+            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
+            {
+                var importedTypes = new List<ExportedType>();
+                foreach (var r in m.ExportedTypes)
+                {
+                    VERBOSE("- Importing " + r);
+
+                    var internalize = excludeInternalizeMatches != null
+                                          ? !ExcludeInternalizeMatches(r.FullName)
+                                          : Internalize;
+
+                    if (!internalize)
+                    {
+                        VERBOSE("- Importing Exported Type " + r);
+                        importedTypes.Add(Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule));
+                    }
+                    else
+                    {
+                        VERBOSE("- Skipping Exported Type " + r);
+                    }
                 }
             }
         }
@@ -1825,6 +1858,18 @@ namespace ILRepacking
             CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
             CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
+            return nt;
+        }
+
+        internal ExportedType Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
+        {
+            var nt = new ExportedType(type.Namespace, type.Name, module, type.Scope)
+                {
+                    Attributes = type.Attributes,
+                    Identifier = type.Identifier, // TODO: CHECK THIS
+                    DeclaringType = type.DeclaringType //TODO: handle renamed types?!
+                };
+            col.Add(nt);
             return nt;
         }
 
