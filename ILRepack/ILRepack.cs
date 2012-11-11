@@ -124,7 +124,7 @@ namespace ILRepacking
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
-		 
+         
         // helpers
         internal ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
@@ -584,13 +584,17 @@ namespace ILRepacking
         /// <summary>
         /// Check if a type's FullName matches a Reges to exclude it from internalizing.
         /// </summary>
-        private bool ExcludeInternalizeMatches(string typeFullName)
+        private bool ShouldInternalize(string typeFullName)
         {
+            if (excludeInternalizeMatches == null)
+            {
+                return Internalize;
+            }
             string withSquareBrackets = "[" + typeFullName + "]";
             foreach (Regex r in excludeInternalizeMatches)
                 if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
-                    return true;
-            return false;
+                    return false;
+            return true;
         }
 
         /// <summary>
@@ -699,6 +703,7 @@ namespace ILRepacking
             {
                 fixator.FixMethodVisibility(r);
             }
+            fixator.FixReferences(TargetAssemblyDefinition.MainModule.ExportedTypes);
             fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
             fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
             fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes, null);
@@ -870,16 +875,10 @@ namespace ILRepacking
             }
             foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
             {
-                List<TypeDefinition> importedTypes = new List<TypeDefinition>();
                 foreach (var r in m.Types)
                 {
                     VERBOSE("- Importing " + r);
-                    bool internalize = Internalize;
-                    if (excludeInternalizeMatches != null)
-                    {
-                        internalize = !ExcludeInternalizeMatches(r.FullName);
-                    }
-                    importedTypes.Add(Import(r, TargetAssemblyMainModule.Types, internalize));
+                    Import(r, TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
                 }
             }
         }
@@ -887,6 +886,13 @@ namespace ILRepacking
         private void RepackExportedTypes()
         {
             INFO("Processing types");
+            foreach (var m in MergedAssemblies.SelectMany(x => x.Modules))
+            {
+                foreach (var r in m.ExportedTypes)
+                {
+                    mappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
+                }
+            }
             foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
             {
                 VERBOSE("- Importing Exported Type" + r);
@@ -894,19 +900,12 @@ namespace ILRepacking
             }
             foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
             {
-                var importedTypes = new List<ExportedType>();
                 foreach (var r in m.ExportedTypes)
                 {
-                    VERBOSE("- Importing " + r);
-
-                    var internalize = excludeInternalizeMatches != null
-                                          ? !ExcludeInternalizeMatches(r.FullName)
-                                          : Internalize;
-
-                    if (!internalize)
+                    if (!ShouldInternalize(r.FullName))
                     {
                         VERBOSE("- Importing Exported Type " + r);
-                        importedTypes.Add(Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule));
+                        Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
                     }
                     else
                     {
@@ -1861,16 +1860,44 @@ namespace ILRepacking
             return nt;
         }
 
-        internal ExportedType Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
+        internal TypeReference CreateReference(ExportedType type)
+        {
+            return new TypeReference(type.Namespace, type.Name, TargetAssemblyMainModule, type.Scope)
+            {
+                DeclaringType = type.DeclaringType != null ? CreateReference(type.DeclaringType) : null,
+            };
+        }
+
+        internal void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
         {
             var nt = new ExportedType(type.Namespace, type.Name, module, type.Scope)
                 {
                     Attributes = type.Attributes,
-                    Identifier = type.Identifier, // TODO: CHECK THIS
-                    DeclaringType = type.DeclaringType //TODO: handle renamed types?!
+                    Identifier = type.Identifier, // TODO: CHECK THIS when merging multiple assemblies when exported types ?
+                    DeclaringType = type.DeclaringType
                 };
+
+            // try to skip redirects to merged assemblies
+            if (type.Scope is AssemblyNameReference)
+            {
+                if (MergedAssemblies.Any(x => x.Name.Name == ((AssemblyNameReference)type.Scope).Name))
+                {
+                    return;
+                }
+            }
+            else if (type.Scope is ModuleReference)
+            {
+                if (MergedAssemblies.SelectMany(x => x.Modules).Any(x => x.Name == ((ModuleReference)type.Scope).Name))
+                {
+                    return;
+                }
+            }
             col.Add(nt);
-            return nt;
+        }
+
+        public TypeReference GetExportedTypeFromTypeRef(TypeReference type)
+        {
+            return mappingHandler.GetExportedRemappedType(type) ?? type;
         }
 
         private bool DuplicateTypeAllowed(TypeDefinition type)

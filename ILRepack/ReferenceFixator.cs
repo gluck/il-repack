@@ -80,7 +80,9 @@ namespace ILRepacking
 
             if (type is TypeSpecification)
                 return Fix((TypeSpecification)type, context);
-            
+
+            type = repack.GetExportedTypeFromTypeRef(type);
+
             var t2 = repack.GetMergedTypeFromTypeRef(type);
             if (t2 != null)
                 return t2;
@@ -301,6 +303,11 @@ namespace ILRepacking
                 default:
                     break;
             }
+        }
+
+        internal void FixReferences(Collection<ExportedType> exportedTypes)
+        {
+            // Nothing ?
         }
 
         internal void FixReferences(Collection<CustomAttribute> attributes, IGenericParameterProvider context)

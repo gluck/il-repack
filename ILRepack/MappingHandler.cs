@@ -37,6 +37,7 @@ namespace ILRepacking
         }
 
         private readonly IDictionary<Pair, TypeDefinition> mappings = new Dictionary<Pair, TypeDefinition>();
+        private readonly IDictionary<Pair, TypeReference> exportMappings = new Dictionary<Pair, TypeReference>();
 
         internal TypeDefinition GetRemappedType(TypeReference r)
         {
@@ -53,11 +54,19 @@ namespace ILRepacking
             mappings[GetTypeKey(orig)] = renamed;
         }
 
+        internal void StoreExportedType(IMetadataScope scope, String fullName, TypeReference exportedTo)
+        {
+            exportMappings[GetTypeKey(scope, fullName)] = exportedTo;
+        }
+
         private static Pair GetTypeKey(TypeReference reference)
         {
-            var scope = reference.Scope;
-            var scopeStr = GetScopeName(scope);
-            return new Pair(scopeStr, reference.FullName);
+            return GetTypeKey(reference.Scope, reference.FullName);
+        }
+
+        private static Pair GetTypeKey(IMetadataScope scope, String fullName)
+        {
+            return new Pair(GetScopeName(scope), fullName);
         }
 
         internal static string GetScopeName(IMetadataScope scope)
@@ -78,6 +87,16 @@ namespace ILRepacking
             if (scope is ModuleDefinition)
                 scopeStr = ((ModuleDefinition)scope).Assembly.Name.FullName;
             return scopeStr;
+        }
+
+        public TypeReference GetExportedRemappedType(TypeReference type)
+        {
+            TypeReference other;
+            if (exportMappings.TryGetValue(GetTypeKey(type), out other))
+            {
+                return other;
+            }
+            return null;
         }
     }
 }
