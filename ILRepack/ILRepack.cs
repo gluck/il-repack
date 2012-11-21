@@ -658,6 +658,8 @@ namespace ILRepacking
                 TargetAssemblyDefinition.Name.Name = mainModuleName;
                 TargetAssemblyMainModule.Name = mainModuleName;
             }
+            // set the main module attributes
+            TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
             TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory, OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
 
             if (Version != null)
