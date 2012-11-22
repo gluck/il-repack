@@ -63,6 +63,8 @@
     <Reference Include="System.Xml" />
     <Reference Include="Mono.Posix">
       <Private>True</Private>
+      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Novell\Mono\2.10.9@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
+      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Novell\Mono\2.10.9@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -136,7 +138,7 @@
   -->
   <PropertyGroup>
     <PostBuildEvent>
-      $(TargetPath) /log /wildcards "/out:..\ILRepack.exe" $(TargetPath) Mono.Cecil.dll Mono.Cecil.*.dll Mono.Posix.dll
+      "$(TargetPath)" /log /wildcards "/out:..\ILRepack.exe" "$(TargetPath)" Mono.Cecil.dll Mono.Cecil.*.dll Mono.Posix.dll
       ..\ILRepack.exe /log "/out:..\ILRepack2.exe" ..\ILRepack.exe
 </PostBuildEvent>
   </PropertyGroup>
