@@ -3,6 +3,11 @@ syntax: glob
 _ReSharper*
 .gitignore
 .git
+.settings
+.classpath
+.project
+.gradle
+build
 bin
 obj
 *.suo
