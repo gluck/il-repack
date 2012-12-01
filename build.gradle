@@ -4,12 +4,13 @@ apply from: "${ext.ullinkGradleScripts}/functions.gradle"
 
 buildscript {
     repositories {
-      mavenCentral()
+        mavenLocal()
+        mavenCentral()
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:1.2-SNAPSHOT"
-        classpath "com.ullink.gradle:gradle-nuget-plugin:1.1-SNAPSHOT"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:1.2"
+        classpath "com.ullink.gradle:gradle-nuget-plugin:1.1"
     }
 }
 
@@ -20,6 +21,10 @@ archivesBaseName = 'ILRepack'
 version = '1.20'
 
 defaultTasks('nugetPack', 'zip')
+
+def removeExtension(String path) {
+	path.replaceFirst(~/(?<=.)\.[^\.]+$/, '')
+}
 
 msbuild {
 	def netVersion = project.version + '.0.0'
@@ -35,7 +40,7 @@ msbuild {
 task('repack', dependsOn: msbuild) {
 	// TODO inputs
 	ext.repacked = new File(temporaryDir, 'ILRepack.exe')
-	outputs.files([ext.repacked, org.apache.commons.io.FilenameUtils.removeExtension(ext.repacked.path)+'.pdb'])
+	outputs.files([ext.repacked, removeExtension(ext.repacked.path)+'.pdb'])
 }
 
 repack << {
@@ -49,7 +54,7 @@ repack << {
 task('bootstrap', dependsOn: repack) {
 	inputs.files repack.outputs
 	ext.tmp = new File(temporaryDir, 'ILRepack_tmp.exe')
-	outputs.files([ext.tmp, org.apache.commons.io.FilenameUtils.removeExtension(ext.tmp.path)+'.pdb'])
+	outputs.files([ext.tmp, removeExtension(ext.tmp.path)+'.pdb'])
 }
 
 bootstrap << {
