@@ -31,13 +31,13 @@ msbuild {
 	replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
 	replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
 	
-	solutionFile = /E:\workspace\thirdparty\il-repack-x\il-repack\ILRepack.sln/ //'ILRepack.sln'
+	solutionFile = 'ILRepack.sln'
 	configuration = 'Debug'
 	inputs.file(project.buildFile)
 }
 
 // repacking of all dependencies in a single exe
-task('repack', dependsOn: msbuild) {
+task repack(dependsOn: msbuild) {
 	// TODO inputs
 	ext.repacked = new File(temporaryDir, 'ILRepack.exe')
 	outputs.files([ext.repacked, removeExtension(ext.repacked.path)+'.pdb'])
@@ -51,7 +51,7 @@ repack << {
 }
 
 // bootstrap ILRepack exe for integrity checking
-task('bootstrap', dependsOn: repack) {
+task bootstrap(dependsOn: repack) {
 	inputs.files repack.outputs
 	ext.tmp = new File(temporaryDir, 'ILRepack_tmp.exe')
 	outputs.files([ext.tmp, removeExtension(ext.tmp.path)+'.pdb'])
@@ -64,7 +64,7 @@ bootstrap << {
 }
 
 // target package for upload to github
-task('zip', type: Zip) {
+task zip(type: Zip) {
 	from repack.outputs.getFiles()
 	archiveName = "${archivesBaseName}_${version}.zip"
 }
