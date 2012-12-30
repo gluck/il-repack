@@ -788,6 +788,12 @@ namespace ILRepacking
 
         private void MergeEntry(List<ResourceEntry> parents, ResourceEntry exist, AssemblyDefinition ass, ResourceEntry entry)
         {
+            // The assumption is this is a VarFileInfo
+            if (exist.Id == 0)
+            {
+                VERBOSE("Ignoring VarFileInfo in " + ass.Name);
+                return;
+            }
             if (exist.Data != null && entry.Data != null)
             {
                 if (isAspRes(parents, exist))
@@ -800,7 +806,7 @@ namespace ILRepacking
                 }
                 else
                 {
-                    WARN("Duplicate Win32 resource, ignoring");
+                    WARN(string.Format("Duplicate Win32 resource, \"{0}\" in assembly {1}, ignoring", String.IsNullOrEmpty(exist.Name) ? entry.Name : exist.Name, ass.Name));
                 }
                 return;
             }
