@@ -18,7 +18,7 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.20'
+version = '1.21'
 
 defaultTasks('nugetPack', 'zip')
 
@@ -36,9 +36,14 @@ msbuild {
 	inputs.file(project.buildFile)
 }
 
+ext.repackList = ['ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
+
 // repacking of all dependencies in a single exe
 task repack(dependsOn: msbuild) {
-	// TODO inputs
+    inputs.files {
+        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+        return project.ext.repackList.collect { new File(workingDir, it) }
+    }
 	ext.repacked = new File(temporaryDir, 'ILRepack.exe')
 	outputs.files([ext.repacked, removeExtension(ext.repacked.path)+'.pdb'])
 }
@@ -46,7 +51,7 @@ task repack(dependsOn: msbuild) {
 repack << {
 	exec {
 		workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-		commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/out:'+ext.repacked, 'ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.*.dll', 'Mono.Posix.dll']
+		commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/out:'+ext.repacked] + project.ext.repackList
 	}
 }
 

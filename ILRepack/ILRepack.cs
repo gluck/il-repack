@@ -115,6 +115,7 @@ namespace ILRepacking
         public bool LogVerbose { get; set; }
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
+        public bool LineIndexation { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
@@ -124,14 +125,15 @@ namespace ILRepacking
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
-         
+        internal IKVMLineIndexer LineIndexer { get; set; }
+
         // helpers
         internal ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
         private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
         private StreamWriter logFile;
-        private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
+        internal readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
@@ -329,6 +331,7 @@ namespace ILRepacking
 
             // private cmdline-options:
             LogVerbose = cmd.Modifier("verbose");
+            LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
                 WARN("Option 'delaysign' is only valid with 'keyfile'.");
@@ -372,6 +375,7 @@ namespace ILRepacking
             Console.WriteLine(@" - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies");
             Console.WriteLine(@" - /parallel          use as many CPUs as possible to merge the assemblies");
             Console.WriteLine(@" - /pause             pause execution once completed (good for debugging)");
+            Console.WriteLine(@" - /index             stores file:line debug information as type/method attributes (requires PDB)");
             Console.WriteLine(@" - /verbose           shows more logs");
             Console.WriteLine(@" - /out:<path>        target assembly path, symbol/config/doc files will be written here as well");
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
@@ -681,6 +685,7 @@ namespace ILRepacking
                 TargetAssemblyDefinition.Name.PublicKey = null;
                 TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
+            LineIndexer = new IKVMLineIndexer(this);
 
             RepackReferences();
             RepackTypes();
@@ -934,6 +939,7 @@ namespace ILRepacking
                     TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
                 }
             }
+            LineIndexer.PostRepackReferences();
 
             // add all module references (pinvoke dlls)
             foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
@@ -1647,8 +1653,11 @@ namespace ILRepacking
                     Import(var.VariableType, parent)));
 
             nb.Instructions.SetCapacity(body.Instructions.Count);
+            LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
+                LineIndexer.ProcessMethodBodyInstruction(instr);
+
                 Instruction ni;
 
                 if (instr.OpCode.Code == Code.Calli)
@@ -1731,6 +1740,7 @@ namespace ILRepacking
                 ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
+            LineIndexer.PostMethodBodyRepack(parent);
 
             for (int i = 0; i < body.Instructions.Count; i++)
             {
