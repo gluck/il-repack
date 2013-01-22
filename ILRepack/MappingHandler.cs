@@ -42,7 +42,7 @@ namespace ILRepacking
         internal TypeDefinition GetRemappedType(TypeReference r)
         {
             TypeDefinition other;
-            if (mappings.TryGetValue(GetTypeKey(r), out other))
+            if (r.Scope != null && mappings.TryGetValue(GetTypeKey(r), out other))
             {
                 return other;
             }
@@ -51,12 +51,18 @@ namespace ILRepacking
 
         internal void StoreRemappedType(TypeDefinition orig, TypeDefinition renamed)
         {
-            mappings[GetTypeKey(orig)] = renamed;
+            if (orig.Scope != null)
+            {
+                mappings[GetTypeKey(orig)] = renamed;
+            }
         }
 
         internal void StoreExportedType(IMetadataScope scope, String fullName, TypeReference exportedTo)
         {
-            exportMappings[GetTypeKey(scope, fullName)] = exportedTo;
+            if (scope != null)
+            {
+                exportMappings[GetTypeKey(scope, fullName)] = exportedTo;
+            }
         }
 
         private static Pair GetTypeKey(TypeReference reference)
@@ -71,28 +77,26 @@ namespace ILRepacking
 
         internal static string GetScopeName(IMetadataScope scope)
         {
-            string scopeStr = null;
             if (scope is AssemblyNameReference)
-                scopeStr = ((AssemblyNameReference) scope).Name;
+                return ((AssemblyNameReference)scope).Name;
             if (scope is ModuleDefinition)
-                scopeStr = ((ModuleDefinition) scope).Assembly.Name.Name;
-            return scopeStr;
+                return ((ModuleDefinition) scope).Assembly.Name.Name;
+            throw new Exception("Unsupported scope: " + scope);
         }
 
         internal static string GetScopeFullName(IMetadataScope scope)
         {
-            string scopeStr = null;
             if (scope is AssemblyNameReference)
-                scopeStr = ((AssemblyNameReference)scope).FullName;
+                return ((AssemblyNameReference)scope).FullName;
             if (scope is ModuleDefinition)
-                scopeStr = ((ModuleDefinition)scope).Assembly.Name.FullName;
-            return scopeStr;
+                return ((ModuleDefinition)scope).Assembly.Name.FullName;
+            throw new Exception("Unsupported scope: "+ scope);
         }
 
         public TypeReference GetExportedRemappedType(TypeReference type)
         {
             TypeReference other;
-            if (exportMappings.TryGetValue(GetTypeKey(type), out other))
+            if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
             {
                 return other;
             }
