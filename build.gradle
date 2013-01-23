@@ -18,7 +18,7 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.21'
+version = '1.21.2'
 
 defaultTasks('nugetPack', 'zip')
 
@@ -27,7 +27,7 @@ def removeExtension(String path) {
 }
 
 msbuild {
-	def netVersion = project.version + '.0.0'
+	def netVersion = project.version + '.0'
 	replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
 	replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
 	
@@ -92,7 +92,7 @@ nugetPack {
 		    copyright 'Copyright © Francois Valdy 2011-2012'
 		}
 		delegate.files() {
-			delegate.file(src: repack.ext.repacked, target: 'tools')
+			delegate.file(src: repack.ext.repacked, target: 'lib')
 		}
 	}
 }

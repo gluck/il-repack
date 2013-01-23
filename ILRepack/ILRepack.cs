@@ -803,9 +803,9 @@ namespace ILRepacking
                     Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
                     exist.Data = newData;
                 }
-                else
+                else if (entry.Id != 0) // VS_VERSION_INFO (I guess)
                 {
-                    WARN("Duplicate Win32 resource, ignoring");
+                    WARN(string.Format("Duplicate Win32 resource with id={0}, name={1} in assembly {2}, ignoring", entry.Id, entry.Name, ass.Name));
                 }
                 return;
             }
