@@ -803,9 +803,9 @@ namespace ILRepacking
                     Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
                     exist.Data = newData;
                 }
-                else if (entry.Id != 0) // VS_VERSION_INFO (I guess)
+                else if (!isVersionInfoRes(parents, exist)) 
                 {
-                    WARN(string.Format("Duplicate Win32 resource with id={0}, name={1} in assembly {2}, ignoring", entry.Id, entry.Name, ass.Name));
+                    WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
                 return;
             }
@@ -819,9 +819,14 @@ namespace ILRepacking
             parents.RemoveAt(parents.Count - 1);
         }
 
-        private bool isAspRes(List<ResourceEntry> parents, ResourceEntry exist)
+        private static bool isAspRes(List<ResourceEntry> parents, ResourceEntry exist)
         {
             return exist.Id == 101 && parents.Count == 1 && parents[0].Id == 3771;
+        }
+
+        private static bool isVersionInfoRes(List<ResourceEntry> parents, ResourceEntry exist)
+        {
+            return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
         private void RepackAttributes()
@@ -1776,14 +1781,18 @@ namespace ILRepacking
 
         private void FixAspNetOffset(Collection<Instruction> instructions, MethodReference operand, MethodDefinition parent)
         {
-            if (operand.FullName == "System.Void System.Web.UI.TemplateControl::WriteUTF8ResourceString(System.Web.UI.HtmlTextWriter,System.Int32,System.Int32,System.Boolean)" ||
-                operand.FullName == "System.Web.UI.LiteralControl System.Web.UI.TemplateControl::CreateResourceBasedLiteralControl(System.Int32,System.Int32,System.Boolean)")
+            if (operand.Name == "WriteUTF8ResourceString" || operand.Name == "CreateResourceBasedLiteralControl")
             {
-                int offset;
-                if (aspOffsets.TryGetValue(parent.Module.Assembly, out offset))
+                var fullName = operand.FullName;
+                if (fullName == "System.Void System.Web.UI.TemplateControl::WriteUTF8ResourceString(System.Web.UI.HtmlTextWriter,System.Int32,System.Int32,System.Boolean)" ||
+                    fullName == "System.Web.UI.LiteralControl System.Web.UI.TemplateControl::CreateResourceBasedLiteralControl(System.Int32,System.Int32,System.Boolean)")
                 {
-                    int prev = (int) instructions[instructions.Count - 4].Operand;
-                    instructions[instructions.Count - 4].Operand = prev + offset;
+                    int offset;
+                    if (aspOffsets.TryGetValue(parent.Module.Assembly, out offset))
+                    {
+                        int prev = (int)instructions[instructions.Count - 4].Operand;
+                        instructions[instructions.Count - 4].Operand = prev + offset;
+                    }
                 }
             }
         }

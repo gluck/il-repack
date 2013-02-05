@@ -85,8 +85,6 @@ namespace ILRepacking
             permissionSet.AppendChild(iPermission);
             xmlDoc.AppendChild(permissionSet);
 
-            string xmlDocString = xmlDoc.InnerXml;
-
             SecurityDeclaration xmlDeclaration = new SecurityDeclaration(declaration.Action);
             SecurityAttribute attribute = new SecurityAttribute(GetTypeRef("System.Security.Permissions", "PermissionSetAttribute", "mscorlib", targetModule));
 

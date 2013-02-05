@@ -18,7 +18,7 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.21.2'
+version = '1.21.3'
 
 defaultTasks('nugetPack', 'zip')
 
