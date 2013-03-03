@@ -18,7 +18,7 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.21.3'
+version = '1.22.2'
 
 defaultTasks('nugetPack', 'zip')
 
@@ -75,7 +75,6 @@ task zip(type: Zip) {
 }
 
 // nuget package for upload to nuget
-nugetPack.dependsOn([repack, bootstrap, msbuild])
 nugetPack {
     nuspec {
         metadata() {
@@ -92,12 +91,43 @@ nugetPack {
             copyright 'Copyright © Francois Valdy 2011-2012'
         }
         delegate.files() {
+            delegate.file(src: repack.ext.repacked, target: 'tools')
+        }
+    }
+}
+
+task nugetPackLib(type: com.ullink.NuGetPack) {
+    nuspec {
+        metadata() {
+            id archivesBaseName+'.Lib'
+            delegate.version version
+            title 'ILRepack.Lib - Open-source alternative to ILMerge'
+            authors 'Francois Valdy'
+            owners 'Francois Valdy'
+            projectUrl('https://github.com/gluck/il-repack')
+            delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
+            The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
+            
+            This package includes the exe as a library, for use within tools/build projects.'''
+            requireLicenseAcceptance false
+            summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
+            copyright 'Copyright © Francois Valdy 2011-2012'
+        }
+        delegate.files() {
             delegate.file(src: repack.ext.repacked, target: 'lib')
         }
     }
 }
 
+nugetPack.dependsOn([repack, bootstrap, msbuild, nugetPackLib])
+
 // nuget package upload, requires API key to be set
 nugetPush {
     nupkgFile = nugetPack.getPackageFile()
 }
+
+task nugetPushLib(type: com.ullink.NuGetPush) {
+    nupkgFile = nugetPackLib.getPackageFile()
+}
+
+nugetPush.dependsOn(nugetPushLib)

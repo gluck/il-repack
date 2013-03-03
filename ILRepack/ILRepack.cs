@@ -310,7 +310,20 @@ namespace ILRepacking
                 }
             }
             // TargetPlatformDirectory -> how does cecil handle that?
-            TargetPlatformVersion = cmd.Option("targetplatform");
+            var targetPlatform = cmd.Option("targetplatform");
+            if (targetPlatform != null)
+            {
+                int dirIndex = targetPlatform.IndexOf(',');
+                if (dirIndex != -1)
+                {
+                    TargetPlatformDirectory = targetPlatform.Substring(dirIndex + 1);
+                    TargetPlatformVersion = targetPlatform.Substring(0, dirIndex);
+                }
+                else
+                {
+                    TargetPlatformVersion = targetPlatform;
+                }
+            }
             if (cmd.Modifier("v1"))
                 TargetPlatformVersion = "v1";
             if (cmd.Modifier("v1.1"))
