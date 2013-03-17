@@ -230,8 +230,7 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.LogOutput(e);
-                repack.CloseLogFile();
+                repack.AlwaysLog(e);
                 rc = 1;
             }
             finally
