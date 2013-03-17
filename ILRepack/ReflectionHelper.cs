@@ -115,6 +115,10 @@ namespace ILRepacking
 
         internal bool AreSame(TypeReference a, TypeReference b)
         {
+            if (a == b)
+                return true;
+            if (a == null || b == null)
+                return false;
             a = repack.GetMergedTypeFromTypeRef(a) ?? a;
             b = repack.GetMergedTypeFromTypeRef(b) ?? b;
 

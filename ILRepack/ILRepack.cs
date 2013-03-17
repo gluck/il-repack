@@ -1631,7 +1631,17 @@ namespace ILRepacking
             CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
 
             if (meth.HasPInvokeInfo)
-                nm.PInvokeInfo = new PInvokeInfo(meth.PInvokeInfo.Attributes, meth.PInvokeInfo.EntryPoint, meth.PInvokeInfo.Module);
+            {
+                if (meth.PInvokeInfo == null)
+                {
+                    // Even if this was allowed, I'm not sure it'd work out
+                    //nm.RVA = meth.RVA;
+                }
+                else
+                {
+                    nm.PInvokeInfo = new PInvokeInfo(meth.PInvokeInfo.Attributes, meth.PInvokeInfo.EntryPoint, meth.PInvokeInfo.Module);
+                }
+            }
 
             foreach (ParameterDefinition param in meth.Parameters)
                 CloneTo(param, nm, nm.Parameters);
@@ -1679,7 +1689,13 @@ namespace ILRepacking
 
                 if (instr.OpCode.Code == Code.Calli)
                 {
-                    ni = Instruction.Create(instr.OpCode, (Mono.Cecil.CallSite)instr.Operand);
+                    var call_site = (Mono.Cecil.CallSite)instr.Operand;
+                    Mono.Cecil.CallSite ncs = new CallSite(Import(call_site.ReturnType, parent)) {
+                        HasThis = call_site.HasThis,
+                        ExplicitThis = call_site.ExplicitThis,
+                        CallingConvention = call_site.CallingConvention
+                    };
+                    ni = Instruction.Create(instr.OpCode, ncs);
                 }
                 else switch (instr.OpCode.OperandType)
                 {

@@ -242,7 +242,7 @@ namespace ILRepacking
 
         private void FixReferences(MethodDefinition meth, IGenericParameterProvider context)
         {
-            if (meth.HasPInvokeInfo)
+            if (meth.HasPInvokeInfo && meth.PInvokeInfo != null)
             {
                 meth.PInvokeInfo.Module = Fix(meth.PInvokeInfo.Module);
             }
@@ -279,7 +279,12 @@ namespace ILRepacking
 
         private void FixReferences(Instruction instr, IGenericParameterProvider context)
         {
-            switch (instr.OpCode.OperandType)
+            if (instr.OpCode.Code == Code.Calli)
+            {
+                var call_site = (Mono.Cecil.CallSite)instr.Operand;
+                call_site.ReturnType = Fix(call_site.ReturnType, context);
+            }
+            else switch (instr.OpCode.OperandType)
             {
                 case OperandType.InlineField:
                     instr.Operand = Fix((FieldReference)instr.Operand, context);
@@ -490,7 +495,7 @@ namespace ILRepacking
             }
             if (type is RequiredModifierType)
             {
-                TypeReference fmt = Fix(((RequiredModifierType)type).ModifierType);
+                TypeReference fmt = Fix(((RequiredModifierType)type).ModifierType, context);
                 return new RequiredModifierType(fmt, fet);
             }
             if (type is GenericInstanceType)
@@ -506,7 +511,26 @@ namespace ILRepacking
 
                 return imported_instance;
             }
-            // TODO: what about FunctionPointerType?
+            if (type is FunctionPointerType)
+            {
+                var funcPtr = (FunctionPointerType)type;
+                var imported_instance = new FunctionPointerType()
+                {
+                    HasThis = funcPtr.HasThis,
+                    ExplicitThis = funcPtr.ExplicitThis,
+                    CallingConvention = funcPtr.CallingConvention,
+                    ReturnType = Fix(funcPtr.ReturnType, context)
+                };
+                if (funcPtr.HasParameters)
+                {
+                    foreach (var pd in funcPtr.Parameters)
+                    {
+                        imported_instance.Parameters.Add(pd);
+                    }
+                    FixReferences(imported_instance.Parameters, context);
+                }
+                return imported_instance;
+            }
             throw new InvalidOperationException();
         }
 
