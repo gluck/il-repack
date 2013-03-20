@@ -9,6 +9,13 @@ The later being deprecated, unsupported, and based on an old version of Mono.Cec
 Here we're using latest (slightly modified) Cecil sources (0.9), you can find the fork [here](https://github.com/gluck/cecil).
 Mono.Posix is also required (build only, it gets merged afterwards) for executable bit set on target file.
 
+Downloads
+------
+
+You can grab it using [NuGet](http://nuget.org/packages/ILRepack/).
+
+Old if you're old-school (and want to stay like that), this [direct link](http://nuget.org/api/v2/package/ILRepack) will give you the latest nupkg file, which you can open as a zip file.
+
 Syntax
 ------
 
