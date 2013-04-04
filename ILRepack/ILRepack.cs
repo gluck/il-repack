@@ -116,9 +116,9 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
+        public string PrimaryAssemblyFile { get; set; }
 
         internal List<string> MergedAssemblyFiles { get; set; }
-        internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
@@ -439,7 +439,9 @@ namespace ILRepacking
                         mergedDebugInfo = true;
                     if (PrimaryAssemblyDefinition == null) {
                         PrimaryAssemblyDefinition = mergeAsm;
-                        PrimaryAssemblyFile = assembly;
+                        if(string.IsNullOrEmpty(PrimaryAssemblyFile)) {
+                            PrimaryAssemblyFile = assembly;
+                        }
                     }
                     else
                         OtherAssemblies.Add(mergeAsm);
