@@ -14,7 +14,7 @@ Downloads
 
 You can grab it using [NuGet](http://nuget.org/packages/ILRepack/).
 
-Old if you're old-school (and want to stay like that), this [direct link](http://nuget.org/api/v2/package/ILRepack) will give you the latest nupkg file, which you can open as a zip file.
+Or if you're old-school (and want to stay like that), this [direct link](http://nuget.org/api/v2/package/ILRepack) will give you the latest nupkg file, which you can open as a zip file.
 
 Syntax
 ------
