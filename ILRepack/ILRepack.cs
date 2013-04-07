@@ -684,7 +684,7 @@ namespace ILRepacking
             StrongNameKeyPair snkp = null;
             if (KeyFile != null && File.Exists(KeyFile))
             {
-                using (var stream = new FileStream(KeyFile, FileMode.Open))
+                using (var stream = new FileStream(KeyFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     snkp = new StrongNameKeyPair(stream);
                 }
