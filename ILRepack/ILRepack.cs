@@ -398,7 +398,7 @@ namespace ILRepacking
 
         private void ReadInputAssemblies()
         {
-            MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).ToList();
+            MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             bool mergedDebugInfo = false;
