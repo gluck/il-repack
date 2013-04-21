@@ -1134,7 +1134,7 @@ namespace ILRepacking
             {
                 foreach (var res in rr)
                 {
-                    if (res.type == "ResourceTypeCode.String")
+                    if (res.type == "ResourceTypeCode.String" || res.type.StartsWith("System.String"))
                     {
                         string content = (string) rr.GetObject(res);
                         content = FixStr(content);

@@ -231,8 +231,7 @@ namespace ILRepacking
                 int version = _store.ReadInt32();
                 if (version != 2 && version != 1)
                     throw new ArgumentException("Arg_ResourceFileUnsupportedVersion");
-                if (version == 1)
-                    throw new ArgumentException("Doesn't support (yet) V1 .resources file");
+
                 _version = version;
 
                 _numResources = _store.ReadInt32();
@@ -348,6 +347,13 @@ namespace ILRepacking
 
         public Object GetObject(Res res)
         {
+            if (_version == 1)
+                return GetObject_V1(res);
+            return GetObject_V2(res);
+        }
+
+        private Object GetObject_V2(Res res)
+        {
             lock (this)
             {
                 _store.BaseStream.Seek(_dataSectionOffset + res.dataPos, SeekOrigin.Begin);
@@ -428,6 +434,71 @@ namespace ILRepacking
                 return _bf.Deserialize(_store.BaseStream);
             }
         }
+
+        private Object GetObject_V1(Res res)
+        {
+            lock (this)
+            {
+                _store.BaseStream.Seek(_dataSectionOffset + res.dataPos, SeekOrigin.Begin);
+                int typeIndex = Read7BitEncodedInt();
+                if (typeIndex == -1)
+                    return null;
+                var typeName = TypeNameFromTypeIndex(typeIndex);
+                var type = Type.GetType(typeName, true);
+                if (type == typeof(string))
+                    return this._store.ReadString();
+
+                if (type == typeof(int))
+                    return this._store.ReadInt32();
+                
+                if (type == typeof(byte))
+                    return this._store.ReadByte();
+                
+                if (type == typeof(sbyte))
+                    return this._store.ReadSByte();
+                
+                if (type == typeof(short))
+                    return this._store.ReadInt16();
+                
+                if (type == typeof(long))
+                    return this._store.ReadInt64();
+
+                if (type == typeof(ushort))
+                    return this._store.ReadUInt16();
+
+                if (type == typeof(uint))
+                    return this._store.ReadUInt32();
+
+                if (type == typeof(ulong))
+                    return this._store.ReadUInt64();
+
+                if (type == typeof(float))
+                    return this._store.ReadSingle();
+
+                if (type == typeof(double))
+                    return this._store.ReadDouble();
+
+                if (type == typeof(DateTime))
+                    return new DateTime(this._store.ReadInt64());
+
+                if (type == typeof(TimeSpan))
+                    return new TimeSpan(this._store.ReadInt64());
+
+                if (type == typeof(decimal))
+                {
+                    int[] array = new int[4];
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        array[i] = this._store.ReadInt32();
+                    }
+                    return new decimal(array);
+                }
+
+                // Normal serialized objects 
+                return _bf.Deserialize(_store.BaseStream);
+            }
+        }
+
 
         internal IEnumerator<Res> GetResources()
         {
