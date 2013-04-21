@@ -99,7 +99,7 @@ namespace ILRepacking
         {
             if (!xmlDeclaration.HasSecurityAttributes || xmlDeclaration.SecurityAttributes.Count == 0)
                 // nothing to convert
-                return xmlDeclaration;
+                return null;
             if (xmlDeclaration.SecurityAttributes.Count > 1)
                 throw new Exception("Cannot convert SecurityDeclaration with more than one attribute");
 
@@ -111,9 +111,10 @@ namespace ILRepacking
             CustomAttributeNamedArgument arg = sa.Properties[0];
             if (arg.Name != "XML" || arg.Argument.Type.FullName != "System.String")
                 throw new ArgumentException("Property \"XML\" expected");
-
+            if (string.IsNullOrEmpty(arg.Argument.Value as string))
+                return null;
             XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(arg.Argument.Value as string);
+            xmlDoc.LoadXml((string)arg.Argument.Value);
             XmlNode permissionSet = xmlDoc.SelectSingleNode("/PermissionSet");
             if (permissionSet == null)
                 return null;

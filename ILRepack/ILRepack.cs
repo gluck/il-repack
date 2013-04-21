@@ -1329,12 +1329,12 @@ namespace ILRepacking
         {
             foreach (SecurityDeclaration sec in input)
             {
-                SecurityDeclaration newSec;
+                SecurityDeclaration newSec = null;
                 if (PermissionsetHelper.IsXmlPermissionSet(sec))
                 {
                     newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
                 }
-                else
+                if (newSec == null)
                 {
                     newSec = new SecurityDeclaration(sec.Action);
                     foreach (SecurityAttribute sa in sec.SecurityAttributes)
