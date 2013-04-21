@@ -708,7 +708,7 @@ namespace ILRepacking
             var fixator = new ReferenceFixator(this);
             if (PrimaryAssemblyMainModule.EntryPoint != null)
             {
-                TargetAssemblyMainModule.EntryPoint = fixator.Fix(Import(PrimaryAssemblyDefinition.EntryPoint), null).Resolve();
+                TargetAssemblyMainModule.EntryPoint = fixator.Fix(Import(PrimaryAssemblyDefinition.EntryPoint)).Resolve();
             }
 
             INFO("Fixing references");
@@ -723,9 +723,9 @@ namespace ILRepacking
                 fixator.FixMethodVisibility(r);
             }
             fixator.FixReferences(TargetAssemblyDefinition.MainModule.ExportedTypes);
-            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes, null);
-            fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations, null);
-            fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes, null);
+            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes);
+            fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations);
+            fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in MergedAssemblies)

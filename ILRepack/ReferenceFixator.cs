@@ -34,11 +34,6 @@ namespace ILRepacking
             this.repack = iLRepack;
         }
 
-        private TypeReference Fix(TypeReference type)
-        {
-            return Fix(type, null);
-        }
-
         private ModuleReference Fix(ModuleReference moduleRef)
         {
             ModuleReference nmr = repack.TargetAssemblyMainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
@@ -47,9 +42,9 @@ namespace ILRepacking
             return nmr;
         }
 
-        private FieldReference Fix(FieldReference field, IGenericParameterProvider context)
+        private FieldReference Fix(FieldReference field)
         {
-            field.DeclaringType = Fix(field.DeclaringType, context);
+            field.DeclaringType = Fix(field.DeclaringType);
             if (field.DeclaringType.IsDefinition && !field.IsDefinition)
             {
                 FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.First(x => x.Name == field.Name);
@@ -57,11 +52,11 @@ namespace ILRepacking
                     throw new NullReferenceException("Field \"" + field + "\" not found in type \"" + field.DeclaringType + "\".");
                 return def;
             }
-            field.FieldType = Fix(field.FieldType, context);
+            field.FieldType = Fix(field.FieldType);
             return field;
         }
 
-        private TypeReference Fix(TypeReference type, IGenericParameterProvider context)
+        private TypeReference Fix(TypeReference type)
         {
             if (type == null || type.IsDefinition)
                 return type;
@@ -72,14 +67,14 @@ namespace ILRepacking
                 if (!fixedGenericParameters.Contains(genPar))
                 {
                     fixedGenericParameters.Add(genPar);
-                    FixReferences(genPar.Constraints, context);
-                    FixReferences(genPar.CustomAttributes, context);
+                    FixReferences(genPar.Constraints);
+                    FixReferences(genPar.CustomAttributes);
                 }
                 return type;
             }
 
             if (type is TypeSpecification)
-                return Fix((TypeSpecification)type, context);
+                return Fix((TypeSpecification)type);
 
             type = repack.GetExportedTypeFromTypeRef(type);
 
@@ -88,7 +83,7 @@ namespace ILRepacking
                 return t2;
             
             if (type.IsNested)
-                type.DeclaringType = Fix(type.DeclaringType, context);
+                type.DeclaringType = Fix(type.DeclaringType);
 
             if (type.DeclaringType is TypeDefinition)
                 return ((TypeDefinition)type.DeclaringType).NestedTypes.FirstOrDefault(x => x.FullName == type.FullName);
@@ -110,87 +105,87 @@ namespace ILRepacking
             // Peverify doesn't complain about this, but it complains if we alter the later to protected
 
             foreach (MethodDefinition meth in type.Methods.Where(meth => meth.IsVirtual && !meth.IsNewSlot))
-                FixOverridenMethodDef(meth, type);
+                FixOverridenMethodDef(meth);
         }
 
         internal void FixReferences(TypeDefinition type)
         {
-            FixReferences(type.GenericParameters, type);
+            FixReferences(type.GenericParameters);
 
-            type.BaseType = Fix(type.BaseType, type);
+            type.BaseType = Fix(type.BaseType);
 
             // interfaces before methods, because methods will have to go through them
-            FixReferences(type.Interfaces, type);
+            FixReferences(type.Interfaces);
 
             // nested types first
             foreach (TypeDefinition nested in type.NestedTypes)
                 FixReferences(nested);
             foreach (FieldDefinition field in type.Fields)
-                FixReferences(field, type);
+                FixReferences(field);
             foreach (MethodDefinition meth in type.Methods)
-                FixReferences(meth, type);
+                FixReferences(meth);
             foreach (EventDefinition evt in type.Events)
-                FixReferences(evt, type);
+                FixReferences(evt);
             foreach (PropertyDefinition prop in type.Properties)
-                FixReferences(prop, type);
+                FixReferences(prop);
 
-            FixReferences(type.SecurityDeclarations, type);
-            FixReferences(type.CustomAttributes, type);
+            FixReferences(type.SecurityDeclarations);
+            FixReferences(type.CustomAttributes);
         }
 
         // replaces TypeRef by TypeDef
 
-        private void FixReferences(FieldDefinition field, IGenericParameterProvider context)
+        private void FixReferences(FieldDefinition field)
         {
-            field.FieldType = Fix(field.FieldType, context);
-            FixReferences(field.CustomAttributes, context);
+            field.FieldType = Fix(field.FieldType);
+            FixReferences(field.CustomAttributes);
         }
 
-        private void FixReferences(VariableDefinition var, IGenericParameterProvider context)
+        private void FixReferences(VariableDefinition var)
         {
-            var.VariableType = Fix(var.VariableType, context);
+            var.VariableType = Fix(var.VariableType);
         }
 
-        private CustomAttributeArgument Fix(CustomAttributeArgument arg, IGenericParameterProvider context)
+        private CustomAttributeArgument Fix(CustomAttributeArgument arg)
         {
-            CustomAttributeArgument ret = new CustomAttributeArgument(Fix(arg.Type, context), FixCustomAttributeValue(arg.Value, context));
+            CustomAttributeArgument ret = new CustomAttributeArgument(Fix(arg.Type), FixCustomAttributeValue(arg.Value));
             return ret;
         }
 
-        private object FixCustomAttributeValue(object obj, IGenericParameterProvider context)
+        private object FixCustomAttributeValue(object obj)
         {
             if (obj is TypeReference)
-                return Fix((TypeReference) obj, context);
+                return Fix((TypeReference) obj);
             if (obj is CustomAttributeArgument)
-                return Fix((CustomAttributeArgument)obj, context);
+                return Fix((CustomAttributeArgument)obj);
             if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Select(a => Fix(a, context)).ToArray();
+                return ((CustomAttributeArgument[])obj).Select(a => Fix(a)).ToArray();
             return obj;
         }
 
-        private CustomAttributeNamedArgument Fix(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        private CustomAttributeNamedArgument Fix(CustomAttributeNamedArgument namedArg)
         {
-            CustomAttributeNamedArgument ret = new CustomAttributeNamedArgument(namedArg.Name, Fix(namedArg.Argument, context));
+            CustomAttributeNamedArgument ret = new CustomAttributeNamedArgument(namedArg.Name, Fix(namedArg.Argument));
             return ret;
         }
 
-        private void FixReferences(Collection<CustomAttributeArgument> args, IGenericParameterProvider context)
+        private void FixReferences(Collection<CustomAttributeArgument> args)
         {
             for (int i = 0; i < args.Count; i++)
             {
-                args[i] = Fix(args[i], context);
+                args[i] = Fix(args[i]);
             }
         }
 
-        private void FixReferences(Collection<CustomAttributeNamedArgument> namedArgs, IGenericParameterProvider context)
+        private void FixReferences(Collection<CustomAttributeNamedArgument> namedArgs)
         {
             for (int i = 0; i < namedArgs.Count; i++)
             {
-                namedArgs[i] = Fix(namedArgs[i], context);
+                namedArgs[i] = Fix(namedArgs[i]);
             }
         }
 
-        internal void FixReferences(Collection<SecurityDeclaration> securitydeclarations, IGenericParameterProvider context)
+        internal void FixReferences(Collection<SecurityDeclaration> securitydeclarations)
         {
             if (securitydeclarations.Count > 0)
             {
@@ -198,11 +193,11 @@ namespace ILRepacking
                 {
                     foreach (SecurityAttribute sa in sd.SecurityAttributes)
                     {
-                        sa.AttributeType = Fix(sa.AttributeType, context);
-                        FixReferences(sa.Fields, context);
+                        sa.AttributeType = Fix(sa.AttributeType);
+                        FixReferences(sa.Fields);
                         if (sa.HasFields)
                             throw new NotSupportedException();
-                        FixReferences(sa.Properties, context);
+                        FixReferences(sa.Properties);
                         if (sa.HasProperties)
                         {
                             foreach (var prop in sa.Properties.ToArray())
@@ -240,69 +235,69 @@ namespace ILRepacking
             }
         }
 
-        private void FixReferences(MethodDefinition meth, IGenericParameterProvider context)
+        private void FixReferences(MethodDefinition meth)
         {
             if (meth.HasPInvokeInfo && meth.PInvokeInfo != null)
             {
                 meth.PInvokeInfo.Module = Fix(meth.PInvokeInfo.Module);
             }
-            FixReferences(meth.GenericParameters, meth);
-            FixReferences(meth.Parameters, meth);
-            FixReferences(meth.Overrides, meth);
-            FixReferences(meth.SecurityDeclarations, meth);
-            FixReferences(meth.CustomAttributes, meth);
+            FixReferences(meth.GenericParameters);
+            FixReferences(meth.Parameters);
+            FixReferences(meth.Overrides);
+            FixReferences(meth.SecurityDeclarations);
+            FixReferences(meth.CustomAttributes);
 
-            meth.ReturnType = Fix(meth.ReturnType, meth);
-            FixReferences(meth.MethodReturnType.CustomAttributes, meth);
+            meth.ReturnType = Fix(meth.ReturnType);
+            FixReferences(meth.MethodReturnType.CustomAttributes);
             if (meth.HasBody)
-                FixReferences(meth.Body, meth);
+                FixReferences(meth.Body);
         }
 
-        private void FixReferences(MethodBody body, IGenericParameterProvider context)
+        private void FixReferences(MethodBody body)
         {
             foreach (VariableDefinition var in body.Variables)
-                FixReferences(var, context);
+                FixReferences(var);
 
             foreach (Instruction instr in body.Instructions)
             {
-                FixReferences(instr, context);
+                FixReferences(instr);
             }
             foreach (ExceptionHandler eh in body.ExceptionHandlers)
             {
                 switch (eh.HandlerType)
                 {
                     case ExceptionHandlerType.Catch:
-                        eh.CatchType = Fix(eh.CatchType, context);
+                        eh.CatchType = Fix(eh.CatchType);
                         break;
                 }
             }
         }
 
-        private void FixReferences(Instruction instr, IGenericParameterProvider context)
+        private void FixReferences(Instruction instr)
         {
             if (instr.OpCode.Code == Code.Calli)
             {
                 var call_site = (Mono.Cecil.CallSite)instr.Operand;
-                call_site.ReturnType = Fix(call_site.ReturnType, context);
+                call_site.ReturnType = Fix(call_site.ReturnType);
             }
             else switch (instr.OpCode.OperandType)
             {
                 case OperandType.InlineField:
-                    instr.Operand = Fix((FieldReference)instr.Operand, context);
+                    instr.Operand = Fix((FieldReference)instr.Operand);
                     break;
                 case OperandType.InlineMethod:
-                    instr.Operand = Fix((MethodReference)instr.Operand, context);
+                    instr.Operand = Fix((MethodReference)instr.Operand);
                     break;
                 case OperandType.InlineType:
-                    instr.Operand = Fix((TypeReference)instr.Operand, context);
+                    instr.Operand = Fix((TypeReference)instr.Operand);
                     break;
                 case OperandType.InlineTok:
                     if (instr.Operand is TypeReference)
-                        instr.Operand = Fix((TypeReference)instr.Operand, context);
+                        instr.Operand = Fix((TypeReference)instr.Operand);
                     else if (instr.Operand is FieldReference)
-                        instr.Operand = Fix((FieldReference)instr.Operand, context);
+                        instr.Operand = Fix((FieldReference)instr.Operand);
                     else if (instr.Operand is MethodReference)
-                        instr.Operand = Fix((MethodReference)instr.Operand, context);
+                        instr.Operand = Fix((MethodReference)instr.Operand);
                     else
                         throw new InvalidOperationException();
                     break;
@@ -316,38 +311,38 @@ namespace ILRepacking
             // Nothing ?
         }
 
-        internal void FixReferences(Collection<CustomAttribute> attributes, IGenericParameterProvider context)
+        internal void FixReferences(Collection<CustomAttribute> attributes)
         {
             foreach (CustomAttribute attribute in attributes)
             {
-                attribute.Constructor = Fix(attribute.Constructor, context);
-                FixReferences(attribute.ConstructorArguments, context);
-                FixReferences(attribute.Fields, context);
-                FixReferences(attribute.Properties, context);
+                attribute.Constructor = Fix(attribute.Constructor);
+                FixReferences(attribute.ConstructorArguments);
+                FixReferences(attribute.Fields);
+                FixReferences(attribute.Properties);
             }
         }
 
-        private void FixReferences(Collection<TypeReference> refs, IGenericParameterProvider context)
+        private void FixReferences(Collection<TypeReference> refs)
         {
             for (int i = 0; i < refs.Count; i++)
             {
-                refs[i] = Fix(refs[i], context);
+                refs[i] = Fix(refs[i]);
             }
         }
 
-        private void FixReferences(Collection<ParameterDefinition> parameters, IGenericParameterProvider context)
+        private void FixReferences(Collection<ParameterDefinition> parameters)
         {
             for (int i = 0; i < parameters.Count; i++)
             {
-                FixReferences(parameters[i], context);
+                FixReferences(parameters[i]);
             }
         }
 
-        private void FixReferences(Collection<GenericParameter> parameters, IGenericParameterProvider context)
+        private void FixReferences(Collection<GenericParameter> parameters)
         {
             for (int i = 0; i < parameters.Count; i++)
             {
-                FixReferences(parameters[i], context);
+                FixReferences(parameters[i]);
             }
         }
 
@@ -360,10 +355,10 @@ namespace ILRepacking
         }
 #endif
 
-        private void FixReferences(EventDefinition definition, IGenericParameterProvider context)
+        private void FixReferences(EventDefinition definition)
         {
-            definition.EventType = Fix(definition.EventType, context);
-            FixReferences(definition.CustomAttributes, context);
+            definition.EventType = Fix(definition.EventType);
+            FixReferences(definition.CustomAttributes);
 #if DEBUG
             AssertIsDefinitionIfNotNull(definition.AddMethod);
             AssertIsDefinitionIfNotNull(definition.RemoveMethod);
@@ -371,10 +366,10 @@ namespace ILRepacking
 #endif
         }
 
-        private void FixReferences(PropertyDefinition definition, IGenericParameterProvider context)
+        private void FixReferences(PropertyDefinition definition)
         {
-            definition.PropertyType = Fix(definition.PropertyType, context);
-            FixReferences(definition.CustomAttributes, context);
+            definition.PropertyType = Fix(definition.PropertyType);
+            FixReferences(definition.CustomAttributes);
 #if DEBUG
             AssertIsDefinitionIfNotNull(definition.GetMethod);
             AssertIsDefinitionIfNotNull(definition.SetMethod);
@@ -382,38 +377,38 @@ namespace ILRepacking
 #endif
         }
 
-        private void FixReferences(ParameterDefinition definition, IGenericParameterProvider context)
+        private void FixReferences(ParameterDefinition definition)
         {
-            definition.ParameterType = Fix(definition.ParameterType, context);
-            FixReferences(definition.CustomAttributes, context);
+            definition.ParameterType = Fix(definition.ParameterType);
+            FixReferences(definition.CustomAttributes);
         }
 
-        private void FixReferences(GenericParameter definition, IGenericParameterProvider context)
+        private void FixReferences(GenericParameter definition)
         {
-            FixReferences(definition.Constraints, context);
-            FixReferences(definition.CustomAttributes, context);
+            FixReferences(definition.Constraints);
+            FixReferences(definition.CustomAttributes);
         }
 
-        private GenericInstanceMethod Fix(GenericInstanceMethod method, IGenericParameterProvider context)
+        private GenericInstanceMethod Fix(GenericInstanceMethod method)
         {
-            var element_method = Fix(method.ElementMethod, context);
+            var element_method = Fix(method.ElementMethod);
             var imported_instance = new GenericInstanceMethod(element_method);
 
             var arguments = method.GenericArguments;
             var imported_arguments = imported_instance.GenericArguments;
 
             for (int i = 0; i < arguments.Count; i++)
-                imported_arguments.Add(Fix(arguments[i], context));
+                imported_arguments.Add(Fix(arguments[i]));
 
             return imported_instance;
         }
 
-        internal MethodReference Fix(MethodReference method, IGenericParameterProvider context)
+        internal MethodReference Fix(MethodReference method)
         {
-            TypeReference declaringType = Fix(method.DeclaringType, context);
+            TypeReference declaringType = Fix(method.DeclaringType);
             if (method.IsGenericInstance)
             {
-                return Fix((GenericInstanceMethod)method, context);
+                return Fix((GenericInstanceMethod)method);
             }
             // if declaring type is in our new merged module, return the definition
             if (declaringType.IsDefinition && !method.IsDefinition)
@@ -423,10 +418,10 @@ namespace ILRepacking
                     return def;
             }
             method.DeclaringType = declaringType;
-            method.ReturnType = Fix(method.ReturnType, method);
+            method.ReturnType = Fix(method.ReturnType);
 
-            FixReferences(method.Parameters, method);
-            FixReferences(method.GenericParameters, method);
+            FixReferences(method.Parameters);
+            FixReferences(method.GenericParameters);
 
             if (!method.IsDefinition &&
                 !method.DeclaringType.IsGenericInstance &&
@@ -449,17 +444,17 @@ namespace ILRepacking
             return method;
         }
 
-        private void FixReferences(Collection<MethodReference> parameters, IGenericParameterProvider context)
+        private void FixReferences(Collection<MethodReference> parameters)
         {
             for (int i = 0; i < parameters.Count; i++)
             {
-                parameters[i] = Fix(parameters[i], context);
+                parameters[i] = Fix(parameters[i]);
             }
         }
 
-        private TypeSpecification Fix(TypeSpecification type, IGenericParameterProvider context)
+        private TypeSpecification Fix(TypeSpecification type)
         {
-            var fet = Fix(type.ElementType, context);
+            var fet = Fix(type.ElementType);
             if (type is ArrayType)
             {
                 var array = (ArrayType)type;
@@ -491,12 +486,12 @@ namespace ILRepacking
                 return new SentinelType(fet);
             if (type is OptionalModifierType)
             {
-                TypeReference fmt = Fix(((OptionalModifierType)type).ModifierType, context);
+                TypeReference fmt = Fix(((OptionalModifierType)type).ModifierType);
                 return new OptionalModifierType(fmt, fet);
             }
             if (type is RequiredModifierType)
             {
-                TypeReference fmt = Fix(((RequiredModifierType)type).ModifierType, context);
+                TypeReference fmt = Fix(((RequiredModifierType)type).ModifierType);
                 return new RequiredModifierType(fmt, fet);
             }
             if (type is GenericInstanceType)
@@ -508,7 +503,7 @@ namespace ILRepacking
                 var imported_arguments = imported_instance.GenericArguments;
 
                 for (int i = 0; i < arguments.Count; i++)
-                    imported_arguments.Add(Fix(arguments[i], context));
+                    imported_arguments.Add(Fix(arguments[i]));
 
                 return imported_instance;
             }
@@ -520,7 +515,7 @@ namespace ILRepacking
                     HasThis = funcPtr.HasThis,
                     ExplicitThis = funcPtr.ExplicitThis,
                     CallingConvention = funcPtr.CallingConvention,
-                    ReturnType = Fix(funcPtr.ReturnType, context)
+                    ReturnType = Fix(funcPtr.ReturnType)
                 };
                 if (funcPtr.HasParameters)
                 {
@@ -528,7 +523,7 @@ namespace ILRepacking
                     {
                         imported_instance.Parameters.Add(pd);
                     }
-                    FixReferences(imported_instance.Parameters, context);
+                    FixReferences(imported_instance.Parameters);
                 }
                 return imported_instance;
             }
@@ -556,11 +551,11 @@ namespace ILRepacking
         /// Returns the base-most MethodDefinition (for implicitly or explicitly overridden methods) in this assembly.
         /// (Meaning overridden methods in referenced assemblies do not count, therefore it returns a Definition, not a Reference.)
         /// </summary>
-        public void FixOverridenMethodDef(MethodDefinition meth, IGenericParameterProvider context)
+        public void FixOverridenMethodDef(MethodDefinition meth)
         {
             foreach (var ov in meth.Overrides)
             {
-                MethodReference fixedOv = Fix(ov, context);
+                MethodReference fixedOv = Fix(ov);
                 if (fixedOv.IsDefinition)
                 {
                     if (fixedOv.Module == meth.Module)
