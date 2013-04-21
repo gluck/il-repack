@@ -11,8 +11,8 @@ namespace ILRepacking
     {
         internal class Pair
         {
-            readonly string scope;
-            readonly string name;
+            internal readonly string scope;
+            internal readonly string name;
 
             public Pair(string scope, string name)
             {
@@ -101,6 +101,11 @@ namespace ILRepacking
                 return other;
             }
             return null;
+        }
+
+        internal string GetOrigTypeModule(TypeDefinition nt)
+        {
+            return mappings.Where(p => p.Value == nt).Select(p => p.Key.scope).FirstOrDefault();
         }
     }
 }

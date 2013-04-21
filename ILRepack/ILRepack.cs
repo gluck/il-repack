@@ -1847,7 +1847,7 @@ namespace ILRepacking
             {
                 INFO("Merging " + type);
             }
-            else if (!type.IsPublic)
+            else if (!type.IsPublic || internalize)
             {
                 // rename it
                 string other = "<" + Guid.NewGuid() + ">" + type.Name;
@@ -1862,7 +1862,7 @@ namespace ILRepacking
             else
             {
                 ERROR("Duplicate type " + type);
-                throw new InvalidOperationException("Duplicate type " + type);
+                throw new InvalidOperationException("Duplicate type " + type + " from " + type.Scope + ", was also present in " + mappingHandler.GetOrigTypeModule(nt));
             }
             mappingHandler.StoreRemappedType(type, nt);
 
@@ -1957,6 +1957,16 @@ namespace ILRepacking
             if (fullName == "<Module>" || fullName == "__<Proxy>")
                 return true;
 
+            // XAML helper class, identical in all assemblies, unused within the assembly, and instanciated through reflection from the outside
+            // We could just skip them after the first one, but merging them works just fine
+            if (fullName == "XamlGeneratedNamespace.GeneratedInternalTypeHelper")
+                return true;
+
+            // Merge should be OK since member's names are pretty unique,
+            // but renaming duplicate members would be safer...
+            if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
+                return true;
+
             if (allowedDuplicateTypes.Contains(fullName))
                 return true;
 
@@ -1965,11 +1975,6 @@ namespace ILRepacking
                 top = top.DeclaringType;
             string nameSpace = top.Namespace;
             if (!String.IsNullOrEmpty(nameSpace) && allowedDuplicateNameSpaces.Any(s => s == nameSpace || nameSpace.StartsWith(s + ".")))
-                return true;
-
-            // Merge should be OK since member's names are pretty unique,
-            // but renaming duplicate members would be safer...
-            if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
                 return true;
 
             return false;
