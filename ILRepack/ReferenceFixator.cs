@@ -253,6 +253,7 @@ namespace ILRepacking
             FixReferences(meth.CustomAttributes, meth);
 
             meth.ReturnType = Fix(meth.ReturnType, meth);
+            FixReferences(meth.MethodReturnType.CustomAttributes, meth);
             if (meth.HasBody)
                 FixReferences(meth.Body, meth);
         }
