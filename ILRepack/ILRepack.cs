@@ -946,7 +946,7 @@ namespace ILRepacking
             foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
             {
                 string name = z.Name;
-                if (!MergedAssemblies.Any(y => y.Name.Name == name) && TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name))
+                if (!MergedAssemblies.Any(y => y.Name.Name == name) && TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
                 {
                     // TODO: fix .NET runtime references?
                     // - to target a specific runtime version or
