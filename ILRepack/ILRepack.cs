@@ -13,6 +13,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Cecil.PE;
+using Mono.Collections.Generic;
+using Mono.Unix.Native;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,14 +30,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security;
 using System.Text.RegularExpressions;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using Mono.Cecil.PE;
-using Mono.Collections.Generic;
-using Mono.Unix.Native;
+using System.Threading;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
-using System.Threading;
 
 namespace ILRepacking
 {
@@ -55,7 +56,7 @@ namespace ILRepacking
         {
             if (typeName.EndsWith(".*"))
             {
-                allowedDuplicateNameSpaces.Add(typeName.Substring(0, typeName.Length-2));
+                allowedDuplicateNameSpaces.Add(typeName.Substring(0, typeName.Length - 2));
             }
             else
             {
@@ -238,8 +239,8 @@ namespace ILRepacking
                 repack.CloseLogFile();
                 if (repack.PauseBeforeExit)
                 {
-                  Console.WriteLine("Press Any Key To Continue");
-                  Console.ReadKey(true);            
+                    Console.WriteLine("Press Any Key To Continue");
+                    Console.ReadKey(true);
                 }
             }
             return rc;
@@ -376,11 +377,11 @@ namespace ILRepacking
             Console.WriteLine(@" - /internalize       sets all types but the ones from the first assembly 'internal'");
             Console.WriteLine(@" - /delaysign         sets the key, but don't sign the assembly");
             Console.WriteLine(@" - /noRepackRes       do not add the resource 'ILRepack.List with all merged assembly names");
-            
+
             Console.WriteLine(@" - /usefullpublickeyforreferences - NOT IMPLEMENTED");
             Console.WriteLine(@" - /align             - NOT IMPLEMENTED");
             Console.WriteLine(@" - /closed            - NOT IMPLEMENTED");
-            
+
             Console.WriteLine(@" - /allowdup:Type     allows the specified type for being duplicated in input assemblies");
             Console.WriteLine(@" - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)");
             Console.WriteLine(@" - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)");
@@ -434,10 +435,11 @@ namespace ILRepacking
                     }
                     if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                         throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
-                    
+
                     if (rp.ReadSymbols)
                         mergedDebugInfo = true;
-                    if (PrimaryAssemblyDefinition == null) {
+                    if (PrimaryAssemblyDefinition == null)
+                    {
                         PrimaryAssemblyDefinition = mergeAsm;
                         PrimaryAssemblyFile = assembly;
                     }
@@ -535,12 +537,12 @@ namespace ILRepacking
 
         private IEnumerable<string> ResolveFile(string s)
         {
-            if (!AllowWildCards || s.IndexOfAny(new []{'*', '?'}) == -1)
-                return new []{s};
+            if (!AllowWildCards || s.IndexOfAny(new[] { '*', '?' }) == -1)
+                return new[] { s };
             if (Path.GetDirectoryName(s).IndexOfAny(new[] { '*', '?' }) != -1)
                 throw new Exception("Invalid path: " + s);
             string dir = Path.GetDirectoryName(s);
-            if(String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
+            if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
             return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
         }
 
@@ -623,15 +625,15 @@ namespace ILRepacking
             InitializeLogFile();
             ParseProperties();
             // Read input assemblies only after all properties are set.
-            if (Parallel)  
+            if (Parallel)
                 ReadInputAssembliesParallel();
             else
                 ReadInputAssemblies();
             globalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
-            var asmNames = KeepOtherVersionReferences ? 
-              MergedAssemblies.Select(x => x.FullName) : 
+            var asmNames = KeepOtherVersionReferences ?
+              MergedAssemblies.Select(x => x.FullName) :
               MergedAssemblies.Select(x => x.Name.Name);
-          
+
             mergeAsmNames = new HashSet<string>(asmNames);
             platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
             mappingHandler = new MappingHandler();
@@ -751,7 +753,8 @@ namespace ILRepacking
             TargetAssemblyDefinition.Write(OutputFile, parameters);
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly
-            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) {
+            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
+            {
                 Stat stat;
                 INFO("Copying permissions from " + PrimaryAssemblyFile);
                 Syscall.stat(PrimaryAssemblyFile, out stat);
@@ -762,9 +765,9 @@ namespace ILRepacking
 
             // nice to have, merge .config (assembly configuration file) & .xml (assembly documentation)
             ConfigMerger.Process(this);
-            if(XmlDocumentation)
+            if (XmlDocumentation)
                 DocumentationMerger.Process(this);
-            
+
             // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly
             AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver });
@@ -815,7 +818,7 @@ namespace ILRepacking
                     Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
                     exist.Data = newData;
                 }
-                else if (!isVersionInfoRes(parents, exist)) 
+                else if (!isVersionInfoRes(parents, exist))
                 {
                     WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
@@ -845,12 +848,12 @@ namespace ILRepacking
         {
             if (CopyAttributes)
             {
-                CleanupAttributes(typeof (CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
-                CleanupAttributes(typeof (SecurityTransparentAttribute).FullName, null);
-                CleanupAttributes(typeof (SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes(typeof (AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+                CleanupAttributes(typeof(CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
+                CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, null);
+                CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+                CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
                 CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
-                RemoveAttributes(typeof (InternalsVisibleToAttribute).FullName, ca =>
+                RemoveAttributes(typeof(InternalsVisibleToAttribute).FullName, ca =>
                                                                                 {
                                                                                     String name = (string)ca.ConstructorArguments[0].Value;
                                                                                     int idx;
@@ -860,9 +863,9 @@ namespace ILRepacking
                                                                                     }
                                                                                     return MergedAssemblies.Any(x => x.Name.Name == name);
                                                                                 });
-                RemoveAttributes(typeof (AssemblyDelaySignAttribute).FullName, null);
-                RemoveAttributes(typeof (AssemblyKeyFileAttribute).FullName, null);
-                RemoveAttributes(typeof (AssemblyKeyNameAttribute).FullName, null);
+                RemoveAttributes(typeof(AssemblyDelaySignAttribute).FullName, null);
+                RemoveAttributes(typeof(AssemblyKeyFileAttribute).FullName, null);
+                RemoveAttributes(typeof(AssemblyKeyNameAttribute).FullName, null);
                 foreach (var ass in MergedAssemblies)
                 {
                     CopyCustomAttributes(ass.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, AllowMultipleAssemblyLevelAttributes, null);
@@ -1020,7 +1023,7 @@ namespace ILRepacking
                                 // TODO ? (or not)
                                 break;
                             case ResourceType.Embedded:
-                                var er = (EmbeddedResource) r;
+                                var er = (EmbeddedResource)r;
                                 if (er.Name.EndsWith(".resources"))
                                 {
                                     nr = FixResxResource(er);
@@ -1127,8 +1130,8 @@ namespace ILRepacking
 
         private Resource FixResxResource(EmbeddedResource er)
         {
-            MemoryStream stream = (MemoryStream) er.GetResourceStream();
-            var output = new MemoryStream((int) stream.Length);
+            MemoryStream stream = (MemoryStream)er.GetResourceStream();
+            var output = new MemoryStream((int)stream.Length);
             var rw = new ResourceWriter(output);
             using (var rr = new ResReader(stream))
             {
@@ -1136,7 +1139,7 @@ namespace ILRepacking
                 {
                     if (res.type == "ResourceTypeCode.String" || res.type.StartsWith("System.String"))
                     {
-                        string content = (string) rr.GetObject(res);
+                        string content = (string)rr.GetObject(res);
                         content = FixStr(content);
                         rw.AddResource(res.name, content);
                     }
@@ -1178,6 +1181,28 @@ namespace ILRepacking
                 {
                     // TODO no public key token !
                     return td.FullName + ", " + TargetAssemblyDefinition.FullName;
+                }
+            }
+            return content;
+        }
+
+        /// <summary>
+        /// Fix assembly reference in attribute
+        /// </summary>
+        /// <param name="content">string to search in</param>
+        /// <returns>new string with references fixed</returns>
+        internal string FixReferenceInAttribute(string content)
+        {
+            // TODO: this method is quite related to IKVM, it would be better to refactor ILRepack to be able to use 'plugin'
+            if (String.IsNullOrEmpty(content) || content.Length > 512 || content.IndexOf(", ") == -1 || content.StartsWith("System."))
+                return content;
+            var match = TYPE_RE.Match(content);
+            if (match.Success)
+            {
+                string type = match.Groups[1].Value;
+                if (MergedAssemblies.Any(x => x.Name.Name == match.Groups[2].Value))
+                {
+                    return type + ", " + TargetAssemblyDefinition.FullName.Replace('.', '/') + ";";
                 }
             }
             return content;
@@ -1293,7 +1318,7 @@ namespace ILRepacking
         {
             ParameterDefinition pd = new ParameterDefinition(param.Name, param.Attributes, Import(param.ParameterType, context));
             if (param.HasConstant)
-              pd.Constant = param.Constant;
+                pd.Constant = param.Constant;
             if (param.HasMarshalInfo)
                 pd.MarshalInfo = param.MarshalInfo;
             if (param.HasCustomAttributes)
@@ -1558,7 +1583,7 @@ namespace ILRepacking
                     // "Item" property is used to implement Indexer operators
                     // It may be specified more than one, with extra arguments to get/set methods
                     // Note than one may also define a standard "Item" property, in which case he won't be able to define Indexers
-                    
+
                     // Here we try to prevent duplicate indexers, but allow to merge non-duplicated ones (e.g. this[int] & this[string] )
                     var args = ExtractIndexerParameters(prop);
                     if (others.Any(x => reflectionHelper.AreSame(args, ExtractIndexerParameters(x))))
@@ -1597,7 +1622,7 @@ namespace ILRepacking
             if (prop.GetMethod != null)
                 return prop.GetMethod.Parameters;
             if (prop.SetMethod != null)
-                return prop.SetMethod.Parameters.ToList().GetRange(0, prop.SetMethod.Parameters.Count-1);
+                return prop.SetMethod.Parameters.ToList().GetRange(0, prop.SetMethod.Parameters.Count - 1);
             return null;
         }
 
@@ -1612,10 +1637,10 @@ namespace ILRepacking
         private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
         {
             // ignore duplicate method for merged duplicated types
-            if (!typeJustCreated && 
+            if (!typeJustCreated &&
                 type.Methods.Count > 0 &&
-                type.Methods.Any(x => 
-                  (x.Name == meth.Name) && 
+                type.Methods.Any(x =>
+                  (x.Name == meth.Name) &&
                   (x.Parameters.Count == meth.Parameters.Count) &&
                   (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
             {
@@ -1676,7 +1701,7 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(var.Name, 
+                nb.Variables.Add(new VariableDefinition(var.Name,
                     Import(var.VariableType, parent)));
 
             nb.Instructions.SetCapacity(body.Instructions.Count);
@@ -1690,7 +1715,8 @@ namespace ILRepacking
                 if (instr.OpCode.Code == Code.Calli)
                 {
                     var call_site = (Mono.Cecil.CallSite)instr.Operand;
-                    Mono.Cecil.CallSite ncs = new CallSite(Import(call_site.ReturnType, parent)) {
+                    Mono.Cecil.CallSite ncs = new CallSite(Import(call_site.ReturnType, parent))
+                    {
                         HasThis = call_site.HasThis,
                         ExplicitThis = call_site.ExplicitThis,
                         CallingConvention = call_site.CallingConvention
@@ -1698,78 +1724,78 @@ namespace ILRepacking
                     ni = Instruction.Create(instr.OpCode, ncs);
                 }
                 else switch (instr.OpCode.OperandType)
-                {
-                    case OperandType.InlineArg:
-                    case OperandType.ShortInlineArg:
-                        if (instr.Operand == body.ThisParameter)
-                        {
-                            ni = Instruction.Create(instr.OpCode, nb.ThisParameter);
-                        }
-                        else
-                        {
-                            int param = body.Method.Parameters.IndexOf((ParameterDefinition)instr.Operand);
-                            ni = Instruction.Create(instr.OpCode, parent.Parameters[param]);
-                        }
-                        break;
-                    case OperandType.InlineVar:
-                    case OperandType.ShortInlineVar:
-                        int var = body.Variables.IndexOf((VariableDefinition)instr.Operand);
-                        ni = Instruction.Create(instr.OpCode, nb.Variables[var]);
-                        break;
-                    case OperandType.InlineField:
-                        ni = Instruction.Create(instr.OpCode, Import((FieldReference)instr.Operand, parent));
-                        break;
-                    case OperandType.InlineMethod:
-                        ni = Instruction.Create(instr.OpCode, Import((MethodReference)instr.Operand, parent));
-                        FixAspNetOffset(nb.Instructions, (MethodReference)instr.Operand, parent);
-                        break;
-                    case OperandType.InlineType:
-                        ni = Instruction.Create(instr.OpCode, Import((TypeReference)instr.Operand, parent));
-                        break;
-                    case OperandType.InlineTok:
-                        if (instr.Operand is TypeReference)
-                            ni = Instruction.Create(instr.OpCode, Import((TypeReference)instr.Operand, parent));
-                        else if (instr.Operand is FieldReference)
+                    {
+                        case OperandType.InlineArg:
+                        case OperandType.ShortInlineArg:
+                            if (instr.Operand == body.ThisParameter)
+                            {
+                                ni = Instruction.Create(instr.OpCode, nb.ThisParameter);
+                            }
+                            else
+                            {
+                                int param = body.Method.Parameters.IndexOf((ParameterDefinition)instr.Operand);
+                                ni = Instruction.Create(instr.OpCode, parent.Parameters[param]);
+                            }
+                            break;
+                        case OperandType.InlineVar:
+                        case OperandType.ShortInlineVar:
+                            int var = body.Variables.IndexOf((VariableDefinition)instr.Operand);
+                            ni = Instruction.Create(instr.OpCode, nb.Variables[var]);
+                            break;
+                        case OperandType.InlineField:
                             ni = Instruction.Create(instr.OpCode, Import((FieldReference)instr.Operand, parent));
-                        else if (instr.Operand is MethodReference)
+                            break;
+                        case OperandType.InlineMethod:
                             ni = Instruction.Create(instr.OpCode, Import((MethodReference)instr.Operand, parent));
-                        else
+                            FixAspNetOffset(nb.Instructions, (MethodReference)instr.Operand, parent);
+                            break;
+                        case OperandType.InlineType:
+                            ni = Instruction.Create(instr.OpCode, Import((TypeReference)instr.Operand, parent));
+                            break;
+                        case OperandType.InlineTok:
+                            if (instr.Operand is TypeReference)
+                                ni = Instruction.Create(instr.OpCode, Import((TypeReference)instr.Operand, parent));
+                            else if (instr.Operand is FieldReference)
+                                ni = Instruction.Create(instr.OpCode, Import((FieldReference)instr.Operand, parent));
+                            else if (instr.Operand is MethodReference)
+                                ni = Instruction.Create(instr.OpCode, Import((MethodReference)instr.Operand, parent));
+                            else
+                                throw new InvalidOperationException();
+                            break;
+                        case OperandType.ShortInlineBrTarget:
+                        case OperandType.InlineBrTarget:
+                            ni = Instruction.Create(instr.OpCode, (Instruction)instr.Operand); // TODO review
+                            break;
+                        case OperandType.InlineSwitch:
+                            ni = Instruction.Create(instr.OpCode, (Instruction[])instr.Operand); // TODO review
+                            break;
+                        case OperandType.InlineR:
+                            ni = Instruction.Create(instr.OpCode, (double)instr.Operand);
+                            break;
+                        case OperandType.ShortInlineR:
+                            ni = Instruction.Create(instr.OpCode, (float)instr.Operand);
+                            break;
+                        case OperandType.InlineNone:
+                            ni = Instruction.Create(instr.OpCode);
+                            break;
+                        case OperandType.InlineString:
+                            ni = Instruction.Create(instr.OpCode, (string)instr.Operand);
+                            break;
+                        case OperandType.ShortInlineI:
+                            if (instr.OpCode == OpCodes.Ldc_I4_S)
+                                ni = Instruction.Create(instr.OpCode, (sbyte)instr.Operand);
+                            else
+                                ni = Instruction.Create(instr.OpCode, (byte)instr.Operand);
+                            break;
+                        case OperandType.InlineI8:
+                            ni = Instruction.Create(instr.OpCode, (long)instr.Operand);
+                            break;
+                        case OperandType.InlineI:
+                            ni = Instruction.Create(instr.OpCode, (int)instr.Operand);
+                            break;
+                        default:
                             throw new InvalidOperationException();
-                        break;
-                    case OperandType.ShortInlineBrTarget:
-                    case OperandType.InlineBrTarget:
-                        ni = Instruction.Create(instr.OpCode, (Instruction)instr.Operand); // TODO review
-                        break;
-                    case OperandType.InlineSwitch:
-                        ni = Instruction.Create(instr.OpCode, (Instruction[])instr.Operand); // TODO review
-                        break;
-                    case OperandType.InlineR:
-                        ni = Instruction.Create(instr.OpCode, (double)instr.Operand);
-                        break;
-                    case OperandType.ShortInlineR:
-                        ni = Instruction.Create(instr.OpCode, (float)instr.Operand);
-                        break;
-                    case OperandType.InlineNone:
-                        ni = Instruction.Create(instr.OpCode);
-                        break;
-                    case OperandType.InlineString:
-                        ni = Instruction.Create(instr.OpCode, (string)instr.Operand);
-                        break;
-                    case OperandType.ShortInlineI:
-                        if (instr.OpCode == OpCodes.Ldc_I4_S)
-                            ni = Instruction.Create(instr.OpCode, (sbyte)instr.Operand);
-                        else
-                            ni = Instruction.Create(instr.OpCode, (byte)instr.Operand);
-                        break;
-                    case OperandType.InlineI8:
-                        ni = Instruction.Create(instr.OpCode, (long)instr.Operand);
-                        break;
-                    case OperandType.InlineI:
-                        ni = Instruction.Create(instr.OpCode, (int)instr.Operand);
-                        break;
-                    default:
-                        throw new InvalidOperationException();
-                }
+                    }
                 ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
