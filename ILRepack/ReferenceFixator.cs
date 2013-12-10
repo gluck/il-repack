@@ -13,13 +13,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ILRepacking
 {
@@ -28,6 +28,7 @@ namespace ILRepacking
         private readonly ILRepack repack;
         private string targetAssemblyPublicKeyBlobString;
         private readonly HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
+        private bool renameIkvmAttributeReference;
 
         public ReferenceFixator(ILRepack iLRepack)
         {
@@ -81,13 +82,13 @@ namespace ILRepacking
             var t2 = repack.GetMergedTypeFromTypeRef(type);
             if (t2 != null)
                 return t2;
-            
+
             if (type.IsNested)
                 type.DeclaringType = Fix(type.DeclaringType);
 
             if (type.DeclaringType is TypeDefinition)
                 return ((TypeDefinition)type.DeclaringType).NestedTypes.FirstOrDefault(x => x.FullName == type.FullName);
-            
+
             return type;
         }
 
@@ -155,11 +156,13 @@ namespace ILRepacking
         private object FixCustomAttributeValue(object obj)
         {
             if (obj is TypeReference)
-                return Fix((TypeReference) obj);
+                return Fix((TypeReference)obj);
             if (obj is CustomAttributeArgument)
                 return Fix((CustomAttributeArgument)obj);
             if (obj is CustomAttributeArgument[])
                 return ((CustomAttributeArgument[])obj).Select(a => Fix(a)).ToArray();
+            if (renameIkvmAttributeReference && obj is string)
+                return repack.FixReferenceInIkvmAttribute((string)obj);
             return obj;
         }
 
@@ -281,29 +284,29 @@ namespace ILRepacking
                 call_site.ReturnType = Fix(call_site.ReturnType);
             }
             else switch (instr.OpCode.OperandType)
-            {
-                case OperandType.InlineField:
-                    instr.Operand = Fix((FieldReference)instr.Operand);
-                    break;
-                case OperandType.InlineMethod:
-                    instr.Operand = Fix((MethodReference)instr.Operand);
-                    break;
-                case OperandType.InlineType:
-                    instr.Operand = Fix((TypeReference)instr.Operand);
-                    break;
-                case OperandType.InlineTok:
-                    if (instr.Operand is TypeReference)
-                        instr.Operand = Fix((TypeReference)instr.Operand);
-                    else if (instr.Operand is FieldReference)
+                {
+                    case OperandType.InlineField:
                         instr.Operand = Fix((FieldReference)instr.Operand);
-                    else if (instr.Operand is MethodReference)
+                        break;
+                    case OperandType.InlineMethod:
                         instr.Operand = Fix((MethodReference)instr.Operand);
-                    else
-                        throw new InvalidOperationException();
-                    break;
-                default:
-                    break;
-            }
+                        break;
+                    case OperandType.InlineType:
+                        instr.Operand = Fix((TypeReference)instr.Operand);
+                        break;
+                    case OperandType.InlineTok:
+                        if (instr.Operand is TypeReference)
+                            instr.Operand = Fix((TypeReference)instr.Operand);
+                        else if (instr.Operand is FieldReference)
+                            instr.Operand = Fix((FieldReference)instr.Operand);
+                        else if (instr.Operand is MethodReference)
+                            instr.Operand = Fix((MethodReference)instr.Operand);
+                        else
+                            throw new InvalidOperationException();
+                        break;
+                    default:
+                        break;
+                }
         }
 
         internal void FixReferences(Collection<ExportedType> exportedTypes)
@@ -315,11 +318,21 @@ namespace ILRepacking
         {
             foreach (CustomAttribute attribute in attributes)
             {
+                renameIkvmAttributeReference = IsAnnotation(attribute.AttributeType.Resolve());
                 attribute.Constructor = Fix(attribute.Constructor);
                 FixReferences(attribute.ConstructorArguments);
                 FixReferences(attribute.Fields);
                 FixReferences(attribute.Properties);
             }
+        }
+
+        private bool IsAnnotation(TypeDefinition typeAttribute)
+        {
+            if (typeAttribute == null)
+                return false;
+            if (typeAttribute.Interfaces.Any(@interface => @interface.FullName == "java.lang.annotation.Annotation"))
+                return true;
+            return typeAttribute.BaseType != null && IsAnnotation(typeAttribute.BaseType.Resolve());
         }
 
         private void FixReferences(Collection<TypeReference> refs)
@@ -563,7 +576,7 @@ namespace ILRepacking
                         // it's a Definition, and in our module
                         MethodDefinition fixedOvDef = (MethodDefinition)fixedOv;
                         if (fixedOvDef.IsVirtual)
-                            Fix((MethodDefinition) fixedOv, meth);
+                            Fix((MethodDefinition)fixedOv, meth);
                     }
                 }
             }
