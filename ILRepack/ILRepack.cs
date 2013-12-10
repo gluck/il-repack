@@ -1849,10 +1849,12 @@ namespace ILRepacking
             }
             else if (!type.IsPublic || internalize)
             {
-                // rename it
-                string other = "<" + Guid.NewGuid() + ">" + type.Name;
-                INFO("Renaming " + type.FullName + " into " + other);
-                nt = CreateType(type, col, internalize, other);
+                // rename the type previously imported.
+                // renaming the new one before import made Cecil throw an exception.
+                string other = "<" + Guid.NewGuid() + ">" + nt.Name;
+                INFO("Renaming " + nt.FullName + " into " + other);
+                nt.Name = other;
+                nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
             else if (UnionMerge)
