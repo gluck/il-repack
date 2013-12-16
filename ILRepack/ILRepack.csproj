@@ -47,6 +47,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Posix">
+      <HintPath>..\packages\Mono.Posix.2.0.0.0\lib\net35\Mono.Posix.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -59,13 +62,6 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Mono.Posix">
-      <Private>True</Private>
-      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Novell\Mono\2.10.9@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
-      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Novell\Mono\2.10.9@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
-      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Novell\Mono\2.10.8@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
-      <HintPath>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Novell\Mono\2.10.8@SdkInstallRoot)\lib\mono\2.0\Mono.Posix.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLine.cs" />
@@ -129,6 +125,9 @@
       <ProductName>Windows Installer 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
