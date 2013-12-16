@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:1.6"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:1.9"
         classpath "com.ullink.gradle:gradle-nuget-plugin:1.1"
     }
 }
@@ -18,7 +18,7 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.22.2'
+version = '1.23.0'
 
 defaultTasks('nugetPack', 'zip')
 
@@ -33,6 +33,7 @@ msbuild {
     
     solutionFile = 'ILRepack.sln'
     configuration = 'Debug'
+    projectName = 'ILRepack'
     inputs.file(project.buildFile)
 }
 
