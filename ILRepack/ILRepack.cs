@@ -1716,6 +1716,8 @@ namespace ILRepacking
                         ExplicitThis = call_site.ExplicitThis,
                         CallingConvention = call_site.CallingConvention
                     };
+                    foreach (ParameterDefinition param in call_site.Parameters)
+                        CloneTo(param, parent, ncs.Parameters);
                     ni = Instruction.Create(instr.OpCode, ncs);
                 }
                 else switch (instr.OpCode.OperandType)
