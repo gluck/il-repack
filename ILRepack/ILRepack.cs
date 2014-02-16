@@ -1716,7 +1716,7 @@ namespace ILRepacking
                 if (instr.OpCode.Code == Code.Calli)
                 {
                     var call_site = (Mono.Cecil.CallSite)instr.Operand;
-                    Mono.Cecil.CallSite ncs = new CallSite(Import(call_site.ReturnType, parent))
+                    Mono.Cecil.CallSite ncs = new Mono.Cecil.CallSite(Import(call_site.ReturnType, parent))
                     {
                         HasThis = call_site.HasThis,
                         ExplicitThis = call_site.ExplicitThis,
