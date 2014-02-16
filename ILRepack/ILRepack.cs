@@ -1673,7 +1673,13 @@ namespace ILRepacking
             CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
-            CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
+            nm.MethodReturnType.Attributes = meth.MethodReturnType.Attributes;
+            if (meth.MethodReturnType.HasConstant)
+                nm.MethodReturnType.Constant = meth.MethodReturnType.Constant;
+            if (meth.MethodReturnType.HasMarshalInfo)
+                nm.MethodReturnType.MarshalInfo = meth.MethodReturnType.MarshalInfo;
+            if (meth.MethodReturnType.HasCustomAttributes)
+                CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
 
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
