@@ -18,9 +18,9 @@ apply plugin:'msbuild'
 apply plugin:'nuget'
 
 archivesBaseName = 'ILRepack'
-version = '1.24.0'
+version = '1.25.0'
 
-defaultTasks('nugetPack', 'zip')
+defaultTasks('nugetPack')
 
 def removeExtension(String path) {
     path.replaceFirst(~/(?<=.)\.[^\.]+$/, '')
@@ -46,13 +46,18 @@ task repack(dependsOn: msbuild) {
         return project.ext.repackList.collect { new File(workingDir, it) }
     }
     ext.repacked = new File(temporaryDir, 'ILRepack.exe')
-    outputs.files([ext.repacked, removeExtension(ext.repacked.path)+'.pdb'])
+    ext.repackedLib = new File(temporaryDir, 'ILRepack.dll')
+    outputs.files([ext.repacked, ext.repackedLib, removeExtension(ext.repacked.path)+'.pdb'])
 }
 
 repack << {
     exec {
         workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/out:'+ext.repacked] + project.ext.repackList
+        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+    }
+    exec {
+        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
     }
 }
 
@@ -69,27 +74,25 @@ bootstrap << {
     }
 }
 
-// target package for upload to github
-task zip(type: Zip) {
-    from repack.outputs.getFiles()
-    archiveName = "${archivesBaseName}_${version}.zip"
+def commonNuspecMetadata(def meta) {
+    meta.version version
+    meta.title 'ILRepack - Open-source alternative to ILMerge'
+    meta.authors 'Francois Valdy'
+    meta.owners 'Francois Valdy'
+    meta.projectUrl('https://github.com/gluck/il-repack')
+    meta.copyright 'Copyright © Francois Valdy 2011-2014'
 }
 
 // nuget package for upload to nuget
 nugetPack {
     nuspec {
         metadata() {
+            commonNuspecMetadata(delegate)
             id archivesBaseName
-            delegate.version version
-            title 'ILRepack - Open-source alternative to ILMerge'
-            authors 'Francois Valdy'
-            owners 'Francois Valdy'
-            projectUrl('https://github.com/gluck/il-repack')
             delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.'''
             requireLicenseAcceptance false
             summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly'
-            copyright 'Copyright © Francois Valdy 2011-2012'
         }
         delegate.files() {
             delegate.file(src: repack.ext.repacked, target: 'tools')
@@ -100,22 +103,18 @@ nugetPack {
 task nugetPackLib(type: com.ullink.NuGetPack) {
     nuspec {
         metadata() {
+            commonNuspecMetadata(delegate)
             id archivesBaseName+'.Lib'
-            delegate.version version
-            title 'ILRepack.Lib - Open-source alternative to ILMerge'
-            authors 'Francois Valdy'
-            owners 'Francois Valdy'
-            projectUrl('https://github.com/gluck/il-repack')
             delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
             
-            This package includes the exe as a library, for use within tools/build projects.'''
+            This package provides a library, for use within tools/build projects.
+            If you need the tool as an executable, this is not the package you're looking for, this one is: http://www.nuget.org/packages/ILRepack/.'''
             requireLicenseAcceptance false
             summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
-            copyright 'Copyright © Francois Valdy 2011-2012'
         }
         delegate.files() {
-            delegate.file(src: repack.ext.repacked, target: 'lib')
+            delegate.file(src: repack.ext.repackedLib, target: 'lib')
         }
     }
 }
