@@ -37,7 +37,7 @@ namespace ILRepacking
 
         private ModuleReference Fix(ModuleReference moduleRef)
         {
-            ModuleReference nmr = repack.TargetAssemblyMainModule.ModuleReferences.First(x => x.Name == moduleRef.Name);
+            ModuleReference nmr = repack.TargetAssemblyMainModule.ModuleReferences.FirstOrDefault(x => x.Name == moduleRef.Name);
             if (nmr == null)
                 throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
             return nmr;
@@ -48,7 +48,7 @@ namespace ILRepacking
             field.DeclaringType = Fix(field.DeclaringType);
             if (field.DeclaringType.IsDefinition && !field.IsDefinition)
             {
-                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.First(x => x.Name == field.Name);
+                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.FirstOrDefault(x => x.Name == field.Name);
                 if (def == null)
                     throw new NullReferenceException("Field \"" + field + "\" not found in type \"" + field.DeclaringType + "\".");
                 return def;
