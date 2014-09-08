@@ -43,6 +43,12 @@ namespace ILRepacking
         {
             foreach (var assemblyDefinition in mergedAssemblies)
             {
+                var path = assemblyDefinition.GetPortableProfileDirectory();
+                if (path != null && Directory.Exists(path))
+                {
+                    AddSearchDirectory(path);
+                }
+
                 base.RegisterAssembly(assemblyDefinition);
             }
         }
@@ -1669,7 +1675,13 @@ namespace ILRepacking
             foreach (MethodReference ov in meth.Overrides)
                 nm.Overrides.Add(Import(ov, nm));
 
-            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
+            try
+            {
+                CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
+            }
+            catch
+            {}
+            
             CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
