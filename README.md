@@ -55,6 +55,16 @@ A console application has been released (can be used as DLL as well), using same
 Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.
 </pre>
 
+How to build
+------------
+
+``` bash
+git clone https://github.com/gluck/il-repack.git
+cd il-repack
+git submodule update --init
+xbuild ILRepack.sln
+```
+
 TODO
 ------
   * Crash-testing
