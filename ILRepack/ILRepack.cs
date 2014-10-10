@@ -1530,13 +1530,20 @@ namespace ILRepacking
                 return type;
 
             reference = platformFixer.FixPlatformVersion(reference);
-
-            if (context == null)
+            try
             {
-                // we come here when importing types used for assembly-level custom attributes
-                return TargetAssemblyMainModule.Import(reference);
+                if (context == null)
+                {
+                    // we come here when importing types used for assembly-level custom attributes
+                    return TargetAssemblyMainModule.Import(reference);
+                }
+                return TargetAssemblyMainModule.Import(reference, context);
             }
-            return TargetAssemblyMainModule.Import(reference, context);
+            catch (ArgumentOutOfRangeException) // working around a bug in Cecil
+            {
+                ERROR ("Problem adding reference: " + reference.FullName);
+                throw;
+            }
         }
 
         private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
