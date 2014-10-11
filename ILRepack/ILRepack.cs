@@ -39,6 +39,8 @@ namespace ILRepacking
 {
     public class RepackAssemblyResolver : DefaultAssemblyResolver
     {
+        private List<string> paths = new List<string>();
+
         public void RegisterAssemblies(List<AssemblyDefinition> mergedAssemblies)
         {
             foreach (var assemblyDefinition in mergedAssemblies)
@@ -46,11 +48,35 @@ namespace ILRepacking
                 var path = assemblyDefinition.GetPortableProfileDirectory();
                 if (path != null && Directory.Exists(path))
                 {
-                    AddSearchDirectory(path);
+                    paths.Add(path);
                 }
 
                 base.RegisterAssembly(assemblyDefinition);
             }
+        }
+
+        public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+        {
+            AssemblyDefinition result;
+            if (name.IsRetargetable)
+            {
+                foreach (var path in paths)
+                {
+                    AddSearchDirectory(path);
+                }
+
+                result = base.Resolve(name, parameters);
+                foreach (var path in paths)
+                {
+                    RemoveSearchDirectory(path);
+                }
+            }
+            else
+            {
+                result = base.Resolve(name, parameters);
+            }
+
+            return result;
         }
     }
 
@@ -1675,12 +1701,7 @@ namespace ILRepacking
             foreach (MethodReference ov in meth.Overrides)
                 nm.Overrides.Add(Import(ov, nm));
 
-            try
-            {
-                CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
-            }
-            catch
-            {}
+            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
             
             CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
