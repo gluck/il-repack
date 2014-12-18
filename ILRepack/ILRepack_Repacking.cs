@@ -1129,8 +1129,8 @@ namespace ILRepacking
         {
             // this can be changed, but I left some bits out so both methods shouldn't be completely identical
             return a.Name == b.Name && ParamsMatch(a.Parameters, b.Parameters) &&
-                (a.Attributes ^ (a.Attributes & (MethodAttributes.HideBySig | MethodAttributes.CompilerControlled)))
-                    == (b.Attributes ^ (b.Attributes & (MethodAttributes.HideBySig | MethodAttributes.CompilerControlled))) &&
+                (a.Attributes ^ (a.Attributes & MethodAttributes.HideBySig))
+                    == (b.Attributes ^ (b.Attributes & MethodAttributes.HideBySig)) &&
                 //a.CallingConvention == b.CallingConvention && //AttrsMatch(a.CustomAttributes, b.CustomAttributes) &&
                 a.FullName == b.FullName && GenericParamsMatch(a.GenericParameters, b.GenericParameters) &&
                 (a.ImplAttributes ^ (a.ImplAttributes & MethodImplAttributes.ForwardRef))
