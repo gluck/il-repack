@@ -24,3 +24,5 @@ glob:_UpgradeReport_Files
 glob:UpgradeLog*.XML
 glob:*.orig
 glob:Backup
+/ILRepack.sln.ide
+/testasm

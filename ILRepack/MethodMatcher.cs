@@ -41,6 +41,21 @@ namespace ILRepacking
             return null;
         }
 
+        static MethodDefinition SelectMethod(MethodDefinition a, MethodDefinition b)
+        {
+            bool
+                aFRef = (a.ImplAttributes & MethodImplAttributes.ForwardRef) != 0,
+                bFRef = (b.ImplAttributes & MethodImplAttributes.ForwardRef) != 0;
+
+            if (aFRef != bFRef)
+                if (aFRef)
+                    return b;
+                if (bFRef)
+                    return a;
+
+            return a; // ...?
+        }
+
         static bool MethodMatch(MethodDefinition candidate, MethodDefinition method)
         {
             if (!candidate.IsVirtual)
