@@ -175,6 +175,9 @@ namespace ILRepacking
             if (XmlDocumentation)
                 DocumentationMerger.Process(this);
 
+            if (Assembly.GetEntryAssembly() != Assembly.GetExecutingAssembly()) // used as a library
+                GC.Collect(); // see line 1124
+
             // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly
             AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver });
@@ -1042,116 +1045,18 @@ namespace ILRepacking
             return parameters != null && parameters.Count > 0;
         }
 
-        // these might already exist somewhere, but I'm too lazy to check
-        static bool ParamsMatch(Collection<ParameterDefinition> a, Collection<ParameterDefinition> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (a[i].Attributes != b[i].Attributes || !AttrsMatch(a[i].CustomAttributes, b[i].CustomAttributes) ||
-                        !TypesMatch(a[i].ParameterType, b[i].ParameterType))
-                    return false;
-
-            return true;
-        }
-        static bool AttrArgsMatch(Collection<CustomAttributeArgument> a, Collection<CustomAttributeArgument> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (!TypesMatch(a[i].Type, b[i].Type) || a[i].Value != b[i].Value) // constants only, this should be OK
-                    return false;
-
-            return true;
-        }
-        static bool AttrsMatch(Collection<CustomAttribute> a, Collection<CustomAttribute> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (!TypesMatch(a[i].AttributeType, b[i].AttributeType) || a[i].Constructor.FullName != b[i].Constructor.FullName /* meh */ ||
-                        !AttrArgsMatch(a[i].ConstructorArguments, b[i].ConstructorArguments))
-                    return false;
-
-            return true;
-        }
-        static bool GenericParamsMatch(Collection<GenericParameter> a, Collection<GenericParameter> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (a[i].Attributes != b[i].Attributes || !GenericParamsMatch(a[i].GenericParameters, b[i].GenericParameters) ||
-                        /*AttrsMatch(a[i].CustomAttributes, b[i].CustomAttributes)*/ a[i].Type != b[i].Type)
-                    return false;
-
-            return true;
-        }
-        static bool TypesMatch(TypeReference a, TypeReference b)
-        {
-            return a == null && b == null || (a.FullName == b.FullName && GenericParamsMatch(a.GenericParameters, b.GenericParameters) && TypesMatch(a.DeclaringType, b.DeclaringType)
-                && a.IsArray == b.IsArray && a.IsByReference == b.IsByReference && a.IsDefinition == b.IsDefinition && a.IsFunctionPointer == b.IsFunctionPointer &&
-                a.IsGenericInstance == b.IsGenericInstance && a.IsGenericParameter == b.IsGenericParameter && a.IsOptionalModifier == b.IsOptionalModifier &&
-                a.IsPinned == b.IsPinned && a.IsPointer == b.IsPointer && a.IsPrimitive == b.IsPrimitive && a.IsRequiredModifier == b.IsRequiredModifier &&
-                a.IsSentinel == b.IsSentinel && a.IsValueType == b.IsValueType);
-        }
-        static bool SecurityAttrsMatch(Collection<SecurityAttribute> a, Collection<SecurityAttribute> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (!TypesMatch(a[i].AttributeType, b[i].AttributeType))
-                    return false;
-
-            return true;
-        }
-        static bool SecurityDeclarationsMatch(Collection<SecurityDeclaration> a, Collection<SecurityDeclaration> b)
-        {
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; i++)
-                if (a[i].Action != b[i].Action || !SecurityAttrsMatch(a[i].SecurityAttributes, b[i].SecurityAttributes))
-                    return false;
-
-            return true;
-        }
-        static bool PInvokeInfoMatches(PInvokeInfo a, PInvokeInfo b)
-        {
-            return a == null && b == null || (a.Attributes == b.Attributes && a.EntryPoint == b.EntryPoint && a.SupportsLastError == b.SupportsLastError);
-        }
-
-        static bool MethodsMatch(MethodDefinition a, MethodDefinition b)
-        {
-            // this can be changed, but I left some bits out so both methods shouldn't be completely identical
-            return a.Name == b.Name && ParamsMatch(a.Parameters, b.Parameters) &&
-                (a.Attributes ^ (a.Attributes & MethodAttributes.HideBySig))
-                    == (b.Attributes ^ (b.Attributes & MethodAttributes.HideBySig)) &&
-                //a.CallingConvention == b.CallingConvention && //AttrsMatch(a.CustomAttributes, b.CustomAttributes) &&
-                a.FullName == b.FullName && GenericParamsMatch(a.GenericParameters, b.GenericParameters) &&
-                (a.ImplAttributes ^ (a.ImplAttributes & MethodImplAttributes.ForwardRef))
-                    == (b.ImplAttributes ^ (b.ImplAttributes & MethodImplAttributes.ForwardRef)) && // see CloneTo(MethodDefinition, TypeDefinition, bool)
-                a.IsConstructor == b.IsConstructor && a.SemanticsAttributes == b.SemanticsAttributes &&
-                TypesMatch(a.ReturnType, b.ReturnType) //&& //SecurityDeclarationsMatch(a.SecurityDeclarations, b.SecurityDeclarations) &&
-                ;//PInvokeInfoMatches(a.PInvokeInfo, b.PInvokeInfo);
-        }
-
-        private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
+        private void CloneTo(MethodDefinition mtd, TypeDefinition type, bool typeJustCreated)
         {
             if (!typeJustCreated && type.Methods.Count > 0)
             {
-                MethodDefinition md = type.Methods.FirstOrDefault(m => MethodsMatch(m, meth));
+                MethodDefinition md = type.Methods.FirstOrDefault(m => MemberComparer.MethodsMatch(m, mtd));
 
                 if (md != null)
                 {
                     // choose the correct method if one of the methods has the ForwardRef attr.
                     bool
-                        aFRef = (md  .ImplAttributes & MethodImplAttributes.ForwardRef) != 0,
-                        bFRef = (meth.ImplAttributes & MethodImplAttributes.ForwardRef) != 0;
+                        aFRef = (md .ImplAttributes & MethodImplAttributes.ForwardRef) != 0,
+                        bFRef = (mtd.ImplAttributes & MethodImplAttributes.ForwardRef) != 0;
 
                     if (aFRef != bFRef)
                     {
@@ -1159,82 +1064,70 @@ namespace ILRepacking
                         {
                             VERBOSE("Replacing ForwardRef method " + md.FullName);
                             type.Methods.Remove(md);
-                            // meth will be added later // this sounds weird, why did you name it 'meth'?
+                            // mtd will be added later
                         }
                         else if (bFRef)
                         {
-                            IGNOREDUP("method", meth);
+                            IGNOREDUP("method", mtd);
                             return;
                         }
                     }
                     else
                     {
-                        IGNOREDUP("method", meth);
+                        IGNOREDUP("method", mtd);
                         return;
                     }
                 }
             }
 
-            //// ignore duplicate method for merged duplicated types
-            //if (!typeJustCreated &&
-            //    type.Methods.Count > 0 &&
-            //    type.Methods.Any(x =>
-            //      (x.Name == meth.Name) &&
-            //      (x.Parameters.Count == meth.Parameters.Count) &&
-            //      (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
-            //{
-            //    IGNOREDUP("method", meth);
-            //    return;
-            //}
-
             // use void placeholder as we'll do the return type import later on (after generic parameters)
-            MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, TargetAssemblyMainModule.TypeSystem.Void);
-            nm.ImplAttributes = meth.ImplAttributes;
+            MethodDefinition nm = new MethodDefinition(mtd.Name, mtd.Attributes, TargetAssemblyMainModule.TypeSystem.Void);
+            nm.ImplAttributes = mtd.ImplAttributes;
 
             type.Methods.Add(nm);
 
-            CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
+            CopyGenericParameters(mtd.GenericParameters, nm.GenericParameters, nm);
 
-            if (meth.HasPInvokeInfo)
+            if (mtd.HasPInvokeInfo)
             {
-                if (meth.PInvokeInfo == null)
+                if (mtd.PInvokeInfo == null)
                 {
                     // Even if this was allowed, I'm not sure it'd work out
-                    //nm.RVA = meth.RVA;
+                    //nm.RVA = mtd.RVA;
                 }
                 else
                 {
-                    nm.PInvokeInfo = new PInvokeInfo(meth.PInvokeInfo.Attributes, meth.PInvokeInfo.EntryPoint, meth.PInvokeInfo.Module);
+                    nm.PInvokeInfo = new PInvokeInfo(mtd.PInvokeInfo.Attributes, mtd.PInvokeInfo.EntryPoint, mtd.PInvokeInfo.Module);
                 }
             }
 
-            foreach (ParameterDefinition param in meth.Parameters)
+            foreach (ParameterDefinition param in mtd.Parameters)
                 CloneTo(param, nm, nm.Parameters);
 
-            foreach (MethodReference ov in meth.Overrides)
+            foreach (MethodReference ov in mtd.Overrides)
                 nm.Overrides.Add(Import(ov, nm));
 
-            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
-            CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
+            CopySecurityDeclarations(mtd.SecurityDeclarations, nm.SecurityDeclarations, nm);
+            CopyCustomAttributes(mtd.CustomAttributes, nm.CustomAttributes, nm);
 
-            nm.ReturnType = Import(meth.ReturnType, nm);
-            nm.MethodReturnType.Attributes = meth.MethodReturnType.Attributes;
-            if (meth.MethodReturnType.HasConstant)
-                nm.MethodReturnType.Constant = meth.MethodReturnType.Constant;
-            if (meth.MethodReturnType.HasMarshalInfo)
-                nm.MethodReturnType.MarshalInfo = meth.MethodReturnType.MarshalInfo;
-            if (meth.MethodReturnType.HasCustomAttributes)
-                CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
+            nm.ReturnType = Import(mtd.ReturnType, nm);
+            nm.MethodReturnType.Attributes = mtd.MethodReturnType.Attributes;
+            if (mtd.MethodReturnType.HasConstant)
+                nm.MethodReturnType.Constant = mtd.MethodReturnType.Constant;
+            if (mtd.MethodReturnType.HasMarshalInfo)
+                nm.MethodReturnType.MarshalInfo = mtd.MethodReturnType.MarshalInfo;
+            if (mtd.MethodReturnType.HasCustomAttributes)
+                CopyCustomAttributes(mtd.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
 
-            if (meth.HasBody)
-                CloneTo(meth.Body, nm);
-            meth.Body = null; // frees memory
+            if (mtd.HasBody)
+                CloneTo(mtd.Body, nm);
+            mtd.Body = null; // frees memory // if the GC wants to
 
-            nm.IsAddOn = meth.IsAddOn;
-            nm.IsRemoveOn = meth.IsRemoveOn;
-            nm.IsGetter = meth.IsGetter;
-            nm.IsSetter = meth.IsSetter;
-            nm.CallingConvention = meth.CallingConvention;
+            nm.IsAddOn = mtd.IsAddOn;
+            nm.IsRemoveOn = mtd.IsRemoveOn;
+            nm.IsGetter = mtd.IsGetter;
+            nm.IsSetter = mtd.IsSetter;
+            nm.CallingConvention = mtd.CallingConvention;
         }
 
         private void CloneTo(MethodBody body, MethodDefinition parent)
