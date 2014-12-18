@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/hq1jqalcxe6d18rm?svg=true)](https://ci.appveyor.com/project/gluck/il-repack)
+
 Introduction
 ============
 
