@@ -70,7 +70,6 @@ namespace ILRepacking
             return TypeMatch(a.ElementType, b.ElementType);
         }
         
-
         static bool TypeMatch(TypeSpecification a, TypeSpecification b)
         {
             if (a.IsGenericInstance)

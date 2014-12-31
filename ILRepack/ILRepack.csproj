@@ -68,9 +68,11 @@
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
+    <Compile Include="ILRepack_Repacking.cs" />
     <Compile Include="LineNumberWriter.cs" />
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
+    <Compile Include="MemberComparer.cs" />
     <Compile Include="MethodMatcher.cs" />
     <Compile Include="PermissionsetHelper.cs" />
     <Compile Include="PlatformFixer.cs" />
@@ -127,6 +129,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="ILRepack.snk" />
     <None Include="packages.config" />
   </ItemGroup>
