@@ -144,7 +144,6 @@ namespace ILRepacking
         private static Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
 
         private PlatformFixer platformFixer;
-        private HashSet<string> mergeAsmNames;
         private MappingHandler mappingHandler;
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
@@ -631,11 +630,7 @@ namespace ILRepacking
             else
                 ReadInputAssemblies();
             globalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
-            var asmNames = KeepOtherVersionReferences ?
-              MergedAssemblies.Select(x => x.FullName) :
-              MergedAssemblies.Select(x => x.Name.Name);
 
-            mergeAsmNames = new HashSet<string>(asmNames);
             platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
             mappingHandler = new MappingHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
