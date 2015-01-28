@@ -1152,8 +1152,6 @@ namespace ILRepacking
         }
 
         // Real stuff below //
-
-
         // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
         // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
         //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
@@ -1212,96 +1210,6 @@ namespace ILRepacking
                 CopyCustomAttributes(param.CustomAttributes, pd.CustomAttributes, context);
             col.Add(pd);
         }
-        internal void IGNOREDUP(string ignoredType, object ignoredObject)
-        {
-            // TODO: put on a list and log a summary
-            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
-        }
-
-        private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
-        {
-            return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
-        }
-
-        private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
-        {
-            if (obj is TypeReference)
-                return Import((TypeReference)obj, context);
-            if (obj is CustomAttributeArgument)
-                return Copy((CustomAttributeArgument)obj, context);
-            if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
-            return obj;
-        }
-
-        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
-        {
-            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
-        }
-
-        /// <summary>
-        /// Clones a collection of SecurityDeclarations
-        /// </summary>
-        private void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
-        {
-            foreach (SecurityDeclaration sec in input)
-            {
-                SecurityDeclaration newSec = null;
-                if (PermissionsetHelper.IsXmlPermissionSet(sec))
-                {
-                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
-                }
-                if (newSec == null)
-                {
-                    newSec = new SecurityDeclaration(sec.Action);
-                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
-                    {
-                        SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
-                        if (sa.HasFields)
-                        {
-                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
-                            {
-                                newSa.Fields.Add(Copy(cana, context));
-                            }
-                        }
-                        if (sa.HasProperties)
-                        {
-                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
-                            {
-                                newSa.Properties.Add(Copy(cana, context));
-                            }
-                        }
-                        newSec.SecurityAttributes.Add(newSa);
-                    }
-                }
-                output.Add(newSec);
-            }
-        }
-
-        // helper
-        private static void Copy<T>(Collection<T> input, Collection<T> output, Action<T, T> action)
-        {
-            if (input.Count != output.Count)
-                throw new InvalidOperationException();
-            for (int i = 0; i < input.Count; i++)
-            {
-                action.Invoke(input[i], output[i]);
-            }
-        }
-
-        private void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
-        {
-            foreach (GenericParameter gp in input)
-            {
-                GenericParameter ngp = new GenericParameter(gp.Name, nt);
-
-                ngp.Attributes = gp.Attributes;
-                output.Add(ngp);
-            }
-            // delay copy to ensure all generics parameters are already present
-            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
-            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
-        }
 
         private void CloneTo(EventDefinition evt, TypeDefinition nt, Collection<EventDefinition> col)
         {
@@ -1331,139 +1239,6 @@ namespace ILRepacking
             }
 
             CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
-        }
-
-        private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
-        {
-            var ret = reflectionHelper.FindMethodDefinitionInType(nt, methodDefinition);
-            if (ret == null)
-            {
-                Logger.WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
-            }
-            return ret;
-        }
-
-        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
-        {
-            CopyCustomAttributes(input, output, true, context);
-        }
-
-        private CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
-        {
-            CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
-            foreach (var arg in ca.ConstructorArguments)
-                newCa.ConstructorArguments.Add(Copy(arg, context));
-            foreach (var arg in ca.Fields)
-                newCa.Fields.Add(Copy(arg, context));
-            foreach (var arg in ca.Properties)
-                newCa.Properties.Add(Copy(arg, context));
-            return newCa;
-        }
-
-        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
-        {
-            foreach (CustomAttribute ca in input)
-            {
-                var caType = ca.AttributeType;
-                var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
-                if (similarAttributes.Count != 0)
-                {
-                    if (!allowMultiple)
-                        continue;
-                    if (!CustomAttributeTypeAllowsMultiple(caType))
-                        continue;
-                    if (similarAttributes.Any(x =>
-                            reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
-                            reflectionHelper.AreSame(x.Fields, ca.Fields) &&
-                            reflectionHelper.AreSame(x.Properties, ca.Properties)
-                        ))
-                        continue;
-                }
-                output.Add(Copy(ca, context));
-            }
-        }
-
-        private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
-        {
-            if (type.FullName == "IKVM.Attributes.JavaModuleAttribute" || type.FullName == "IKVM.Attributes.PackageListAttribute")
-            {
-                // IKVM module attributes, although they don't allow multiple, IKVM supports the attribute being specified multiple times
-                return true;
-            }
-            TypeDefinition typeDef = type.Resolve();
-            if (typeDef != null)
-            {
-                var ca = typeDef.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.AttributeUsageAttribute");
-                if (ca != null)
-                {
-                    var prop = ca.Properties.FirstOrDefault(y => y.Name == "AllowMultiple");
-                    if (prop.Argument.Value is bool)
-                    {
-                        return (bool)prop.Argument.Value;
-                    }
-                }
-            }
-            // default is false
-            return false;
-        }
-
-        private void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
-        {
-            foreach (TypeReference ta in input)
-            {
-                output.Add(Import(ta, context));
-            }
-        }
-
-        public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
-        {
-            return mappingHandler.GetRemappedType(reference);
-        }
-
-        private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
-        {
-            TypeDefinition type = GetMergedTypeFromTypeRef(reference);
-            if (type != null)
-                return type;
-
-            reference = platformFixer.FixPlatformVersion(reference);
-            try
-            {
-                if (context == null)
-                {
-                    // we come here when importing types used for assembly-level custom attributes
-                    return TargetAssemblyMainModule.Import(reference);
-                }
-                return TargetAssemblyMainModule.Import(reference, context);
-            }
-            catch (ArgumentOutOfRangeException) // working around a bug in Cecil
-            {
-                Logger.ERROR ("Problem adding reference: " + reference.FullName);
-                throw;
-            }
-        }
-
-        private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
-        {
-            FieldReference importReference = platformFixer.FixPlatformVersion(reference);
-
-            return TargetAssemblyMainModule.Import(importReference, context);
-        }
-
-        private MethodReference Import(MethodReference reference)
-        {
-            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
-            return TargetAssemblyMainModule.Import(importReference);
-        }
-
-        private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
-        {
-            // If this is a Method/TypeDefinition, it will be corrected to a definition again later
-
-            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
-
-            return TargetAssemblyMainModule.Import(importReference, context);
-
         }
 
         private void CloneTo(PropertyDefinition prop, TypeDefinition nt, Collection<PropertyDefinition> col)
@@ -1514,23 +1289,6 @@ namespace ILRepacking
             }
 
             CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
-        }
-
-        private static IList<ParameterDefinition> ExtractIndexerParameters(PropertyDefinition prop)
-        {
-            if (prop.GetMethod != null)
-                return prop.GetMethod.Parameters;
-            if (prop.SetMethod != null)
-                return prop.SetMethod.Parameters.ToList().GetRange(0, prop.SetMethod.Parameters.Count - 1);
-            return null;
-        }
-
-        private static bool IsIndexer(PropertyDefinition prop)
-        {
-            if (prop.Name != "Item")
-                return false;
-            var parameters = ExtractIndexerParameters(prop);
-            return parameters != null && parameters.Count > 0;
         }
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
@@ -1738,6 +1496,249 @@ namespace ILRepacking
 
                 nb.ExceptionHandlers.Add(neh);
             }
+        }
+
+        internal void IGNOREDUP(string ignoredType, object ignoredObject)
+        {
+            // TODO: put on a list and log a summary
+            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
+        }
+
+        private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
+        }
+
+        private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
+        {
+            if (obj is TypeReference)
+                return Import((TypeReference)obj, context);
+            if (obj is CustomAttributeArgument)
+                return Copy((CustomAttributeArgument)obj, context);
+            if (obj is CustomAttributeArgument[])
+                return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
+            return obj;
+        }
+
+        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
+        }
+
+        /// <summary>
+        /// Clones a collection of SecurityDeclarations
+        /// </summary>
+        private void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
+        {
+            foreach (SecurityDeclaration sec in input)
+            {
+                SecurityDeclaration newSec = null;
+                if (PermissionsetHelper.IsXmlPermissionSet(sec))
+                {
+                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
+                }
+                if (newSec == null)
+                {
+                    newSec = new SecurityDeclaration(sec.Action);
+                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
+                    {
+                        SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
+                        if (sa.HasFields)
+                        {
+                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                            {
+                                newSa.Fields.Add(Copy(cana, context));
+                            }
+                        }
+                        if (sa.HasProperties)
+                        {
+                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                            {
+                                newSa.Properties.Add(Copy(cana, context));
+                            }
+                        }
+                        newSec.SecurityAttributes.Add(newSa);
+                    }
+                }
+                output.Add(newSec);
+            }
+        }
+
+        // helper
+        private static void Copy<T>(Collection<T> input, Collection<T> output, Action<T, T> action)
+        {
+            if (input.Count != output.Count)
+                throw new InvalidOperationException();
+            for (int i = 0; i < input.Count; i++)
+            {
+                action.Invoke(input[i], output[i]);
+            }
+        }
+
+        private void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
+        {
+            foreach (GenericParameter gp in input)
+            {
+                GenericParameter ngp = new GenericParameter(gp.Name, nt);
+
+                ngp.Attributes = gp.Attributes;
+                output.Add(ngp);
+            }
+            // delay copy to ensure all generics parameters are already present
+            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
+            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
+        }
+
+
+
+        private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
+        {
+            var ret = reflectionHelper.FindMethodDefinitionInType(nt, methodDefinition);
+            if (ret == null)
+            {
+                Logger.WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
+            }
+            return ret;
+        }
+
+        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
+        {
+            CopyCustomAttributes(input, output, true, context);
+        }
+
+        private CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
+        {
+            CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
+            foreach (var arg in ca.ConstructorArguments)
+                newCa.ConstructorArguments.Add(Copy(arg, context));
+            foreach (var arg in ca.Fields)
+                newCa.Fields.Add(Copy(arg, context));
+            foreach (var arg in ca.Properties)
+                newCa.Properties.Add(Copy(arg, context));
+            return newCa;
+        }
+
+        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
+        {
+            foreach (CustomAttribute ca in input)
+            {
+                var caType = ca.AttributeType;
+                var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
+                if (similarAttributes.Count != 0)
+                {
+                    if (!allowMultiple)
+                        continue;
+                    if (!CustomAttributeTypeAllowsMultiple(caType))
+                        continue;
+                    if (similarAttributes.Any(x =>
+                            reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
+                            reflectionHelper.AreSame(x.Fields, ca.Fields) &&
+                            reflectionHelper.AreSame(x.Properties, ca.Properties)
+                        ))
+                        continue;
+                }
+                output.Add(Copy(ca, context));
+            }
+        }
+
+        private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
+        {
+            if (type.FullName == "IKVM.Attributes.JavaModuleAttribute" || type.FullName == "IKVM.Attributes.PackageListAttribute")
+            {
+                // IKVM module attributes, although they don't allow multiple, IKVM supports the attribute being specified multiple times
+                return true;
+            }
+            TypeDefinition typeDef = type.Resolve();
+            if (typeDef != null)
+            {
+                var ca = typeDef.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.AttributeUsageAttribute");
+                if (ca != null)
+                {
+                    var prop = ca.Properties.FirstOrDefault(y => y.Name == "AllowMultiple");
+                    if (prop.Argument.Value is bool)
+                    {
+                        return (bool)prop.Argument.Value;
+                    }
+                }
+            }
+            // default is false
+            return false;
+        }
+
+        private void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
+        {
+            foreach (TypeReference ta in input)
+            {
+                output.Add(Import(ta, context));
+            }
+        }
+
+        public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
+        {
+            return mappingHandler.GetRemappedType(reference);
+        }
+
+        private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
+        {
+            TypeDefinition type = GetMergedTypeFromTypeRef(reference);
+            if (type != null)
+                return type;
+
+            reference = platformFixer.FixPlatformVersion(reference);
+            try
+            {
+                if (context == null)
+                {
+                    // we come here when importing types used for assembly-level custom attributes
+                    return TargetAssemblyMainModule.Import(reference);
+                }
+                return TargetAssemblyMainModule.Import(reference, context);
+            }
+            catch (ArgumentOutOfRangeException) // working around a bug in Cecil
+            {
+                Logger.ERROR ("Problem adding reference: " + reference.FullName);
+                throw;
+            }
+        }
+
+        private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
+        {
+            FieldReference importReference = platformFixer.FixPlatformVersion(reference);
+
+            return TargetAssemblyMainModule.Import(importReference, context);
+        }
+
+        private MethodReference Import(MethodReference reference)
+        {
+            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
+            return TargetAssemblyMainModule.Import(importReference);
+        }
+
+        private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
+        {
+            // If this is a Method/TypeDefinition, it will be corrected to a definition again later
+
+            MethodReference importReference = platformFixer.FixPlatformVersion(reference);
+
+            return TargetAssemblyMainModule.Import(importReference, context);
+
+        }
+
+        private static IList<ParameterDefinition> ExtractIndexerParameters(PropertyDefinition prop)
+        {
+            if (prop.GetMethod != null)
+                return prop.GetMethod.Parameters;
+            if (prop.SetMethod != null)
+                return prop.SetMethod.Parameters.ToList().GetRange(0, prop.SetMethod.Parameters.Count - 1);
+            return null;
+        }
+
+        private static bool IsIndexer(PropertyDefinition prop)
+        {
+            if (prop.Name != "Item")
+                return false;
+            var parameters = ExtractIndexerParameters(prop);
+            return parameters != null && parameters.Count > 0;
         }
 
         private void FixAspNetOffset(Collection<Instruction> instructions, MethodReference operand, MethodDefinition parent)
