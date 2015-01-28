@@ -60,21 +60,12 @@ namespace ILRepacking
 
         public string OutputFile { get; set; }
         public bool PublicKeyTokens { get; set; } // UNIMPL
-        public void SetInputAssemblies(string[] inputAssemblies)
-        {
-            InputAssemblies = inputAssemblies;
-        }
         public void SetSearchDirectories(string[] dirs)
         {
             foreach (var dir in dirs)
             {
                 globalAssemblyResolver.AddSearchDirectory(dir);
             }
-        }
-        public void SetTargetPlatform(string targetPlatformVersion, string targetPlatformDirectory)
-        {
-            TargetPlatformVersion = targetPlatformVersion;
-            TargetPlatformDirectory = targetPlatformDirectory;
         }
         public bool StrongNameLost { get; private set; }
         public Kind? TargetKind { get; set; }
