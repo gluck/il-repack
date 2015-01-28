@@ -106,12 +106,6 @@ namespace ILRepacking
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
         private readonly Logger _logger = new Logger(false);
 
-        internal void IGNOREDUP(string ignoredType, object ignoredObject)
-        {
-            // TODO: put on a list and log a summary
-            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
-        }
-
         [STAThread]
         public static int Main(string[] args)
         {
@@ -1217,6 +1211,11 @@ namespace ILRepacking
             if (param.HasCustomAttributes)
                 CopyCustomAttributes(param.CustomAttributes, pd.CustomAttributes, context);
             col.Add(pd);
+        }
+        internal void IGNOREDUP(string ignoredType, object ignoredObject)
+        {
+            // TODO: put on a list and log a summary
+            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
         private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
