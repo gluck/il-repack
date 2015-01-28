@@ -57,7 +57,7 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.ERROR("Failed to merge configuration files: " + e);
+                repack.Logger.ERROR("Failed to merge configuration files: " + e);
             }
         }
     }

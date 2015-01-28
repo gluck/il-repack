@@ -48,7 +48,6 @@ namespace ILRepacking
         }
     }
 
-
     public class ILRepack
     {
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
@@ -80,8 +79,7 @@ namespace ILRepacking
         public string KeyFile { get; set; }
         public bool Parallel { get; set; }
         public bool PauseBeforeExit { get; set; }
-        public bool Log { get; set; }
-        public string LogFile { get; set; }
+
         public void Merge()
         {
             Repack();
@@ -114,7 +112,6 @@ namespace ILRepacking
 
         // end of ILMerge-similar attributes
 
-        public bool LogVerbose { get; set; }
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
@@ -134,7 +131,11 @@ namespace ILRepacking
 
         private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
-        private StreamWriter logFile;
+        public Logger Logger
+        {
+            get { return _logger; }
+        }
+
         internal readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
@@ -146,71 +147,7 @@ namespace ILRepacking
         private PlatformFixer platformFixer;
         private MappingHandler mappingHandler;
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
-
-        public ILRepack()
-        {
-            // default values
-            LogVerbose = false;
-        }
-
-        private void AlwaysLog(object str)
-        {
-            string logStr = str.ToString();
-            Console.WriteLine(logStr);
-            if (logFile != null)
-                logFile.WriteLine(logStr);
-        }
-
-        internal void LogOutput(object str)
-        {
-            if (Log)
-            {
-                AlwaysLog(str);
-            }
-        }
-
-        private void InitializeLogFile()
-        {
-            if (!string.IsNullOrEmpty(LogFile))
-            {
-                Log = true;
-                logFile = new StreamWriter(LogFile);
-            }
-        }
-
-        private void CloseLogFile()
-        {
-            if (logFile != null)
-            {
-                logFile.Flush();
-                logFile.Close();
-                logFile.Dispose();
-                logFile = null;
-            }
-        }
-
-        internal void ERROR(string msg)
-        {
-            AlwaysLog("ERROR: " + msg);
-        }
-
-        internal void WARN(string msg)
-        {
-            AlwaysLog("WARN: " + msg);
-        }
-
-        internal void INFO(string msg)
-        {
-            LogOutput("INFO: " + msg);
-        }
-
-        internal void VERBOSE(string msg)
-        {
-            if (LogVerbose)
-            {
-                LogOutput("INFO: " + msg);
-            }
-        }
+        private readonly Logger _logger = new Logger(false);
 
         internal void IGNOREDUP(string ignoredType, object ignoredObject)
         {
@@ -231,12 +168,12 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.AlwaysLog(e);
+                repack.Logger.AlwaysLog(e);
                 rc = 1;
             }
             finally
             {
-                repack.CloseLogFile();
+                repack.Logger.CloseLogFile();
                 if (repack.PauseBeforeExit)
                 {
                     Console.WriteLine("Press Any Key To Continue");
@@ -248,7 +185,7 @@ namespace ILRepacking
 
         void Exit(int exitCode)
         {
-            CloseLogFile();
+            Logger.CloseLogFile();
             Environment.Exit(exitCode);
         }
 
@@ -281,9 +218,9 @@ namespace ILRepacking
                 ExcludeFile = cmd.Option("internalize");
             }
             KeyFile = cmd.Option("keyfile");
-            Log = cmd.HasOption("log");
-            if (Log)
-                LogFile = cmd.Option("log");
+            Logger.Log = cmd.HasOption("log");
+            if (Logger.Log)
+                Logger.LogFile = cmd.Option("log");
             OutputFile = cmd.Option("out");
             PublicKeyTokens = cmd.Modifier("usefullpublickeyforreferences");
             var targetKind = cmd.Option("target");
@@ -343,15 +280,15 @@ namespace ILRepacking
             SetSearchDirectories(cmd.Options("lib"));
 
             // private cmdline-options:
-            LogVerbose = cmd.Modifier("verbose");
+            Logger.LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                WARN("Option 'delaysign' is only valid with 'keyfile'.");
+                Logger.WARN("Option 'delaysign' is only valid with 'keyfile'.");
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                WARN("Option 'allowMultiple' is only valid with 'copyattrs'.");
+                Logger.WARN("Option 'allowMultiple' is only valid with 'copyattrs'.");
             if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                WARN("Option 'attr' can not be used with 'copyattrs'.");
+                Logger.WARN("Option 'attr' can not be used with 'copyattrs'.");
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
@@ -405,7 +342,7 @@ namespace ILRepacking
             bool mergedDebugInfo = false;
             foreach (string assembly in MergedAssemblyFiles)
             {
-                INFO("Adding assembly for merge: " + assembly);
+                _logger.INFO("Adding assembly for merge: " + assembly);
                 try
                 {
                     ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
@@ -426,7 +363,7 @@ namespace ILRepacking
                         {
                             rp.ReadSymbols = false;
                             mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                            INFO("Failed to load debug information for " + assembly);
+                            _logger.INFO("Failed to load debug information for " + assembly);
                         }
                         else
                         {
@@ -448,7 +385,7 @@ namespace ILRepacking
                 }
                 catch
                 {
-                    ERROR("Failed to load assembly " + assembly);
+                    _logger.ERROR("Failed to load assembly " + assembly);
                     throw;
                 }
             }
@@ -461,7 +398,7 @@ namespace ILRepacking
 
         private void ReadInputAssembliesParallel()
         {
-            INFO("Reading in Parallel");
+            Logger.INFO("Reading in Parallel");
             MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).ToList();
 
             // TODO: this could be parallelized to gain speed
@@ -475,7 +412,7 @@ namespace ILRepacking
                 string assembly = MergedAssemblyFiles[idx];
                 ThreadPool.QueueUserWorkItem((WaitCallback)((_) =>
                 {
-                    INFO("Adding assembly for merge: " + assembly);
+                    Logger.INFO("Adding assembly for merge: " + assembly);
                     try
                     {
                         ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
@@ -496,7 +433,7 @@ namespace ILRepacking
                             {
                                 rp.ReadSymbols = false;
                                 mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                                INFO("Failed to load debug information for " + assembly);
+                                Logger.INFO("Failed to load debug information for " + assembly);
                             }
                             else
                             {
@@ -512,7 +449,7 @@ namespace ILRepacking
                     }
                     catch
                     {
-                        ERROR("Failed to load assembly " + assembly);
+                        Logger.ERROR("Failed to load assembly " + assembly);
                         throw;
                     }
                     finally
@@ -622,7 +559,7 @@ namespace ILRepacking
         public void Repack()
         {
             reflectionHelper = new ReflectionHelper(this);
-            InitializeLogFile();
+            Logger.InitializeLogFile();
             ParseProperties();
             // Read input assemblies only after all properties are set.
             if (Parallel)
@@ -709,7 +646,7 @@ namespace ILRepacking
                 TargetAssemblyMainModule.EntryPoint = fixator.Fix(Import(PrimaryAssemblyDefinition.EntryPoint)).Resolve();
             }
 
-            INFO("Fixing references");
+            Logger.INFO("Fixing references");
             // this step travels through all TypeRefs & replaces them by matching TypeDefs
 
             foreach (var r in TargetAssemblyMainModule.Types)
@@ -739,7 +676,6 @@ namespace ILRepacking
                 }
             }
 
-            INFO("Writing output assembly to disk");
             var parameters = new WriterParameters();
             if ((snkp != null) && !DelaySign)
                 parameters.StrongNameKeyPair = snkp;
@@ -747,12 +683,13 @@ namespace ILRepacking
             if (DebugInfo)
                 parameters.WriteSymbols = true;
             TargetAssemblyDefinition.Write(OutputFile, parameters);
+            Logger.INFO("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly
             if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 Stat stat;
-                INFO("Copying permissions from " + PrimaryAssemblyFile);
+                Logger.INFO("Copying permissions from " + PrimaryAssemblyFile);
                 Syscall.stat(PrimaryAssemblyFile, out stat);
                 Syscall.chmod(OutputFile, stat.st_mode);
             }
@@ -772,7 +709,7 @@ namespace ILRepacking
             foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
             {
                 // failed
-                ERROR("Merged assembly still references " + a.FullName);
+                Logger.ERROR("Merged assembly still references " + a.FullName);
                 failed = true;
             }
             if (failed)
@@ -816,13 +753,13 @@ namespace ILRepacking
                 }
                 else if (!isVersionInfoRes(parents, exist))
                 {
-                    WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
+                    Logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
                 return;
             }
             if (exist.Data != null || entry.Data != null)
             {
-                WARN("Inconsistent Win32 resources, ignoring");
+                Logger.WARN("Inconsistent Win32 resources, ignoring");
                 return;
             }
             parents.Add(exist);
@@ -889,18 +826,19 @@ namespace ILRepacking
 
         private void RepackTypes()
         {
-            INFO("Processing types");
+            Logger.INFO("Processing types");
             // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
+
             foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
             {
-                VERBOSE("- Importing " + r);
+                Logger.VERBOSE("- Importing " + r);
                 Import(r, TargetAssemblyMainModule.Types, false);
             }
             foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.Types)
                 {
-                    VERBOSE("- Importing " + r);
+                    Logger.VERBOSE("- Importing " + r);
                     Import(r, TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
                 }
             }
@@ -908,7 +846,7 @@ namespace ILRepacking
 
         private void RepackExportedTypes()
         {
-            INFO("Processing types");
+            Logger.INFO("Processing types");
             foreach (var m in MergedAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.ExportedTypes)
@@ -918,7 +856,7 @@ namespace ILRepacking
             }
             foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
             {
-                VERBOSE("- Importing Exported Type" + r);
+                Logger.VERBOSE("- Importing Exported Type" + r);
                 Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
             }
             foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
@@ -927,12 +865,12 @@ namespace ILRepacking
                 {
                     if (!ShouldInternalize(r.FullName))
                     {
-                        VERBOSE("- Importing Exported Type " + r);
+                        Logger.VERBOSE("- Importing Exported Type " + r);
                         Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
                     }
                     else
                     {
-                        VERBOSE("- Skipping Exported Type " + r);
+                        Logger.VERBOSE("- Skipping Exported Type " + r);
                     }
                 }
             }
@@ -940,7 +878,7 @@ namespace ILRepacking
 
         private void RepackReferences()
         {
-            INFO("Processing references");
+            Logger.INFO("Processing references");
             // Add all AssemblyReferences to merged assembly (probably not necessary)
             foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
             {
@@ -950,7 +888,7 @@ namespace ILRepacking
                     // TODO: fix .NET runtime references?
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
-                    VERBOSE("- add reference " + z);
+                    Logger.VERBOSE("- add reference " + z);
                     AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
                     TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
                 }
@@ -970,7 +908,7 @@ namespace ILRepacking
 
         private void RepackResources()
         {
-            INFO("Processing resources");
+            Logger.INFO("Processing resources");
             // merge resources
             List<string> repackList = null;
             EmbeddedResource repackListRes = null;
@@ -1003,17 +941,17 @@ namespace ILRepacking
                     if (!AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
                     {
                         // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                        WARN("Ignoring duplicate resource " + r.Name);
+                        Logger.WARN("Ignoring duplicate resource " + r.Name);
                     }
                     else
                     {
-                        VERBOSE("- Importing " + r.Name);
+                        Logger.VERBOSE("- Importing " + r.Name);
                         var nr = r;
                         switch (r.ResourceType)
                         {
                             case ResourceType.AssemblyLinked:
                                 // TODO
-                                WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
+                                Logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
                                 break;
                             case ResourceType.Linked:
                                 // TODO ? (or not)
@@ -1239,7 +1177,7 @@ namespace ILRepacking
             {
                 if (RemoveAttributes(type, null))
                 {
-                    WARN("[" + type + "] attribute wasn't merged because of inconsistency accross merged assemblies");
+                    Logger.WARN("[" + type + "] attribute wasn't merged because of inconsistency accross merged assemblies");
                 }
             }
         }
@@ -1436,7 +1374,7 @@ namespace ILRepacking
             var ret = reflectionHelper.FindMethodDefinitionInType(nt, methodDefinition);
             if (ret == null)
             {
-                WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
+                Logger.WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
             }
             return ret;
         }
@@ -1536,7 +1474,7 @@ namespace ILRepacking
             }
             catch (ArgumentOutOfRangeException) // working around a bug in Cecil
             {
-                ERROR ("Problem adding reference: " + reference.FullName);
+                Logger.ERROR ("Problem adding reference: " + reference.FullName);
                 throw;
             }
         }
@@ -1867,6 +1805,8 @@ namespace ILRepacking
 
         internal TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
+            Logger.VERBOSE("- Importing " + type);
+
             TypeDefinition nt = TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
             if (nt == null)
@@ -1876,25 +1816,25 @@ namespace ILRepacking
             }
             else if (DuplicateTypeAllowed(type))
             {
-                INFO("Merging " + type);
+                Logger.INFO("Merging " + type);
             }
             else if (!type.IsPublic || internalize)
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = "<" + Guid.NewGuid() + ">" + nt.Name;
-                INFO("Renaming " + nt.FullName + " into " + other);
+                Logger.INFO("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
             else if (UnionMerge)
             {
-                INFO("Merging " + type);
+                Logger.INFO("Merging " + type);
             }
             else
             {
-                ERROR("Duplicate type " + type);
+                Logger.ERROR("Duplicate type " + type);
                 throw new InvalidOperationException("Duplicate type " + type + " from " + type.Scope + ", was also present in " + mappingHandler.GetOrigTypeModule(nt));
             }
             mappingHandler.StoreRemappedType(type, nt);

@@ -76,7 +76,7 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.ERROR("Failed to merge documentation files: " + e);
+                repack.Logger.ERROR("Failed to merge documentation files: " + e);
             }
         }
     }
