@@ -58,10 +58,6 @@ namespace ILRepacking
         public bool Parallel { get; set; }
         public bool PauseBeforeExit { get; set; }
 
-        public void Merge()
-        {
-            Repack();
-        }
         public string OutputFile { get; set; }
         public bool PublicKeyTokens { get; set; } // UNIMPL
         public void SetInputAssemblies(string[] inputAssemblies)
