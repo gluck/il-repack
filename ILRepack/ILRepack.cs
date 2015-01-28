@@ -37,17 +37,6 @@ using MethodBody = Mono.Cecil.Cil.MethodBody;
 
 namespace ILRepacking
 {
-    public class RepackAssemblyResolver : DefaultAssemblyResolver
-    {
-        public void RegisterAssemblies(List<AssemblyDefinition> mergedAssemblies)
-        {
-            foreach (var assemblyDefinition in mergedAssemblies)
-            {
-                base.RegisterAssembly(assemblyDefinition);
-            }
-        }
-    }
-
     public class ILRepack
     {
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
