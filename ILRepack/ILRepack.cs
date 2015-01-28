@@ -41,17 +41,6 @@ namespace ILRepacking
     {
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
 
-        public void AllowDuplicateType(string typeName)
-        {
-            if (typeName.EndsWith(".*"))
-            {
-                allowedDuplicateNameSpaces.Add(typeName.Substring(0, typeName.Length - 2));
-            }
-            else
-            {
-                allowedDuplicateTypes[typeName] = typeName;
-            }
-        }
         public bool AllowDuplicateResources { get; set; }
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
         public bool AllowWildCards { get; set; }
@@ -1909,6 +1898,18 @@ namespace ILRepacking
         public TypeReference GetExportedTypeFromTypeRef(TypeReference type)
         {
             return mappingHandler.GetExportedRemappedType(type) ?? type;
+        }
+
+        private void AllowDuplicateType(string typeName)
+        {
+            if (typeName.EndsWith(".*"))
+            {
+                allowedDuplicateNameSpaces.Add(typeName.Substring(0, typeName.Length - 2));
+            }
+            else
+            {
+                allowedDuplicateTypes[typeName] = typeName;
+            }
         }
 
         private bool DuplicateTypeAllowed(TypeDefinition type)
