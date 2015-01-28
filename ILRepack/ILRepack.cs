@@ -57,16 +57,8 @@ namespace ILRepacking
         public string KeyFile { get; set; }
         public bool Parallel { get; set; }
         public bool PauseBeforeExit { get; set; }
-
         public string OutputFile { get; set; }
         public bool PublicKeyTokens { get; set; } // UNIMPL
-        public void SetSearchDirectories(string[] dirs)
-        {
-            foreach (var dir in dirs)
-            {
-                globalAssemblyResolver.AddSearchDirectory(dir);
-            }
-        }
         public bool StrongNameLost { get; private set; }
         public Kind? TargetKind { get; set; }
         public string TargetPlatformDirectory { get; set; }
@@ -257,6 +249,14 @@ namespace ILRepacking
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
+        }
+
+        public void SetSearchDirectories(string[] dirs)
+        {
+            foreach (var dir in dirs)
+            {
+                globalAssemblyResolver.AddSearchDirectory(dir);
+            }
         }
 
         private void Usage()
