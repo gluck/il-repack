@@ -124,5 +124,21 @@ namespace ILRepack.Tests
             Assert.AreEqual(versionOption, versionNumber);
         }
 
+        [Test]
+        public void WithArguments_GetCount_ReturnCount(string argsCount)
+        {
+            string[] arguments = { "/var", "/log-file" };
+            CommandLine commandLine = new CommandLine(arguments);
+            Assert.AreEqual(2, commandLine.OptionsCount);
+            Assert.IsFalse(commandLine.HasNoOptions);
+        }
+
+        [Test]
+        public void WithZeroArguments_GetIsEmpty_ReturnTrue()
+        {
+            string[] arguments = { };
+            CommandLine commandLine = new CommandLine(arguments);
+            Assert.IsTrue(commandLine.HasNoOptions);
+        }
     }
 }

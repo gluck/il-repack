@@ -53,11 +53,11 @@ namespace ILRepacking
                     nextDataset.ReadXml(configFile);
                     dataset.Merge(nextDataset);
                 }
-                dataset.WriteXml(repack.OutputFile + ".config");
+                dataset.WriteXml(repack.options.OutputFile + ".config");
             }
             catch (Exception e)
             {
-                repack.ERROR("Failed to merge configuration files: " + e);
+                repack.logger.ERROR("Failed to merge configuration files: " + e);
             }
         }
     }
