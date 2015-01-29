@@ -295,58 +295,13 @@ namespace ILRepacking
 
         private void ReadInputAssemblies()
         {
-            MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).Distinct().ToList();
+            MergedAssemblyFiles = InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
+            var primary = MergedAssemblyFiles.FirstOrDefault();
             foreach (string assembly in MergedAssemblyFiles)
             {
-                AssemblyDefinitionContainer result;
-
-                _logger.INFO("Adding assembly for merge: " + assembly);
-                try
-                {
-                    ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
-                    // read PDB/MDB?
-                    if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
-                    {
-                        rp.ReadSymbols = true;
-                    }
-                    AssemblyDefinition mergeAsm;
-                    try
-                    {
-                        mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                    }
-                    catch
-                    {
-                        // cope with invalid symbol file
-                        if (rp.ReadSymbols)
-                        {
-                            rp.ReadSymbols = false;
-                            mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                            _logger.INFO("Failed to load debug information for " + assembly);
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                    if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
-                        throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
-
-                    result = new AssemblyDefinitionContainer
-                    {
-                        Assembly = assembly,
-                        Definition = mergeAsm,
-                        IsPrimary = MergedAssemblyFiles.First() == assembly,
-                        SymbolsRead = rp.ReadSymbols
-                    };
-                }
-                catch
-                {
-                    _logger.ERROR("Failed to load assembly " + assembly);
-                    throw;
-                }
-
+                var result = ReadInputAssembly(assembly, primary == assembly);
                 if (result.IsPrimary)
                 {
                     PrimaryAssemblyDefinition = result.Definition;
@@ -361,6 +316,54 @@ namespace ILRepacking
 
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
             MergedAssemblies.Add(PrimaryAssemblyDefinition);
+        }
+
+        private AssemblyDefinitionContainer ReadInputAssembly(string assembly, bool isPrimary)
+        {
+            _logger.INFO("Adding assembly for merge: " + assembly);
+            try
+            {
+                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) {AssemblyResolver = globalAssemblyResolver};
+                // read PDB/MDB?
+                if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
+                {
+                    rp.ReadSymbols = true;
+                }
+                AssemblyDefinition mergeAsm;
+                try
+                {
+                    mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                }
+                catch
+                {
+                    // cope with invalid symbol file
+                    if (rp.ReadSymbols)
+                    {
+                        rp.ReadSymbols = false;
+                        mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                        _logger.INFO("Failed to load debug information for " + assembly);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
+                    throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+
+                return new AssemblyDefinitionContainer
+                {
+                    Assembly = assembly,
+                    Definition = mergeAsm,
+                    IsPrimary = isPrimary,
+                    SymbolsRead = rp.ReadSymbols
+                };
+            }
+            catch
+            {
+                _logger.ERROR("Failed to load assembly " + assembly);
+                throw;
+            }
         }
 
         public class AssemblyDefinitionContainer
