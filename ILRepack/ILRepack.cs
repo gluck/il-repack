@@ -298,9 +298,10 @@ namespace ILRepacking
             MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
-            bool mergedDebugInfo = false;
             foreach (string assembly in MergedAssemblyFiles)
             {
+                AssemblyDefinitionContainer result;
+
                 _logger.INFO("Adding assembly for merge: " + assembly);
                 try
                 {
@@ -332,27 +333,42 @@ namespace ILRepacking
                     if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                         throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
 
-                    if (rp.ReadSymbols)
-                        mergedDebugInfo = true;
-                    if (PrimaryAssemblyDefinition == null)
+                    result = new AssemblyDefinitionContainer
                     {
-                        PrimaryAssemblyDefinition = mergeAsm;
-                        PrimaryAssemblyFile = assembly;
-                    }
-                    else
-                        OtherAssemblies.Add(mergeAsm);
+                        Assembly = assembly,
+                        Definition = mergeAsm,
+                        IsPrimary = MergedAssemblyFiles.First() == assembly,
+                        SymbolsRead = rp.ReadSymbols
+                    };
                 }
                 catch
                 {
                     _logger.ERROR("Failed to load assembly " + assembly);
                     throw;
                 }
+
+                if (result.IsPrimary)
+                {
+                    PrimaryAssemblyDefinition = result.Definition;
+                    PrimaryAssemblyFile = result.Assembly;
+                }
+                else
+                    OtherAssemblies.Add(result.Definition);
+
+                // prevent writing PDB if we haven't read any
+                DebugInfo &= result.SymbolsRead;
             }
-            // prevent writing PDB if we haven't read any
-            DebugInfo = mergedDebugInfo;
 
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
             MergedAssemblies.Add(PrimaryAssemblyDefinition);
+        }
+
+        public class AssemblyDefinitionContainer
+        {
+            public bool SymbolsRead { get; set; }
+            public AssemblyDefinition Definition { get; set; }
+            public string Assembly { get; set; }
+            public bool IsPrimary { get; set; }
         }
 
         private IEnumerable<string> ResolveFile(string s)
