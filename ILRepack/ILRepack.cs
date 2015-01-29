@@ -355,82 +355,6 @@ namespace ILRepacking
             MergedAssemblies.Add(PrimaryAssemblyDefinition);
         }
 
-        private void ReadInputAssembliesParallel()
-        {
-            Logger.INFO("Reading in Parallel");
-            MergedAssemblyFiles = InputAssemblies.SelectMany(x => ResolveFile(x)).ToList();
-
-            // TODO: this could be parallelized to gain speed
-            bool mergedDebugInfo = false;
-            AssemblyDefinition[] readAsms = new AssemblyDefinition[MergedAssemblyFiles.Count];
-            int remain = MergedAssemblyFiles.Count;
-            EventWaitHandle evt = new ManualResetEvent(false);
-            for (int i = 0; i < MergedAssemblyFiles.Count; i++)
-            {
-                int idx = i;
-                string assembly = MergedAssemblyFiles[idx];
-                ThreadPool.QueueUserWorkItem((WaitCallback)((_) =>
-                {
-                    Logger.INFO("Adding assembly for merge: " + assembly);
-                    try
-                    {
-                        ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = globalAssemblyResolver };
-                        // read PDB/MDB?
-                        if (DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
-                        {
-                            rp.ReadSymbols = true;
-                        }
-                        AssemblyDefinition mergeAsm;
-                        try
-                        {
-                            mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                        }
-                        catch
-                        {
-                            // cope with invalid symbol file
-                            if (rp.ReadSymbols)
-                            {
-                                rp.ReadSymbols = false;
-                                mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                                Logger.INFO("Failed to load debug information for " + assembly);
-                            }
-                            else
-                            {
-                                throw;
-                            }
-                        }
-                        if (!AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
-                            throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
-
-                        if (rp.ReadSymbols)
-                            mergedDebugInfo = true;
-                        readAsms[idx] = mergeAsm;
-                    }
-                    catch
-                    {
-                        Logger.ERROR("Failed to load assembly " + assembly);
-                        throw;
-                    }
-                    finally
-                    {
-                        if (Interlocked.Decrement(ref remain) == 0)
-                            evt.Set();
-                    }
-                }));
-            }
-
-            evt.WaitOne();
-
-            // prevent writing PDB if we haven't read any
-            DebugInfo = mergedDebugInfo;
-
-            MergedAssemblies = new List<AssemblyDefinition>(readAsms);
-            PrimaryAssemblyDefinition = readAsms[0];
-            OtherAssemblies = new List<AssemblyDefinition>(readAsms);
-            OtherAssemblies.RemoveAt(0);
-        }
-
-
         private IEnumerable<string> ResolveFile(string s)
         {
             if (!AllowWildCards || s.IndexOfAny(new[] { '*', '?' }) == -1)
@@ -520,11 +444,9 @@ namespace ILRepacking
             reflectionHelper = new ReflectionHelper(this);
             Logger.InitializeLogFile();
             ParseProperties();
+
             // Read input assemblies only after all properties are set.
-            if (Parallel)
-                ReadInputAssembliesParallel();
-            else
-                ReadInputAssemblies();
+            ReadInputAssemblies();
             globalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
@@ -1508,6 +1430,11 @@ namespace ILRepacking
         {
             return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
         }
+        
+        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
+        }
 
         private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
         {
@@ -1519,12 +1446,7 @@ namespace ILRepacking
                 return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
             return obj;
         }
-
-        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
-        {
-            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
-        }
-
+        
         /// <summary>
         /// Clones a collection of SecurityDeclarations
         /// </summary>
