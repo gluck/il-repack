@@ -68,7 +68,9 @@
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
+    <Compile Include="ICommandLine.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
+    <Compile Include="ILogger.cs" />
     <Compile Include="LineNumberWriter.cs" />
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />

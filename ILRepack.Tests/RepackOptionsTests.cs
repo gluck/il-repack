@@ -20,6 +20,15 @@ namespace ILRepack.Tests
             repackLogger = new Mock<ILogger>();
             commandLine = new Mock<ICommandLine>();
         }
+
+        [Test]
+        public void WithAllowDuplicateResources_GetModifier_ReturnModifier()
+        {
+            commandLine.Setup(line => line.Modifier("allowduplicateresources")).Returns(true);
+            RepackOptions options = new RepackOptions(commandLine.Object, repackLogger.Object);
+            options.Parse();
+            Assert.AreEqual(true, options.AllowDuplicateResources);
+        }
         
 
 
