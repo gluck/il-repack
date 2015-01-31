@@ -10,7 +10,7 @@ namespace ILRepack.Tests
     class CommandLineTests
     {
         [Test]
-        public void WithNoArguments_NewObject_NoOtherArguments()
+        public void WithNoArguments__NewObject__NoOtherArguments()
         {
             string[] arguments = { };
             CommandLine commandLine = new CommandLine(arguments);
@@ -18,7 +18,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithEmptyOption_GetOption_ReturnNull()
+        public void WithEmptyOption__GetOption__ReturnNull()
         {
             string[] arguments = { "" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -27,7 +27,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithInvalidOptionPrefix_GetOption_ReturnNull()
+        public void WithInvalidOptionPrefix__GetOption__ReturnNull()
         {
             string[] arguments = { "&ver" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -36,7 +36,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithValidOptionPrefix_GetOption_ReturnNull()
+        public void WithValidOptionPrefix__GetOption__ReturnNull()
         {
             string[] arguments = { "--keyfile:file", "--log" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -45,7 +45,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithValidOption_GetOptionWithNameInCaps_ReturnOption()
+        public void WithValidOption__GetOptionWithNameInCaps__ReturnOption()
         {
             string[] arguments = { "/keyfile:file" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -54,7 +54,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithValidOption_GetOtherOption_ReturnNull()
+        public void WithValidOption__GetOtherOption__ReturnNull()
         {
             string[] arguments = { "/keyfile:file" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -63,7 +63,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithEmptyOption_GetOption_ReturnEmptyString()
+        public void WithEmptyOption__GetOption__ReturnEmptyString()
         {
             string[] arguments = { "/" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -72,7 +72,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOptions_RemoveOption_ReturnAllOptionsExceptTheOneRemoved()
+        public void WithOptions__RemoveOption__ReturnAllOptionsExceptTheOneRemoved()
         {
             string[] arguments = { "/var", "-var", "--var", "/log" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -84,7 +84,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithBoolOption_GetOption_ReturnOption()
+        public void WithBoolOption__GetOption__ReturnOption()
         {
             string[] arguments = { "/union:true" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -94,7 +94,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOptions_RemoveOptions_ReturnMatchedOptions()
+        public void WithOptions__RemoveOptions__ReturnMatchedOptions()
         {
             string[] arguments = { "/union:true", "/log:file", "/var:3.3" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -103,7 +103,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOptionWithInvalidAssignChar_GetOption_ReturnNull()
+        public void WithOptionWithInvalidAssignChar__GetOption__ReturnNull()
         {
             string[] arguments = { "/log-file" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -112,7 +112,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOneOption_NewObject_ReturnOption()
+        public void WithOneOption__NewObject__ReturnOption()
         {
             string versionOptionName = "ver";
             string versionNumber = "3.2.2.2";
@@ -125,7 +125,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithArguments_GetCount_ReturnCount(string argsCount)
+        public void WithArguments__GetCount__ReturnCount(string argsCount)
         {
             string[] arguments = { "/var", "/log-file" };
             CommandLine commandLine = new CommandLine(arguments);
@@ -134,7 +134,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithZeroArguments_GetIsEmpty_ReturnTrue()
+        public void WithZeroArguments__GetIsEmpty__ReturnTrue()
         {
             string[] arguments = { };
             CommandLine commandLine = new CommandLine(arguments);
