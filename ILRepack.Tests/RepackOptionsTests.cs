@@ -5,6 +5,7 @@ using System.Text;
 using ILRepacking;
 using Moq;
 using NUnit.Framework;
+using System.Text.RegularExpressions;
 
 namespace ILRepack.Tests
 {
@@ -13,6 +14,7 @@ namespace ILRepack.Tests
     {
         Mock<ILogger> repackLogger;
         Mock<ICommandLine> commandLine;
+        Mock<IFile> file;
         RepackOptions options;
 
         [SetUp]
@@ -20,7 +22,8 @@ namespace ILRepack.Tests
         {
             repackLogger = new Mock<ILogger>();
             commandLine = new Mock<ICommandLine>();
-            options = new RepackOptions(commandLine.Object, repackLogger.Object);
+            file = new Mock<IFile>();
+            options = new RepackOptions(commandLine.Object, repackLogger.Object, file.Object);
         }
 
         [Test]
@@ -75,7 +78,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithAllowDuplicateTypes_WithTypes__CallParse__TypesIsSet()
+        public void WithAllowDuplicateTypes_WithTypes__CallParse__DuplicateTypesAreSet()
         {
             string[] types = new string[] { "PlatformFixer", "ReflectionHelper" };
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(types);
@@ -84,7 +87,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithAllowDuplicateTypes_WithNamespaces__CallParse__NamespacesIsSet()
+        public void WithAllowDuplicateTypes_WithNamespaces__CallParse__NamespacesAreSet()
         {
             string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
             var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
@@ -94,7 +97,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithAllowDuplicateTypes_WithNamespaces_WithTypes__CallParse__TypesAndNamespacesIsSet()
+        public void WithAllowDuplicateTypes_WithNamespaces_WithTypes__CallParse__TypesAndNamespacesAreSet()
         {
             string[] types = new string[] { "ILogger", "ILRepack" };
             string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
@@ -201,7 +204,7 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOptionVersion__Parse__SetVersion()
+        public void WithOptionVersion__Parse__VersionIsSet()
         {
             Version version = new Version("1.1");
             commandLine.Setup(cmd => cmd.Option("ver")).Returns(version.ToString());
@@ -283,6 +286,27 @@ namespace ILRepack.Tests
             Assert.IsNotNull(options.InputAssemblies);
             Assert.IsNotEmpty(options.InputAssemblies);
             options.ParseProperties();
+        }
+
+        [Test]
+        public void WithNoKeyFile__ParseProperties__ReadExcludeInternalizedMatches()
+        {
+            var inputAssemblies = new List<string> { "A", "B", "C" };
+            string keyFile = "keyfilepath";
+            var keyFileLines = new List<string> { "key1" };
+            commandLine.Setup(cmd => cmd.Option("out")).Returns("outfilepath");
+            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
+            commandLine.Setup(cmd => cmd.Option("internalize")).Returns(keyFile);
+            file.Setup(_ => _.Exists(keyFile)).Returns(true);
+            file.Setup(_ => _.ReadAllLines(keyFile)).Returns(keyFileLines.ToArray());
+            options.Parse();
+            Assert.IsNotNull(options.InputAssemblies);
+            Assert.IsNotEmpty(options.InputAssemblies);
+            options.ParseProperties();
+            var linesEnumerator = keyFileLines.GetEnumerator();
+            var pattern = options.ExcludeInternalizeMatches.First();
+            Assert.IsTrue(pattern.IsMatch(keyFileLines.First()));
         }
 
     }

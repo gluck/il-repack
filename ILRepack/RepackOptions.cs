@@ -75,6 +75,7 @@ namespace ILRepacking
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly ICommandLine cmd;
         private readonly ILogger logger;
+        private readonly IFile file;
         private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
         private List<Regex> excludeInternalizeMatches;
 
@@ -104,10 +105,11 @@ namespace ILRepacking
             }
         }
 
-        public RepackOptions(ICommandLine commandLine, ILogger logger)
+        public RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
         {
             this.cmd = commandLine;
             this.logger = logger;
+            this.file = file;
         }
 
         public bool ShouldShowUsage()
@@ -220,18 +222,20 @@ namespace ILRepacking
             {
                 throw new ArgumentException("No output file given.");
             }
+
             if ((InputAssemblies == null) || (InputAssemblies.Length == 0))
             {
                 throw new ArgumentException("No input files given.");
             }
 
-            if ((KeyFile != null) && !File.Exists(KeyFile))
+            if ((KeyFile != null) && !file.Exists(KeyFile))
             {
                 throw new ArgumentException("KeyFile does not exist: \"" + KeyFile + "\".");
             }
+
             if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
             {
-                string[] lines = File.ReadAllLines(ExcludeFile);
+                string[] lines = file.ReadAllLines(ExcludeFile);
                 excludeInternalizeMatches = new List<Regex>(lines.Length);
                 foreach (string line in lines)
                     excludeInternalizeMatches.Add(new Regex(line));

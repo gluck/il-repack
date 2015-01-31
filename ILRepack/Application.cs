@@ -12,8 +12,9 @@ namespace ILRepacking
         {
             ICommandLine commandLine = new CommandLine(args);
             ILogger logger = new RepackLogger();
-            RepackOptions options = new RepackOptions(commandLine, logger);
-            int rc = -1;
+            IFile file = new FileWrapper();
+            RepackOptions options = new RepackOptions(commandLine, logger, file);
+            int returnCode = -1;
             try
             {
                 if (options.ShouldShowUsage())
@@ -32,7 +33,7 @@ namespace ILRepacking
 
                 ILRepack repack = new ILRepack(options, logger);
                 repack.Repack();
-                rc = 0;
+                returnCode = 0;
             }
             catch (RepackOptions.InvalidTargetKindException e)
             {
@@ -43,7 +44,7 @@ namespace ILRepacking
             catch (Exception e)
             {
                 logger.Log(e);
-                rc = 1;
+                returnCode = 1;
             }
             finally
             {
@@ -54,7 +55,7 @@ namespace ILRepacking
                     Console.ReadKey(true);
                 }
             }
-            return rc;
+            return returnCode;
         }
 
         static void Usage()
