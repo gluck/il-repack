@@ -48,7 +48,6 @@ namespace ILRepacking
         }
     }
 
-
     public class ILRepack
     {
         internal RepackOptions options;
@@ -68,8 +67,6 @@ namespace ILRepacking
         internal ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
         private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
-
-        private StreamWriter logFile;
 
         private ReflectionHelper reflectionHelper;
         private static Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
@@ -101,43 +98,8 @@ namespace ILRepacking
             //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
-        [STAThread]
-        public static int Main(string[] args)
-        {
-            ICommandLine commandLine = new CommandLine(args);
-            ILogger logger = new RepackLogger();
-            RepackOptions options = new RepackOptions(commandLine, logger);
-            ILRepack repack = new ILRepack(options, logger);
-            int rc = -1;
-            try
-            {
-                repack.ReadArguments();
 
-                if (logger.Open(options.LogFile))
-                    options.Log = true;
-                logger.ShouldLogVerbose = options.LogVerbose;
-
-                repack.Repack();
-                rc = 0;
-            }
-            catch (Exception e)
-            {
-                logger.Log(e);
-                rc = 1;
-            }
-            finally
-            {
-                logger.Close();
-                if (repack.PauseBeforeExit)
-                {
-                    Console.WriteLine("Press Any Key To Continue");
-                    Console.ReadKey(true);
-                }
-            }
-            return rc;
-        }
-
-        private void ReadArguments()
+        public void ReadArguments()
         {
             options.Parse();
         }
