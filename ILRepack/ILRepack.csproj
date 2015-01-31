@@ -69,7 +69,7 @@
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
-    <Compile Include="FileImpl.cs" />
+    <Compile Include="FileWrapper.cs" />
     <Compile Include="ICommandLine.cs" />
     <Compile Include="IFile.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
