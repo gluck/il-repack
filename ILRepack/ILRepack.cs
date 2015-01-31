@@ -93,11 +93,6 @@ namespace ILRepacking
             //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
-        public void ReadArguments()
-        {
-            options.Parse();
-        }
-
         private void ReadInputAssemblies()
         {
             MergedAssemblyFiles = options.InputAssemblies.SelectMany(x => ResolveFile(x)).Distinct().ToList();
