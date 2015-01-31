@@ -13,7 +13,6 @@ namespace ILRepacking
             ICommandLine commandLine = new CommandLine(args);
             ILogger logger = new RepackLogger();
             RepackOptions options = new RepackOptions(commandLine, logger);
-            ILRepack repack = new ILRepack(options, logger);
             int rc = -1;
             try
             {
@@ -22,12 +21,16 @@ namespace ILRepacking
                     Usage();
                     Exit(2);
                 }
-                repack.ReadArguments();
+                options.Parse();
 
+                //TODO: Open the logger before the parse
                 if (logger.Open(options.LogFile))
+                {
                     options.Log = true;
-                logger.ShouldLogVerbose = options.LogVerbose;
+                    logger.ShouldLogVerbose = options.LogVerbose;
+                }
 
+                ILRepack repack = new ILRepack(options, logger);
                 repack.Repack();
                 rc = 0;
             }
@@ -45,7 +48,7 @@ namespace ILRepacking
             finally
             {
                 logger.Close();
-                if (repack.PauseBeforeExit)
+                if (options.PauseBeforeExit)
                 {
                     Console.WriteLine("Press Any Key To Continue");
                     Console.ReadKey(true);

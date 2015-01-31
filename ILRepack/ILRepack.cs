@@ -76,11 +76,6 @@ namespace ILRepacking
         private MappingHandler mappingHandler;
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
-        public bool PauseBeforeExit 
-        { 
-            get { return options.PauseBeforeExit; } 
-        }
-
         internal ILRepack(RepackOptions options, ILogger logger)
         {
             this.options = options;
