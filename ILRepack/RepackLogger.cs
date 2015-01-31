@@ -6,10 +6,12 @@ using System.Text;
 
 namespace ILRepacking
 {
-    class RepackLogger
+    class RepackLogger : ILogger
     {
         private string outputFile;
         private StreamWriter writer;
+
+        public bool ShouldLogVerbose { get; set; }
 
         public RepackLogger()
         {
@@ -64,7 +66,5 @@ namespace ILRepacking
             if (ShouldLogVerbose)
                 Log("INFO: " + msg);
         }
-
-        public bool ShouldLogVerbose { get; set; }
     }
 }

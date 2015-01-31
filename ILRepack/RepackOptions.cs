@@ -11,7 +11,6 @@ namespace ILRepacking
     class RepackOptions
     {
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
-
         public bool AllowDuplicateResources { get; set; }
         public bool AllowMultipleAssemblyLevelAttributes { get; set; }
         public bool AllowWildCards { get; set; }
@@ -67,8 +66,8 @@ namespace ILRepacking
         
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
-        private readonly CommandLine cmd;
-        private readonly RepackLogger logger;
+        private readonly ICommandLine cmd;
+        private readonly ILogger logger;
         private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
         private List<Regex> excludeInternalizeMatches;
 
@@ -98,7 +97,7 @@ namespace ILRepacking
             }
         }
 
-        public RepackOptions(CommandLine commandLine, RepackLogger logger)
+        public RepackOptions(ICommandLine commandLine, ILogger logger)
         {
             this.cmd = commandLine;
             this.logger = logger;

@@ -52,7 +52,7 @@ namespace ILRepacking
     public class ILRepack
     {
         internal RepackOptions options;
-        internal RepackLogger logger;
+        internal ILogger logger;
 
         internal List<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
@@ -84,7 +84,7 @@ namespace ILRepacking
             get { return options.PauseBeforeExit; } 
         }
 
-        internal ILRepack(RepackOptions options, RepackLogger logger)
+        internal ILRepack(RepackOptions options, ILogger logger)
         {
             this.options = options;
             this.logger = logger;
@@ -104,8 +104,8 @@ namespace ILRepacking
         [STAThread]
         public static int Main(string[] args)
         {
-            CommandLine commandLine = new CommandLine(args);
-            RepackLogger logger = new RepackLogger();
+            ICommandLine commandLine = new CommandLine(args);
+            ILogger logger = new RepackLogger();
             RepackOptions options = new RepackOptions(commandLine, logger);
             ILRepack repack = new ILRepack(options, logger);
             int rc = -1;
