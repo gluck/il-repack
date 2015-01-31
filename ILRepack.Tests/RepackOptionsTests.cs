@@ -74,5 +74,216 @@ namespace ILRepack.Tests
             Assert.IsFalse(options.ShouldShowUsage());
         }
 
+        [Test]
+        public void WithAllowDuplicateTypes_WithTypes__CallParse__TypesIsSet()
+        {
+            string[] types = new string[] { "PlatformFixer", "ReflectionHelper" };
+            commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(types);
+            options.Parse();
+            CollectionAssert.AreEquivalent(types, options.AllowedDuplicateTypes.Values);
+        }
+
+        [Test]
+        public void WithAllowDuplicateTypes_WithNamespaces__CallParse__NamespacesIsSet()
+        {
+            string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
+            var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
+            commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(namespaces);
+            options.Parse();
+            CollectionAssert.AreEquivalent(namespaceTypes, options.AllowedDuplicateNameSpaces);
+        }
+
+        [Test]
+        public void WithAllowDuplicateTypes_WithNamespaces_WithTypes__CallParse__TypesAndNamespacesIsSet()
+        {
+            string[] types = new string[] { "ILogger", "ILRepack" };
+            string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
+            string[] duplicateTypes = types.Concat(namespaces).ToArray();
+            commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(duplicateTypes);
+            options.Parse();
+            var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
+            CollectionAssert.AreEquivalent(types, options.AllowedDuplicateTypes.Values);
+            CollectionAssert.AreEquivalent(namespaceTypes, options.AllowedDuplicateNameSpaces);
+        }
+
+        [Test]
+        public void WithModifierNDebug__Parse__DebugInfoFalseIsSet()
+        {
+            options.Parse();
+            Assert.IsTrue(options.DebugInfo);
+            commandLine.Setup(cmd => cmd.Modifier("ndebug")).Returns(true);
+            options.Parse();
+            Assert.IsFalse(options.DebugInfo);
+        }
+
+        [Test]
+        public void WithOptionInternalize__Parse__ExcludeFileIsSet()
+        {
+            commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
+            string excludeFileName = "ILogger";
+            commandLine.Setup(cmd => cmd.Option("internalize")).Returns(excludeFileName);
+            options.Parse();
+            Assert.AreEqual(excludeFileName, options.ExcludeFile);
+        }
+
+        [Test]
+        public void WithOptionLog__Parse__LogFileIsSet()
+        {
+            commandLine.Setup(cmd => cmd.HasOption("log")).Returns(true);
+            string logFileName = "31012015.log";
+            commandLine.Setup(cmd => cmd.Option("log")).Returns(logFileName);
+            options.Parse();
+            Assert.AreEqual(logFileName, options.LogFile);
+        }
+
+        [Test]
+        public void WithOptionTargetKindLibrary__Parse__TargetKindIsSet()
+        {
+            commandLine.Setup(cmd => cmd.Option("target")).Returns("library");
+            options.Parse();
+            Assert.AreEqual(ILRepacking.ILRepack.Kind.Dll, options.TargetKind);
+        }
+
+        [Test]
+        public void WithOptionTargetKindEXE__Parse__TargetKindIsSet()
+        {
+            commandLine.Setup(cmd => cmd.Option("target")).Returns("exe");
+            options.Parse();
+            Assert.AreEqual(ILRepacking.ILRepack.Kind.Exe, options.TargetKind);
+        }
+
+        [Test]
+        public void WithOptionTargetKindWinEXE__Parse__TargetKindIsSet()
+        {
+            commandLine.Setup(cmd => cmd.Option("target")).Returns("winexe");
+            options.Parse();
+            Assert.AreEqual(ILRepacking.ILRepack.Kind.WinExe, options.TargetKind);
+        }
+
+        [Test]
+        [ExpectedException(typeof(RepackOptions.InvalidTargetKindException))]
+        public void WithOptionTargetKindInvalid__Parse__TargetKindIsSet()
+        {
+            commandLine.Setup(cmd => cmd.Option("target")).Returns("notsupportedtype");
+            options.Parse();
+        }
+
+        [Test]
+        public void WithOptionTargetPlatform__Parse__DirectoryAndVersionAreSet()
+        {
+            string directory = "dir";
+            string version = "v1";
+            string targetPlatform = string.Join(",", version, directory);
+            commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(targetPlatform);
+            options.Parse();
+            Assert.AreEqual(directory, options.TargetPlatformDirectory);
+            Assert.AreEqual(version, options.TargetPlatformVersion);
+        }
+
+        [Test]
+        public void WithOptionTargetPlatform__Parse__VersionIsSet()
+        {
+            string version = "v1";
+            commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(version);
+            options.Parse();
+            Assert.AreEqual(version, options.TargetPlatformVersion);
+        }
+
+        [TestCase("v1")]
+        [TestCase("v1.1")]
+        [TestCase("v2")]
+        [TestCase("v4")]
+        public void WithModifierTargetVersion__Parse__TargetPlatformVersionIsSet(string version)
+        {
+            commandLine.Setup(cmd => cmd.Modifier(version)).Returns(true);
+            options.Parse();
+            Assert.AreEqual(version, options.TargetPlatformVersion);
+        }
+
+        [Test]
+        public void WithOptionVersion__Parse__SetVersion()
+        {
+            Version version = new Version("1.1");
+            commandLine.Setup(cmd => cmd.Option("ver")).Returns(version.ToString());
+            options.Parse();
+            Assert.AreEqual(version, options.Version);
+        }
+
+        [Test]
+        public void WithOptionKeyFileNotSet_WithDelaySign__Parse__Warn()
+        {
+            commandLine.Setup(cmd => cmd.Modifier("delaysign")).Returns(true);
+            options.Parse();
+            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+        }
+
+        [Test]
+        public void WithAllowMultipleAssign_WithNoCopyAttributes__Parse__Warn()
+        {
+            commandLine.Setup(cmd => cmd.Modifier("allowmultiple")).Returns(true);
+            options.Parse();
+            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+        }
+
+        [Test]
+        public void WithAttributeFile_WithCopyAttributes__Parse__Warn()
+        {
+            string attributeFile = "filename";
+            commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
+            commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
+            options.Parse();
+            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+        }
+        
+        [Test]
+        public void WithNoSetup__SetSearchDirectories__SetGlobalAssemblyResolver()
+        {
+            var dirs = new List<string> { "dir1", "dir2", "dir3" };
+            options.SetSearchDirectories(dirs.ToArray());
+            var searchDirs = dirs.Concat(new string[] { ".", "bin"});
+            CollectionAssert.AreEquivalent(searchDirs, options.GlobalAssemblyResolver.GetSearchDirectories());
+        }
+
+        [Test]
+        public void WithNoSetup__SetTargetPlatform__TargetPlatformIsSet()
+        {
+            string directory = "dir";
+            string version = "v1";
+            options.SetTargetPlatform(version, directory);
+            Assert.AreEqual(directory, options.TargetPlatformDirectory);
+            Assert.AreEqual(version, options.TargetPlatformVersion);
+        }
+        
+        [Test]
+        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "No output file given.")]
+        public void WithNoOutputFile__ParseProperties__ThrowException()
+        {
+            options.ParseProperties();
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "No input files given.")]
+        public void WithNoInputAssemblies__ParseProperties__ThrowException()
+        {
+            commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
+            options.Parse();
+            Assert.IsNotNullOrEmpty(options.OutputFile);
+            options.ParseProperties();
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "KeyFile does not exist", MatchType = MessageMatch.Contains)]
+        public void WithNoKeyFile__ParseProperties__ThrowException()
+        {
+            var inputAssemblies = new List<string> { "A", "B", "C" };
+            commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
+            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            commandLine.Setup(cmd => cmd.Option("keyfile")).Returns("filename");
+            options.Parse();
+            Assert.IsNotNull(options.InputAssemblies);
+            Assert.IsNotEmpty(options.InputAssemblies);
+            options.ParseProperties();
+        }
+
     }
 }

@@ -93,12 +93,10 @@ namespace ILRepacking
             //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
-
         public void ReadArguments()
         {
             options.Parse();
         }
-
 
         private void ReadInputAssemblies()
         {
