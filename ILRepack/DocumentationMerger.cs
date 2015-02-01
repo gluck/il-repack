@@ -69,14 +69,14 @@ namespace ILRepacking
                 }
 
                 // write
-                using (var writer = XmlWriter.Create(Path.ChangeExtension(repack.options.OutputFile, ".xml"), new XmlWriterSettings() { Indent = true, IndentChars = "    " }))
+                using (var writer = XmlWriter.Create(Path.ChangeExtension(repack.Options.OutputFile, ".xml"), new XmlWriterSettings() { Indent = true, IndentChars = "    " }))
                 {
                     doc.WriteTo(writer);
                 }
             }
             catch (Exception e)
             {
-                repack.logger.ERROR("Failed to merge documentation files: " + e);
+                repack.Logger.ERROR("Failed to merge documentation files: " + e);
             }
         }
     }

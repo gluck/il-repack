@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ILRepacking
 {
@@ -13,7 +10,7 @@ namespace ILRepacking
             ICommandLine commandLine = new CommandLine(args);
             ILogger logger = new RepackLogger();
             IFile file = new FileWrapper();
-            RepackOptions options = new RepackOptions(commandLine, logger, file);
+            var options = new RepackOptions(commandLine, logger, file);
             int returnCode = -1;
             try
             {
@@ -24,7 +21,7 @@ namespace ILRepacking
                 }
                 options.Parse();
 
-                //TODO: Open the logger before the parse
+                //TODO: Open the Logger before the parse
                 if (logger.Open(options.LogFile))
                 {
                     options.Log = true;
@@ -61,7 +58,7 @@ namespace ILRepacking
         static void Usage()
         {
             Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil 0.9.4.0 - Version " + typeof(ILRepack).Assembly.GetName().Version.ToString(2));
-            Console.WriteLine(@"Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
+            Console.WriteLine(@"Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
             Console.WriteLine(@" - /log:<logfile>     enable logging (to a file, if given) (default is disabled)");
@@ -95,7 +92,7 @@ namespace ILRepacking
             Console.WriteLine(@" - <path_to_primary>  primary assembly, gives the name, version to the merged one");
             Console.WriteLine(@" - <other_assemblies> ...");
             Console.WriteLine(@"");
-            Console.WriteLine(@"Note: for compatibility purposes, all options are case insensitive, and can be specified using '/', '-' or '--' prefix.");
+            Console.WriteLine(@"Note: for compatibility purposes, all Options are case insensitive, and can be specified using '/', '-' or '--' prefix.");
         }
 
         static void Exit(int exitCode)

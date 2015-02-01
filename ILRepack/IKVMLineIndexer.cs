@@ -149,13 +149,13 @@ namespace ILRepacking
 
         public void PostRepackReferences()
         {
-            if (!repack.options.LineIndexation)
+            if (!repack.Options.LineIndexation)
                 return;
 
             ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
-            if (ikvmRuntimeReference == null && repack.options.LineIndexation)
+            if (ikvmRuntimeReference == null && repack.Options.LineIndexation)
             {
-                ikvmRuntimeReference = repack.options.GlobalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
+                ikvmRuntimeReference = repack.Options.GlobalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
             }
             if (ikvmRuntimeReference != null)
             {
