@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NUnit.Framework;
 using ILRepacking;
 
@@ -13,7 +10,7 @@ namespace ILRepack.Tests
         public void WithNoArguments__NewObject__NoOtherArguments()
         {
             string[] arguments = { };
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             Assert.IsEmpty(commandLine.OtherAguments);
         }
 
@@ -21,7 +18,7 @@ namespace ILRepack.Tests
         public void WithEmptyOption__GetOption__ReturnNull()
         {
             string[] arguments = { "" };
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             string option = commandLine.Option("");
             Assert.IsNull(option);
         }
@@ -30,8 +27,8 @@ namespace ILRepack.Tests
         public void WithInvalidOptionPrefix__GetOption__ReturnNull()
         {
             string[] arguments = { "&ver" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("ver");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("ver");
             Assert.IsNull(option);
         }
 
@@ -39,8 +36,8 @@ namespace ILRepack.Tests
         public void WithValidOptionPrefix__GetOption__ReturnNull()
         {
             string[] arguments = { "--keyfile:file", "--log" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("keyfile");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("keyfile");
             Assert.AreEqual("file", option);
         }
 
@@ -48,8 +45,8 @@ namespace ILRepack.Tests
         public void WithValidOption__GetOptionWithNameInCaps__ReturnOption()
         {
             string[] arguments = { "/keyfile:file" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("KEYFILE");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("KEYFILE");
             Assert.AreEqual("file", option);
         }
 
@@ -57,8 +54,8 @@ namespace ILRepack.Tests
         public void WithValidOption__GetOtherOption__ReturnNull()
         {
             string[] arguments = { "/keyfile:file" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("union");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("union");
             Assert.IsNull(option);
         }
 
@@ -66,8 +63,8 @@ namespace ILRepack.Tests
         public void WithEmptyOption__GetOption__ReturnEmptyString()
         {
             string[] arguments = { "/" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("");
             Assert.IsEmpty(option);
         }
 
@@ -75,7 +72,7 @@ namespace ILRepack.Tests
         public void WithOptions__RemoveOption__ReturnAllOptionsExceptTheOneRemoved()
         {
             string[] arguments = { "/var", "-var", "--var", "/log" };
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             Assert.IsTrue(commandLine.Modifier("var"));
             Assert.IsFalse(commandLine.HasOption("var"));
             Assert.IsTrue(commandLine.Modifier("log"));
@@ -87,9 +84,9 @@ namespace ILRepack.Tests
         public void WithBoolOption__GetOption__ReturnOption()
         {
             string[] arguments = { "/union:true" };
-            CommandLine commandLine = new CommandLine(arguments);
-            bool defaultValue = false;
-            bool shouldUnion = commandLine.OptionBoolean("union", defaultValue);
+            var commandLine = new CommandLine(arguments);
+            const bool defaultValue = false;
+            var shouldUnion = commandLine.OptionBoolean("union", defaultValue);
             Assert.IsTrue(shouldUnion);
         }
 
@@ -97,8 +94,8 @@ namespace ILRepack.Tests
         public void WithOptions__RemoveOptions__ReturnMatchedOptions()
         {
             string[] arguments = { "/union:true", "/log:file", "/var:3.3" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string[] matchedArguments = commandLine.Options("union");
+            var commandLine = new CommandLine(arguments);
+            var matchedArguments = commandLine.Options("union");
             Assert.AreEqual(1, matchedArguments.Length);
         }
 
@@ -106,29 +103,29 @@ namespace ILRepack.Tests
         public void WithOptionWithInvalidAssignChar__GetOption__ReturnNull()
         {
             string[] arguments = { "/log-file" };
-            CommandLine commandLine = new CommandLine(arguments);
-            string option = commandLine.Option("log");
+            var commandLine = new CommandLine(arguments);
+            var option = commandLine.Option("log");
             Assert.IsNull(option);
         }
 
         [Test]
         public void WithOneOption__NewObject__ReturnOption()
         {
-            string versionOptionName = "ver";
-            string versionNumber = "3.2.2.2";
+            const string versionOptionName = "ver";
+            const string versionNumber = "3.2.2.2";
             string[] arguments = { String.Format("/{0}:{1}", versionOptionName, versionNumber)};
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             Assert.IsNotEmpty(arguments);
             Assert.IsTrue(commandLine.HasOption(versionOptionName));
-            string versionOption = commandLine.Option(versionOptionName);
+            var versionOption = commandLine.Option(versionOptionName);
             Assert.AreEqual(versionOption, versionNumber);
         }
 
         [Test]
-        public void WithArguments__GetCount__ReturnCount(string argsCount)
+        public void WithArguments__GetCount__ReturnCount()
         {
             string[] arguments = { "/var", "/log-file" };
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             Assert.AreEqual(2, commandLine.OptionsCount);
             Assert.IsFalse(commandLine.HasNoOptions);
         }
@@ -137,7 +134,7 @@ namespace ILRepack.Tests
         public void WithZeroArguments__GetIsEmpty__ReturnTrue()
         {
             string[] arguments = { };
-            CommandLine commandLine = new CommandLine(arguments);
+            var commandLine = new CommandLine(arguments);
             Assert.IsTrue(commandLine.HasNoOptions);
         }
     }

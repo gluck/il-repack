@@ -1,6 +1,4 @@
-﻿
-using System;
-using ILRepacking;
+﻿using ILRepacking;
 using NUnit.Framework;
 
 namespace ILRepack.Tests
@@ -30,7 +28,11 @@ namespace ILRepack.Tests
             ILogger logger = new RepackLogger();
             Assert.IsTrue(logger.Open("file.out"));
             logger.Close();
-            logger.ERROR("Only written to the console. No erorr is thrown.");
+            const string message = "Only written to the console. No erorr is thrown.";
+            logger.ERROR(message);
+            logger.WARN(message);
+            logger.VERBOSE(message);
+            logger.INFO(message);
         }
     }
 }

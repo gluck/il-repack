@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using ILRepacking;
 using Moq;
 using NUnit.Framework;
-using System.Text.RegularExpressions;
 
 namespace ILRepack.Tests
 {
@@ -80,7 +78,7 @@ namespace ILRepack.Tests
         [Test]
         public void WithAllowDuplicateTypes_WithTypes__CallParse__DuplicateTypesAreSet()
         {
-            string[] types = new string[] { "PlatformFixer", "ReflectionHelper" };
+            string[] types = { "PlatformFixer", "ReflectionHelper" };
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(types);
             options.Parse();
             CollectionAssert.AreEquivalent(types, options.AllowedDuplicateTypes.Values);
@@ -89,7 +87,7 @@ namespace ILRepack.Tests
         [Test]
         public void WithAllowDuplicateTypes_WithNamespaces__CallParse__NamespacesAreSet()
         {
-            string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
+            string[] namespaces = { "PlatformFixer.*", "ReflectionHelper.*" };
             var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(namespaces);
             options.Parse();
@@ -99,8 +97,8 @@ namespace ILRepack.Tests
         [Test]
         public void WithAllowDuplicateTypes_WithNamespaces_WithTypes__CallParse__TypesAndNamespacesAreSet()
         {
-            string[] types = new string[] { "ILogger", "ILRepack" };
-            string[] namespaces = new string[] { "PlatformFixer.*", "ReflectionHelper.*" };
+            string[] types = { "ILogger", "ILRepack" };
+            string[] namespaces = { "PlatformFixer.*", "ReflectionHelper.*" };
             string[] duplicateTypes = types.Concat(namespaces).ToArray();
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(duplicateTypes);
             options.Parse();
@@ -123,7 +121,7 @@ namespace ILRepack.Tests
         public void WithOptionInternalize__Parse__ExcludeFileIsSet()
         {
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
-            string excludeFileName = "ILogger";
+            const string excludeFileName = "ILogger";
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(excludeFileName);
             options.Parse();
             Assert.AreEqual(excludeFileName, options.ExcludeFile);
@@ -133,7 +131,7 @@ namespace ILRepack.Tests
         public void WithOptionLog__Parse__LogFileIsSet()
         {
             commandLine.Setup(cmd => cmd.HasOption("log")).Returns(true);
-            string logFileName = "31012015.log";
+            const string logFileName = "31012015.log";
             commandLine.Setup(cmd => cmd.Option("log")).Returns(logFileName);
             options.Parse();
             Assert.AreEqual(logFileName, options.LogFile);
@@ -174,9 +172,9 @@ namespace ILRepack.Tests
         [Test]
         public void WithOptionTargetPlatform__Parse__DirectoryAndVersionAreSet()
         {
-            string directory = "dir";
-            string version = "v1";
-            string targetPlatform = string.Join(",", version, directory);
+            const string directory = "dir";
+            const string version = "v1";
+            var targetPlatform = string.Join(",", version, directory);
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(targetPlatform);
             options.Parse();
             Assert.AreEqual(directory, options.TargetPlatformDirectory);
@@ -186,7 +184,7 @@ namespace ILRepack.Tests
         [Test]
         public void WithOptionTargetPlatform__Parse__VersionIsSet()
         {
-            string version = "v1";
+            const string version = "v1";
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(version);
             options.Parse();
             Assert.AreEqual(version, options.TargetPlatformVersion);
@@ -206,7 +204,7 @@ namespace ILRepack.Tests
         [Test]
         public void WithOptionVersion__Parse__VersionIsSet()
         {
-            Version version = new Version("1.1");
+            var version = new Version("1.1");
             commandLine.Setup(cmd => cmd.Option("ver")).Returns(version.ToString());
             options.Parse();
             Assert.AreEqual(version, options.Version);
@@ -231,7 +229,7 @@ namespace ILRepack.Tests
         [Test]
         public void WithAttributeFile_WithCopyAttributes__Parse__Warn()
         {
-            string attributeFile = "filename";
+            const string attributeFile = "filename";
             commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
             commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
             options.Parse();
@@ -250,8 +248,8 @@ namespace ILRepack.Tests
         [Test]
         public void WithNoSetup__SetTargetPlatform__TargetPlatformIsSet()
         {
-            string directory = "dir";
-            string version = "v1";
+            const string directory = "dir";
+            const string version = "v1";
             options.SetTargetPlatform(version, directory);
             Assert.AreEqual(directory, options.TargetPlatformDirectory);
             Assert.AreEqual(version, options.TargetPlatformVersion);
@@ -292,7 +290,7 @@ namespace ILRepack.Tests
         public void WithNoKeyFile__ParseProperties__ReadExcludeInternalizedMatches()
         {
             var inputAssemblies = new List<string> { "A", "B", "C" };
-            string keyFile = "keyfilepath";
+            const string keyFile = "keyfilepath";
             var keyFileLines = new List<string> { "key1" };
             commandLine.Setup(cmd => cmd.Option("out")).Returns("outfilepath");
             commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
@@ -304,7 +302,6 @@ namespace ILRepack.Tests
             Assert.IsNotNull(options.InputAssemblies);
             Assert.IsNotEmpty(options.InputAssemblies);
             options.ParseProperties();
-            var linesEnumerator = keyFileLines.GetEnumerator();
             var pattern = options.ExcludeInternalizeMatches.First();
             Assert.IsTrue(pattern.IsMatch(keyFileLines.First()));
         }
