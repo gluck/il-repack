@@ -13,37 +13,29 @@ namespace ILRepacking
 
         public bool ShouldLogVerbose { get; set; }
 
-        public RepackLogger()
-        {
-        }
-
         public void Log(object str)
         {
             string logStr = str.ToString();
             Console.WriteLine(logStr);
-            if (writer!= null)
+            if (writer != null)
                 writer.WriteLine(logStr);
         }
 
-        public bool Open(string outputFile)
+        public bool Open(string file)
         {
-            this.outputFile = outputFile;
-            bool didOpenWriter = false;
-            if (!string.IsNullOrEmpty(outputFile))
-            {
-                writer = new StreamWriter(outputFile);
-                didOpenWriter = true;
-            }
-            return didOpenWriter;
+            outputFile = file;
+            if (string.IsNullOrEmpty(outputFile)) 
+                return false;
+            writer = new StreamWriter(outputFile);
+            return true;
         }
 
         public void Close()
         {
-            if (outputFile != null)
-            {
-                writer.Close();
-                writer = null;
-            }
+            if (outputFile == null) 
+                return;
+            writer.Close();
+            writer = null;
         }
 
         public void ERROR(string msg)

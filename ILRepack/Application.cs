@@ -10,7 +10,7 @@ namespace ILRepacking
             ICommandLine commandLine = new CommandLine(args);
             ILogger logger = new RepackLogger();
             IFile file = new FileWrapper();
-            var options = new RepackOptions(commandLine, logger, file);
+            RepackOptions options = new RepackOptions(commandLine, logger, file);
             int returnCode = -1;
             try
             {

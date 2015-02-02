@@ -198,7 +198,7 @@ namespace ILRepacking
 
             SetSearchDirectories(cmd.Options("lib"));
 
-            // private cmdline-options:
+            // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
