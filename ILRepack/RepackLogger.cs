@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace ILRepacking
 {
@@ -23,16 +20,16 @@ namespace ILRepacking
 
         public bool Open(string file)
         {
-            outputFile = file;
-            if (string.IsNullOrEmpty(outputFile)) 
+            if (string.IsNullOrEmpty(file)) 
                 return false;
+            outputFile = file;
             writer = new StreamWriter(outputFile);
             return true;
         }
 
         public void Close()
         {
-            if (outputFile == null) 
+            if (writer == null) 
                 return;
             writer.Close();
             writer = null;
