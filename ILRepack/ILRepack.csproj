@@ -85,6 +85,7 @@
     <Compile Include="ReflectionHelper.cs" />
     <Compile Include="RepackLogger.cs" />
     <Compile Include="RepackOptions.cs" />
+    <Compile Include="RepackAssemblyResolver.cs" />
     <Compile Include="ResReader.cs" />
     <Compile Include="SerReader.cs" />
   </ItemGroup>
