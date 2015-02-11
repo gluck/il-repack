@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ILRepack.Tests</RootNamespace>
     <AssemblyName>ILRepack.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Moq">
@@ -47,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLineTests.cs" />
+    <Compile Include="ILRepackTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RepackLoggerTests.cs" />
     <Compile Include="RepackOptionsTests.cs" />
@@ -55,6 +58,15 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker120.exe.config" />
+    <None Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.exe.config" />
+    <None Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.vshost.exe.config" />
+    <None Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.vshost.exe.manifest" />
+    <None Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker40.exe.config" />
+    <None Include="sharpdevelop\SharpDevelop.CheckMSBuild35Features.targets" />
+    <None Include="sharpdevelop\SharpDevelop.CodeAnalysis.targets" />
+    <None Include="sharpdevelop\SharpDevelop.exe.config" />
+    <None Include="sharpdevelop\SharpDevelop.TargetingPack.targets" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
@@ -65,6 +77,62 @@
       <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
       <Name>ILRepack</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="sharpdevelop\AvalonDock.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="sharpdevelop\AvalonDock.pdb" />
+    <Content Include="sharpdevelop\dlls.txt" />
+    <Content Include="sharpdevelop\ICSharpCode.AvalonEdit.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.AvalonEdit.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.AvalonEdit.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.Build.Tasks.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.Build.Tasks.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.Presentation.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.Presentation.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.WinForms.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.WinForms.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.Core.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Cecil.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Cecil.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Cecil.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.Refactoring.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.Refactoring.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.Refactoring.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.CSharp.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Xml.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Xml.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.NRefactory.Xml.xml" />
+    <Content Include="sharpdevelop\ICSharpCode.Scripting.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.Scripting.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker120.exe" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker120.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.exe" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker35.vshost.exe" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker40.exe" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.BuildWorker40.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.Widgets.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.SharpDevelop.Widgets.pdb" />
+    <Content Include="sharpdevelop\ICSharpCode.TreeView.dll" />
+    <Content Include="sharpdevelop\ICSharpCode.TreeView.pdb" />
+    <Content Include="sharpdevelop\log4net.dll" />
+    <Content Include="sharpdevelop\Mono.Cecil.dll" />
+    <Content Include="sharpdevelop\Mono.Cecil.pdb" />
+    <Content Include="sharpdevelop\SharpDevelop.EnvDTE.dll" />
+    <Content Include="sharpdevelop\SharpDevelop.EnvDTE.pdb" />
+    <Content Include="sharpdevelop\SharpDevelop.exe" />
+    <Content Include="sharpdevelop\SharpDevelop.pdb" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

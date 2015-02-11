@@ -74,15 +74,14 @@ namespace ILRepacking
             Repack();
         }
 
-        private void ReadInputAssemblies()
+        public void ReadInputAssemblies()
         {
             MergedAssemblyFiles = Options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
-            // TODO: this could be parallelized to gain speed
+
             var primary = MergedAssemblyFiles.FirstOrDefault();
-            foreach (string assembly in MergedAssemblyFiles)
+            foreach (var result in MergedAssemblyFiles.Select(assembly => ReadInputAssembly(assembly, primary == assembly)).AsParallel())
             {
-                var result = ReadInputAssembly(assembly, primary == assembly);
                 if (result.IsPrimary)
                 {
                     PrimaryAssemblyDefinition = result.Definition;
