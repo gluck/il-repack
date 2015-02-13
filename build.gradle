@@ -9,13 +9,17 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.0"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.3"
         classpath "com.ullink.gradle:gradle-nuget-plugin:2.0"
+        classpath "com.ullink.gradle:gradle-nunit-plugin:1.0"
+        classpath "com.ullink.gradle:gradle-opencover-plugin:1.0"
     }
 }
 
 apply plugin:'msbuild'
 apply plugin:'nuget'
+apply plugin:'nunit'
+apply plugin:'com.ullink.opencover-nunit'
 
 archivesBaseName = 'ILRepack'
 version = '1.25.0'
@@ -31,11 +35,15 @@ msbuild {
     def netVersion = project.version + '.0'
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
-    
+
     solutionFile = 'ILRepack.sln'
     configuration = 'Debug'
     projectName = 'ILRepack'
     inputs.file(project.buildFile)
+}
+
+nunit {
+    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ]
 }
 
 ext.repackList = ['ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
