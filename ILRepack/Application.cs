@@ -19,7 +19,9 @@ namespace ILRepacking
                     Usage();
                     Exit(2);
                 }
+
                 options.Parse();
+                options.ParseProperties();
 
                 //TODO: Open the Logger before the parse
                 if (logger.Open(options.LogFile))
@@ -29,6 +31,7 @@ namespace ILRepacking
                 }
 
                 ILRepack repack = new ILRepack(options, logger);
+
                 repack.Repack();
                 returnCode = 0;
             }

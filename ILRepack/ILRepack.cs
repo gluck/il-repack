@@ -67,6 +67,8 @@ namespace ILRepacking
         {
             Options = options;
             Logger = logger;
+
+            reflectionHelper = new ReflectionHelper(this);
         }
 
         public void Merge()
@@ -173,7 +175,6 @@ namespace ILRepacking
             SameAsPrimaryAssembly
         }
 
-
         protected TargetRuntime ParseTargetPlatform()
         {
             TargetRuntime runtime = PrimaryAssemblyMainModule.Runtime;
@@ -214,9 +215,6 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
-            reflectionHelper = new ReflectionHelper(this);
-            Options.ParseProperties();
-
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
             Options.GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
