@@ -97,12 +97,13 @@ namespace ILRepacking
         {
             Options.GlobalAssemblyResolver.RegisterAssemblies(Assemblies.MergedAssemblies);
 
-            platformFixer = new PlatformFixer(Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime);
             mappingHandler = new MappingHandler();
             bool hadStrongName = Assemblies.PrimaryAssemblyDefinition.Name.HasPublicKey;
 
             var kind = Assemblies.GetTargetModuleKind();
             var runtime = Assemblies.GetTargetRuntime();
+
+            platformFixer = new PlatformFixer(Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime);
             platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
 
             // change assembly's name to correspond to the file we create
