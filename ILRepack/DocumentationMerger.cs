@@ -30,7 +30,7 @@ namespace ILRepacking
             {
                 var validXmlFiles = new List<XmlDocument>();
                 XmlDocument doc;
-                foreach (string assembly in repack.MergedAssemblyFiles)
+                foreach (string assembly in repack.Assemblies.MergedAssemblyFiles)
                 {
                     string assemblyDoc = Path.ChangeExtension(assembly, ".xml");
                     if (File.Exists (assemblyDoc))
@@ -53,7 +53,7 @@ namespace ILRepacking
                 root.AppendChild(node);
                 var node2 = doc.CreateElement("name");
                 node.AppendChild(node2);
-                node2.AppendChild(doc.CreateTextNode(repack.TargetAssemblyDefinition.Name.Name));
+                node2.AppendChild(doc.CreateTextNode(repack.Assemblies.TargetAssemblyDefinition.Name.Name));
 
                 // members
                 node = doc.CreateElement("members");

@@ -207,10 +207,10 @@ namespace ILRepacking
                             {
                                 if (prop.Name == "PublicKeyBlob")
                                 {
-                                    if (repack.TargetAssemblyDefinition.Name.HasPublicKey)
+                                    if (repack.Assemblies.TargetAssemblyDefinition.Name.HasPublicKey)
                                     {
                                         if (targetAssemblyPublicKeyBlobString == null)
-                                            foreach (byte b in repack.TargetAssemblyDefinition.Name.PublicKey)
+                                            foreach (byte b in repack.Assemblies.TargetAssemblyDefinition.Name.PublicKey)
                                                 targetAssemblyPublicKeyBlobString += b.ToString("X").PadLeft(2, '0');
                                         if (prop.Argument.Type.FullName != "System.String")
                                             throw new NotSupportedException("Invalid type of argument, expected string");

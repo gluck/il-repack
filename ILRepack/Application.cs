@@ -10,7 +10,10 @@ namespace ILRepacking
             ICommandLine commandLine = new CommandLine(args);
             ILogger logger = new RepackLogger();
             IFile file = new FileWrapper();
+
             RepackOptions options = new RepackOptions(commandLine, logger, file);
+            RepackAssemblies assemblies = new RepackAssemblies(options, logger, file);
+
             int returnCode = -1;
             try
             {
@@ -30,7 +33,9 @@ namespace ILRepacking
                     logger.ShouldLogVerbose = options.LogVerbose;
                 }
 
-                ILRepack repack = new ILRepack(options, logger);
+                assemblies.ReadInputAssemblies();
+
+                ILRepack repack = new ILRepack(options, logger, assemblies);
 
                 repack.Repack();
                 returnCode = 0;

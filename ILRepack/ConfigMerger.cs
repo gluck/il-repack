@@ -27,7 +27,7 @@ namespace ILRepacking
             try
             {
                 var validConfigFiles = new List<string>();
-                foreach (string assembly in repack.MergedAssemblyFiles)
+                foreach (string assembly in repack.Assemblies.MergedAssemblyFiles)
                 {
                     string assemblyConfig = assembly + ".config";
                     if (!File.Exists(assemblyConfig)) 

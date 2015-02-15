@@ -11,8 +11,8 @@ namespace ILRepack.Tests
     [TestFixture]
     class ILRepackTests
     {
-        private RepackOptions repackOptions;
-        private ILRepacking.ILRepack repack;
+        private RepackOptions options;
+        private RepackAssemblies assemblies;
         private Mock<ILogger> logger;
         private Mock<ICommandLine> commandLine;
         private Mock<IFile> file;
@@ -25,8 +25,8 @@ namespace ILRepack.Tests
             commandLine = new Mock<ICommandLine>();
             file = new Mock<IFile>();
 
-            repackOptions = new RepackOptions(commandLine.Object, logger.Object, file.Object);
-            repack = new ILRepacking.ILRepack(repackOptions, logger.Object);
+            options = new RepackOptions(commandLine.Object, logger.Object, file.Object);
+            assemblies = new RepackAssemblies(options, logger.Object, file.Object);
 
             var inputAssemblies = new List<string> { "AvalonDock.dll", 
                 "ICsharpCode.AvalonEdit.dll", 
@@ -57,9 +57,9 @@ namespace ILRepack.Tests
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            repackOptions.InputAssemblies = inputAssembliesPath.ToArray();
+            options.InputAssemblies = inputAssembliesPath.ToArray();
 
-            repack.ReadInputAssemblies();
+            assemblies.ReadInputAssemblies();
             stopwatch.Stop();
             Console.WriteLine("Read assemblies: " + stopwatch.ElapsedMilliseconds);
         }
