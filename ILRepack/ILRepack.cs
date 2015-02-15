@@ -73,13 +73,6 @@ namespace ILRepacking
             SameAsPrimaryAssembly
         }
 
-        protected TargetRuntime ParseTargetPlatform()
-        {
-            var runtime = Assemblies.GetTargetRuntime();
-            platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
-            return runtime;
-        }
-
         /// <summary>
         /// Check if a type's FullName matches a Reges to exclude it from internalizing.
         /// </summary>
@@ -118,7 +111,8 @@ namespace ILRepacking
                     case Kind.WinExe: kind = ModuleKind.Windows; break;
                 }
             }
-            TargetRuntime runtime = ParseTargetPlatform();
+            var runtime = Assemblies.GetTargetRuntime();
+            platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
 
             // change assembly's name to correspond to the file we create
             string mainModuleName = Path.GetFileNameWithoutExtension(Options.OutputFile);
