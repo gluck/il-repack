@@ -17,7 +17,6 @@
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Cecil.PE;
 using Mono.Collections.Generic;
 using Mono.Unix.Native;
 using System;
@@ -49,7 +48,6 @@ namespace ILRepacking
 
         private PlatformFixer platformFixer;
         private MappingHandler mappingHandler;
-        private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
         internal ILRepack(RepackOptions options, ILogger logger, RepackAssemblies assemblies)
         {
@@ -100,60 +98,11 @@ namespace ILRepacking
             mappingHandler = new MappingHandler();
             bool hadStrongName = Assemblies.PrimaryAssemblyDefinition.Name.HasPublicKey;
 
-            var kind = Assemblies.GetTargetModuleKind();
             var runtime = Assemblies.GetTargetRuntime();
-
             platformFixer = new PlatformFixer(Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime);
             platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
 
-            // change assembly's name to correspond to the file we create
-            string mainModuleName = Path.GetFileNameWithoutExtension(Options.OutputFile);
-
-            if (Assemblies.TargetAssemblyDefinition == null)
-            {
-                AssemblyNameDefinition asmName = Clone(Assemblies.PrimaryAssemblyDefinition.Name);
-                asmName.Name = mainModuleName;
-                Assemblies.TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(asmName, mainModuleName,
-                    new ModuleParameters()
-                        {
-                            Kind = kind,
-                            Architecture = Assemblies.PrimaryAssemblyDefinition.MainModule.Architecture,
-                            AssemblyResolver = Options.GlobalAssemblyResolver,
-                            Runtime = runtime
-                        });
-            }
-            else
-            {
-                // TODO: does this work or is there more to do?
-                Assemblies.TargetAssemblyDefinition.MainModule.Kind = kind;
-                Assemblies.TargetAssemblyDefinition.MainModule.Runtime = runtime;
-
-                Assemblies.TargetAssemblyDefinition.Name.Name = mainModuleName;
-                Assemblies.TargetAssemblyDefinition.MainModule.Name = mainModuleName;
-            }
-            // set the main module attributes
-            Assemblies.TargetAssemblyDefinition.MainModule.Attributes = Assemblies.PrimaryAssemblyDefinition.MainModule.Attributes;
-            Assemblies.TargetAssemblyDefinition.MainModule.Win32ResourceDirectory = MergeWin32Resources(Assemblies.PrimaryAssemblyDefinition.MainModule.Win32ResourceDirectory, Assemblies.OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
-
-            if (Options.Version != null)
-                Assemblies.TargetAssemblyDefinition.Name.Version = Options.Version;
-            // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
-            StrongNameKeyPair snkp = null;
-            if (Options.KeyFile != null && File.Exists(Options.KeyFile))
-            {
-                using (var stream = new FileStream(Options.KeyFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    snkp = new StrongNameKeyPair(stream);
-                }
-                Assemblies.TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
-                Assemblies.TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
-                Assemblies.TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
-            }
-            else
-            {
-                Assemblies.TargetAssemblyDefinition.Name.PublicKey = null;
-                Assemblies.TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
-            }
+            Assemblies.ParseTargetAssemblyDefinition();
             LineIndexer = new IKVMLineIndexer(this);
 
             RepackReferences();
@@ -198,13 +147,6 @@ namespace ILRepacking
                 }
             }
 
-            var parameters = new WriterParameters();
-            if ((snkp != null) && !Options.DelaySign)
-                parameters.StrongNameKeyPair = snkp;
-            // write PDB/MDB?
-            if (Options.DebugInfo)
-                parameters.WriteSymbols = true;
-            Assemblies.TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
             Logger.INFO("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly
@@ -236,67 +178,6 @@ namespace ILRepacking
             }
             if (failed)
                 throw new Exception("Merging failed, see above errors");
-        }
-
-        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary, IEnumerable<ResourceDirectory> resources)
-        {
-            if (primary == null)
-                return null;
-            foreach (var ass in Assemblies.OtherAssemblies)
-            {
-                MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
-            }
-            return primary;
-        }
-
-        private void MergeDirectory(List<ResourceEntry> parents, ResourceDirectory ret, AssemblyDefinition ass, ResourceDirectory directory)
-        {
-            foreach (var entry in directory.Entries)
-            {
-                var exist = ret.Entries.FirstOrDefault(x => entry.Name == null ? entry.Id == x.Id : entry.Name == x.Name);
-                if (exist == null)
-                    ret.Entries.Add(entry);
-                else
-                    MergeEntry(parents, exist, ass, entry);
-            }
-        }
-
-        private void MergeEntry(List<ResourceEntry> parents, ResourceEntry exist, AssemblyDefinition ass, ResourceEntry entry)
-        {
-            if (exist.Data != null && entry.Data != null)
-            {
-                if (isAspRes(parents, exist))
-                {
-                    aspOffsets[ass] = exist.Data.Length;
-                    byte[] newData = new byte[exist.Data.Length + entry.Data.Length];
-                    Array.Copy(exist.Data, 0, newData, 0, exist.Data.Length);
-                    Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
-                    exist.Data = newData;
-                }
-                else if (!isVersionInfoRes(parents, exist))
-                {
-                    Logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
-                }
-                return;
-            }
-            if (exist.Data != null || entry.Data != null)
-            {
-                Logger.WARN("Inconsistent Win32 resources, ignoring");
-                return;
-            }
-            parents.Add(exist);
-            MergeDirectory(parents, exist.Directory, ass, entry.Directory);
-            parents.RemoveAt(parents.Count - 1);
-        }
-
-        private static bool isAspRes(List<ResourceEntry> parents, ResourceEntry exist)
-        {
-            return exist.Id == 101 && parents.Count == 1 && parents[0].Id == 3771;
-        }
-
-        private static bool isVersionInfoRes(List<ResourceEntry> parents, ResourceEntry exist)
-        {
-            return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
         private void RepackAttributes()
@@ -712,23 +593,6 @@ namespace ILRepacking
                 new BinaryFormatter().Serialize(stream, repackList.ToArray());
                 return new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream.ToArray());
             }
-        }
-
-        // Real stuff below //
-        // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
-        // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
-        //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
-
-        private AssemblyNameDefinition Clone(AssemblyNameDefinition assemblyName)
-        {
-            AssemblyNameDefinition asmName = new AssemblyNameDefinition(assemblyName.Name, assemblyName.Version);
-            asmName.Attributes = assemblyName.Attributes;
-            asmName.Culture = assemblyName.Culture;
-            asmName.Hash = assemblyName.Hash;
-            asmName.HashAlgorithm = assemblyName.HashAlgorithm;
-            asmName.PublicKey = assemblyName.PublicKey;
-            asmName.PublicKeyToken = assemblyName.PublicKeyToken;
-            return asmName;
         }
 
         /// <summary>
@@ -1311,7 +1175,7 @@ namespace ILRepacking
                     fullName == "System.Web.UI.LiteralControl System.Web.UI.TemplateControl::CreateResourceBasedLiteralControl(System.Int32,System.Int32,System.Boolean)")
                 {
                     int offset;
-                    if (aspOffsets.TryGetValue(parent.Module.Assembly, out offset))
+                    if (Assemblies.TryGetAspOffset(parent.Module.Assembly, out offset))
                     {
                         int prev = (int)instructions[instructions.Count - 4].Operand;
                         instructions[instructions.Count - 4].Operand = prev + offset;
