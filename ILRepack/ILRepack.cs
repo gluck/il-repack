@@ -101,16 +101,7 @@ namespace ILRepacking
             mappingHandler = new MappingHandler();
             bool hadStrongName = Assemblies.PrimaryAssemblyDefinition.Name.HasPublicKey;
 
-            ModuleKind kind = Assemblies.PrimaryAssemblyDefinition.MainModule.Kind;
-            if (Options.TargetKind.HasValue)
-            {
-                switch (Options.TargetKind.Value)
-                {
-                    case Kind.Dll: kind = ModuleKind.Dll; break;
-                    case Kind.Exe: kind = ModuleKind.Console; break;
-                    case Kind.WinExe: kind = ModuleKind.Windows; break;
-                }
-            }
+            var kind = Assemblies.GetTargetModuleKind();
             var runtime = Assemblies.GetTargetRuntime();
             platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
 

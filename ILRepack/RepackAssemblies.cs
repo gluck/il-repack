@@ -144,5 +144,19 @@ namespace ILRepacking
             }
             return runtime;
         }
+
+        public ModuleKind GetTargetModuleKind()
+        {
+            ModuleKind kind = PrimaryAssemblyDefinition.MainModule.Kind;
+            if (options.TargetKind.HasValue)
+            {
+                switch (options.TargetKind.Value)
+                {
+                    case ILRepack.Kind.Dll: kind = ModuleKind.Dll; break;
+                    case ILRepack.Kind.Exe: kind = ModuleKind.Console; break;
+                    case ILRepack.Kind.WinExe: kind = ModuleKind.Windows; break;
+                }
+            }
+        }
     }
 }
