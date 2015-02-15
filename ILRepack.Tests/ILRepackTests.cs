@@ -63,18 +63,5 @@ namespace ILRepack.Tests
             stopwatch.Stop();
             Console.WriteLine("Read assemblies: " + stopwatch.ElapsedMilliseconds);
         }
-
-        [Test]
-        public void TestRepackReferences()
-        {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            repackOptions.InputAssemblies = inputAssembliesPath.ToArray();
-
-            repack.ReadInputAssemblies();
-            repack.RepackReferences();
-            stopwatch.Stop();
-            Console.WriteLine("Read assemblies + repack references: " + stopwatch.ElapsedMilliseconds);
-        }
     }
 }
