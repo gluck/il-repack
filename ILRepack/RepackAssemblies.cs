@@ -118,5 +118,31 @@ namespace ILRepacking
             if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
             return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
         }
+
+        public TargetRuntime GetTargetRuntime()
+        {
+            var runtime = PrimaryAssemblyDefinition.MainModule.Runtime;
+            if (options.TargetPlatformVersion == null)
+                return runtime;
+
+            switch (options.TargetPlatformVersion)
+            {
+                case "v1":
+                    runtime = TargetRuntime.Net_1_0;
+                    break;
+                case "v1.1":
+                    runtime = TargetRuntime.Net_1_1;
+                    break;
+                case "v2":
+                    runtime = TargetRuntime.Net_2_0;
+                    break;
+                case "v4":
+                    runtime = TargetRuntime.Net_4_0;
+                    break;
+                default:
+                    throw new ArgumentException("Invalid TargetPlatformVersion: \"" + options.TargetPlatformVersion + "\".");
+            }
+            return runtime;
+        }
     }
 }

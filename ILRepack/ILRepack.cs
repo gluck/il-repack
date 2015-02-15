@@ -75,19 +75,8 @@ namespace ILRepacking
 
         protected TargetRuntime ParseTargetPlatform()
         {
-            TargetRuntime runtime = Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime;
-            if (Options.TargetPlatformVersion != null)
-            {
-                switch (Options.TargetPlatformVersion)
-                {
-                    case "v1": runtime = TargetRuntime.Net_1_0; break;
-                    case "v1.1": runtime = TargetRuntime.Net_1_1; break;
-                    case "v2": runtime = TargetRuntime.Net_2_0; break;
-                    case "v4": runtime = TargetRuntime.Net_4_0; break;
-                    default: throw new ArgumentException("Invalid TargetPlatformVersion: \"" + Options.TargetPlatformVersion + "\".");
-                }
-                platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
-            }
+            var runtime = Assemblies.GetTargetRuntime();
+            platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
             return runtime;
         }
 
