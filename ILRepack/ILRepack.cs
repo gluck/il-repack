@@ -43,11 +43,7 @@ namespace ILRepacking
 
         internal IKVMLineIndexer LineIndexer { get; set; }
 
-        // helpers
-        internal ModuleDefinition TargetAssemblyMainModule { get { return Assemblies.TargetAssemblyDefinition.MainModule; } }
-
-        private ModuleDefinition PrimaryAssemblyMainModule { get { return Assemblies.PrimaryAssemblyDefinition.MainModule; } }
-
+        // helpers 
         private readonly ReflectionHelper reflectionHelper;
         private static readonly Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
 
@@ -79,7 +75,7 @@ namespace ILRepacking
 
         protected TargetRuntime ParseTargetPlatform()
         {
-            TargetRuntime runtime = PrimaryAssemblyMainModule.Runtime;
+            TargetRuntime runtime = Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime;
             if (Options.TargetPlatformVersion != null)
             {
                 switch (Options.TargetPlatformVersion)
@@ -119,11 +115,11 @@ namespace ILRepacking
         {
             Options.GlobalAssemblyResolver.RegisterAssemblies(Assemblies.MergedAssemblies);
 
-            platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
+            platformFixer = new PlatformFixer(Assemblies.PrimaryAssemblyDefinition.MainModule.Runtime);
             mappingHandler = new MappingHandler();
             bool hadStrongName = Assemblies.PrimaryAssemblyDefinition.Name.HasPublicKey;
 
-            ModuleKind kind = PrimaryAssemblyMainModule.Kind;
+            ModuleKind kind = Assemblies.PrimaryAssemblyDefinition.MainModule.Kind;
             if (Options.TargetKind.HasValue)
             {
                 switch (Options.TargetKind.Value)
@@ -146,7 +142,7 @@ namespace ILRepacking
                     new ModuleParameters()
                         {
                             Kind = kind,
-                            Architecture = PrimaryAssemblyMainModule.Architecture,
+                            Architecture = Assemblies.PrimaryAssemblyDefinition.MainModule.Architecture,
                             AssemblyResolver = Options.GlobalAssemblyResolver,
                             Runtime = runtime
                         });
@@ -154,15 +150,15 @@ namespace ILRepacking
             else
             {
                 // TODO: does this work or is there more to do?
-                TargetAssemblyMainModule.Kind = kind;
-                TargetAssemblyMainModule.Runtime = runtime;
+                Assemblies.TargetAssemblyDefinition.MainModule.Kind = kind;
+                Assemblies.TargetAssemblyDefinition.MainModule.Runtime = runtime;
 
                 Assemblies.TargetAssemblyDefinition.Name.Name = mainModuleName;
-                TargetAssemblyMainModule.Name = mainModuleName;
+                Assemblies.TargetAssemblyDefinition.MainModule.Name = mainModuleName;
             }
             // set the main module attributes
-            TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory, Assemblies.OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
+            Assemblies.TargetAssemblyDefinition.MainModule.Attributes = Assemblies.PrimaryAssemblyDefinition.MainModule.Attributes;
+            Assemblies.TargetAssemblyDefinition.MainModule.Win32ResourceDirectory = MergeWin32Resources(Assemblies.PrimaryAssemblyDefinition.MainModule.Win32ResourceDirectory, Assemblies.OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
 
             if (Options.Version != null)
                 Assemblies.TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -176,12 +172,12 @@ namespace ILRepacking
                 }
                 Assemblies.TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
                 Assemblies.TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
-                TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
+                Assemblies.TargetAssemblyDefinition.MainModule.Attributes |= ModuleAttributes.StrongNameSigned;
             }
             else
             {
                 Assemblies.TargetAssemblyDefinition.Name.PublicKey = null;
-                TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
+                Assemblies.TargetAssemblyDefinition.MainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
             LineIndexer = new IKVMLineIndexer(this);
 
@@ -192,37 +188,37 @@ namespace ILRepacking
             RepackAttributes();
 
             var fixator = new ReferenceFixator(this);
-            if (PrimaryAssemblyMainModule.EntryPoint != null)
+            if (Assemblies.PrimaryAssemblyDefinition.MainModule.EntryPoint != null)
             {
-                TargetAssemblyMainModule.EntryPoint = fixator.Fix(Import(Assemblies.PrimaryAssemblyDefinition.EntryPoint)).Resolve();
+                Assemblies.TargetAssemblyDefinition.MainModule.EntryPoint = fixator.Fix(Import(Assemblies.PrimaryAssemblyDefinition.EntryPoint)).Resolve();
             }
 
             Logger.INFO("Fixing references");
             // this step travels through all TypeRefs & replaces them by matching TypeDefs
 
-            foreach (var r in TargetAssemblyMainModule.Types)
+            foreach (var r in Assemblies.TargetAssemblyDefinition.MainModule.Types)
             {
                 fixator.FixReferences(r);
             }
-            foreach (var r in TargetAssemblyMainModule.Types)
+            foreach (var r in Assemblies.TargetAssemblyDefinition.MainModule.Types)
             {
                 fixator.FixMethodVisibility(r);
             }
             fixator.FixReferences(Assemblies.TargetAssemblyDefinition.MainModule.ExportedTypes);
             fixator.FixReferences(Assemblies.TargetAssemblyDefinition.CustomAttributes);
             fixator.FixReferences(Assemblies.TargetAssemblyDefinition.SecurityDeclarations);
-            fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes);
+            fixator.FixReferences(Assemblies.TargetAssemblyDefinition.MainModule.CustomAttributes);
 
             // final reference cleanup (Cecil Import automatically added them)
             foreach (AssemblyDefinition asm in Assemblies.MergedAssemblies)
             {
-                foreach (var refer in TargetAssemblyMainModule.AssemblyReferences.ToArray())
+                foreach (var refer in Assemblies.TargetAssemblyDefinition.MainModule.AssemblyReferences.ToArray())
                 {
                     // remove all referenced assemblies with same same, as we didn't bother on the version when merging
                     // in case we reference same assemblies with different versions, there might be prior errors if we don't merge the 'largest one'
                     if (Options.KeepOtherVersionReferences ? refer.FullName == asm.FullName : refer.Name == asm.Name.Name)
                     {
-                        TargetAssemblyMainModule.AssemblyReferences.Remove(refer);
+                        Assemblies.TargetAssemblyDefinition.MainModule.AssemblyReferences.Remove(refer);
                     }
                 }
             }
@@ -356,20 +352,20 @@ namespace ILRepacking
                 }
                 foreach (var mod in Assemblies.MergedAssemblies.SelectMany(x => x.Modules))
                 {
-                    CopyCustomAttributes(mod.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
+                    CopyCustomAttributes(mod.CustomAttributes, Assemblies.TargetAssemblyDefinition.MainModule.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
                 }
             }
             else if (Options.AttributeFile != null)
             {
                 AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(Options.AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver });
                 CopyCustomAttributes(attributeAsm.CustomAttributes, Assemblies.TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
+                CopyCustomAttributes(attributeAsm.CustomAttributes, Assemblies.TargetAssemblyDefinition.MainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
             }
             else
             {
                 CopyCustomAttributes(Assemblies.PrimaryAssemblyDefinition.CustomAttributes, Assemblies.TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
+                CopyCustomAttributes(Assemblies.PrimaryAssemblyDefinition.MainModule.CustomAttributes, Assemblies.TargetAssemblyDefinition.MainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
             }
             CopySecurityDeclarations(Assemblies.PrimaryAssemblyDefinition.SecurityDeclarations, Assemblies.TargetAssemblyDefinition.SecurityDeclarations, null);
@@ -383,14 +379,14 @@ namespace ILRepacking
             foreach (var r in Assemblies.PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
             {
                 Logger.VERBOSE("- Importing " + r);
-                Import(r, TargetAssemblyMainModule.Types, false);
+                Import(r, Assemblies.TargetAssemblyDefinition.MainModule.Types, false);
             }
             foreach (var m in Assemblies.OtherAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.Types)
                 {
                     Logger.VERBOSE("- Importing " + r);
-                    Import(r, TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
+                    Import(r, Assemblies.TargetAssemblyDefinition.MainModule.Types, ShouldInternalize(r.FullName));
                 }
             }
         }
@@ -408,7 +404,7 @@ namespace ILRepacking
             foreach (var r in Assemblies.PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
             {
                 Logger.VERBOSE("- Importing Exported Type" + r);
-                Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
+                Import(r, Assemblies.TargetAssemblyDefinition.MainModule.ExportedTypes, Assemblies.TargetAssemblyDefinition.MainModule);
             }
             foreach (var m in Assemblies.OtherAssemblies.SelectMany(x => x.Modules))
             {
@@ -417,7 +413,7 @@ namespace ILRepacking
                     if (!ShouldInternalize(r.FullName))
                     {
                         Logger.VERBOSE("- Importing Exported Type " + r);
-                        Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
+                        Import(r, Assemblies.TargetAssemblyDefinition.MainModule.ExportedTypes, Assemblies.TargetAssemblyDefinition.MainModule);
                     }
                     else
                     {
@@ -434,14 +430,14 @@ namespace ILRepacking
             foreach (var z in Assemblies.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
             {
                 string name = z.Name;
-                if (!Assemblies.MergedAssemblies.Any(y => y.Name.Name == name) && Assemblies.TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
+                if (!Assemblies.MergedAssemblies.Any(y => y.Name.Name == name) && Assemblies.TargetAssemblyDefinition.Name.Name != name && !Assemblies.TargetAssemblyDefinition.MainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
                 {
                     // TODO: fix .NET runtime references?
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
                     Logger.VERBOSE("- add reference " + z);
                     AssemblyNameReference fixedRef = platformFixer.FixPlatformVersion(z);
-                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
+                    Assemblies.TargetAssemblyDefinition.MainModule.AssemblyReferences.Add(fixedRef);
                 }
             }
             LineIndexer.PostRepackReferences();
@@ -450,9 +446,9 @@ namespace ILRepacking
             foreach (var z in Assemblies.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
             {
                 string name = z.Name;
-                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
+                if (!Assemblies.TargetAssemblyDefinition.MainModule.ModuleReferences.Any(y => y.Name == name))
                 {
-                    TargetAssemblyMainModule.ModuleReferences.Add(z);
+                    Assemblies.TargetAssemblyDefinition.MainModule.ModuleReferences.Add(z);
                 }
             }
         }
@@ -469,7 +465,7 @@ namespace ILRepacking
             {
                 repackList = Assemblies.MergedAssemblies.Select(a => a.FullName).ToList();
                 repackListRes = GetRepackListResource(repackList);
-                TargetAssemblyMainModule.Resources.Add(repackListRes);
+                Assemblies.TargetAssemblyDefinition.MainModule.Resources.Add(repackListRes);
             }
             foreach (var r in Assemblies.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
             {
@@ -489,7 +485,7 @@ namespace ILRepacking
                 }
                 else
                 {
-                    if (!Options.AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
+                    if (!Options.AllowDuplicateResources && Assemblies.TargetAssemblyDefinition.MainModule.Resources.Any(x => x.Name == r.Name))
                     {
                         // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
                         Logger.WARN("Ignoring duplicate resource " + r.Name);
@@ -515,7 +511,7 @@ namespace ILRepacking
                                 }
                                 break;
                         }
-                        TargetAssemblyMainModule.Resources.Add(nr);
+                        Assemblies.TargetAssemblyDefinition.MainModule.Resources.Add(nr);
                     }
                 }
             }
@@ -526,8 +522,8 @@ namespace ILRepacking
             var others = (string[])new BinaryFormatter().Deserialize(r.GetResourceStream());
             repackList = repackList.Union(others).ToList();
             EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
-            TargetAssemblyMainModule.Resources.Remove(repackListRes);
-            TargetAssemblyMainModule.Resources.Add(repackListRes2);
+            Assemblies.TargetAssemblyDefinition.MainModule.Resources.Remove(repackListRes);
+            Assemblies.TargetAssemblyDefinition.MainModule.Resources.Add(repackListRes2);
             repackListRes = repackListRes2;
         }
 
@@ -536,11 +532,11 @@ namespace ILRepacking
             if (existing == null)
             {
                 lists = ExtractIkvmExportsLists(extra);
-                TargetAssemblyMainModule.Resources.Add(existing = extra);
+                Assemblies.TargetAssemblyDefinition.MainModule.Resources.Add(existing = extra);
             }
             else
             {
-                TargetAssemblyMainModule.Resources.Remove(existing);
+                Assemblies.TargetAssemblyDefinition.MainModule.Resources.Remove(existing);
                 var lists2 = ExtractIkvmExportsLists(extra);
                 foreach (KeyValuePair<string, List<int>> kv in lists2)
                 {
@@ -558,7 +554,7 @@ namespace ILRepacking
                     }
                 }
                 existing = GenerateIkvmExports(lists);
-                TargetAssemblyMainModule.Resources.Add(existing);
+                Assemblies.TargetAssemblyDefinition.MainModule.Resources.Add(existing);
             }
         }
 
@@ -897,7 +893,7 @@ namespace ILRepacking
                 return;
             }
             // use void placeholder as we'll do the return type import later on (after generic parameters)
-            MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, TargetAssemblyMainModule.TypeSystem.Void);
+            MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, Assemblies.TargetAssemblyDefinition.MainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
 
             type.Methods.Add(nm);
@@ -1127,7 +1123,7 @@ namespace ILRepacking
                 SecurityDeclaration newSec = null;
                 if (PermissionsetHelper.IsXmlPermissionSet(sec))
                 {
-                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
+                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, Assemblies.TargetAssemblyDefinition.MainModule);
                 }
                 if (newSec == null)
                 {
@@ -1280,9 +1276,9 @@ namespace ILRepacking
                 if (context == null)
                 {
                     // we come here when importing types used for assembly-level custom attributes
-                    return TargetAssemblyMainModule.Import(reference);
+                    return Assemblies.TargetAssemblyDefinition.MainModule.Import(reference);
                 }
-                return TargetAssemblyMainModule.Import(reference, context);
+                return Assemblies.TargetAssemblyDefinition.MainModule.Import(reference, context);
             }
             catch (ArgumentOutOfRangeException) // working around a bug in Cecil
             {
@@ -1295,13 +1291,13 @@ namespace ILRepacking
         {
             FieldReference importReference = platformFixer.FixPlatformVersion(reference);
 
-            return TargetAssemblyMainModule.Import(importReference, context);
+            return Assemblies.TargetAssemblyDefinition.MainModule.Import(importReference, context);
         }
 
         private MethodReference Import(MethodReference reference)
         {
             MethodReference importReference = platformFixer.FixPlatformVersion(reference);
-            return TargetAssemblyMainModule.Import(importReference);
+            return Assemblies.TargetAssemblyDefinition.MainModule.Import(importReference);
         }
 
         private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
@@ -1310,7 +1306,7 @@ namespace ILRepacking
 
             MethodReference importReference = platformFixer.FixPlatformVersion(reference);
 
-            return TargetAssemblyMainModule.Import(importReference, context);
+            return Assemblies.TargetAssemblyDefinition.MainModule.Import(importReference, context);
 
         }
 
@@ -1362,7 +1358,7 @@ namespace ILRepacking
         {
             Logger.VERBOSE("- Importing " + type);
 
-            TypeDefinition nt = TargetAssemblyMainModule.GetType(type.FullName);
+            TypeDefinition nt = Assemblies.TargetAssemblyDefinition.MainModule.GetType(type.FullName);
             bool justCreatedType = false;
             if (nt == null)
             {
@@ -1439,7 +1435,7 @@ namespace ILRepacking
 
         internal TypeReference CreateReference(ExportedType type)
         {
-            return new TypeReference(type.Namespace, type.Name, TargetAssemblyMainModule, type.Scope)
+            return new TypeReference(type.Namespace, type.Name, Assemblies.TargetAssemblyDefinition.MainModule, type.Scope)
             {
                 DeclaringType = type.DeclaringType != null ? CreateReference(type.DeclaringType) : null,
             };

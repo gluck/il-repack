@@ -30,7 +30,7 @@ namespace ILRepacking
         {
             get
             {
-                return repack.TargetAssemblyMainModule;
+                return repack.Assemblies.TargetAssemblyDefinition.MainModule;
             }
         }
 
@@ -152,7 +152,7 @@ namespace ILRepacking
             if (!repack.Options.LineIndexation)
                 return;
 
-            ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
+            ikvmRuntimeReference = repack.Assemblies.TargetAssemblyDefinition.MainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
             if (ikvmRuntimeReference == null && repack.Options.LineIndexation)
             {
                 ikvmRuntimeReference = repack.Options.GlobalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
