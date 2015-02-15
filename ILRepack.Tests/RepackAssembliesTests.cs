@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using ILRepacking;
 using Moq;
 using NUnit.Framework;
@@ -9,7 +8,7 @@ using NUnit.Framework;
 namespace ILRepack.Tests
 {
     [TestFixture]
-    class ILRepackTests
+    class RepackAssembliesTests
     {
         private RepackOptions options;
         private RepackAssemblies assemblies;

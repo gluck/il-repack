@@ -49,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLineTests.cs" />
-    <Compile Include="ILRepackTests.cs" />
+    <Compile Include="RepackAssembliesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RepackLoggerTests.cs" />
     <Compile Include="RepackOptionsTests.cs" />
