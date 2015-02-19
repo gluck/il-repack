@@ -25,8 +25,6 @@ namespace ILRepacking
 
         internal Dictionary<AssemblyDefinition, int> AspOffsets { get; set; }
 
-        
-
         public RepackAssemblies(RepackOptions options, ILogger logger, IFile file)
         {
             this.options = options;
@@ -40,72 +38,67 @@ namespace ILRepacking
         {
             MergedAssemblyFiles = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
+            MergedAssemblies = new List<AssemblyDefinition>();
 
-            var primary = MergedAssemblyFiles.FirstOrDefault();
-            foreach (var result in MergedAssemblyFiles.Select(assembly => ReadInputAssembly(assembly, primary == assembly)).AsParallel())
+            PrimaryAssemblyFile = MergedAssemblyFiles.FirstOrDefault();
+            foreach (var result in MergedAssemblyFiles.AsParallel().Select(ReadInputAssembly))
             {
-                if (result.IsPrimary)
+                if (result.Assembly == PrimaryAssemblyFile)
                 {
                     PrimaryAssemblyDefinition = result.Definition;
-                    PrimaryAssemblyFile = result.Assembly;
                 }
                 else
+                { 
                     OtherAssemblies.Add(result.Definition);
-
-                // prevent writing PDB if we haven't read any
-                options.DebugInfo &= result.SymbolsRead;
+                }
+                MergedAssemblies.Add(result.Definition);
             }
-
-            MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
-            MergedAssemblies.Add(PrimaryAssemblyDefinition);
         }
 
-        private AssemblyDefinitionContainer ReadInputAssembly(string assembly, bool isPrimary)
+        private AssemblyDefinitionContainer ReadInputAssembly(string assembly)
         {
             logger.INFO("Adding assembly for merge: " + assembly);
+            var readerParameters = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = options.GlobalAssemblyResolver };
+
+            var debugFileExists = file.Exists(Path.ChangeExtension(assembly, "pdb")) || file.Exists(assembly + ".mdb");
+            options.DebugInfo &= debugFileExists;
+            readerParameters.ReadSymbols = options.DebugInfo;
+            if (readerParameters.ReadSymbols)
+                logger.INFO("Adding pdb for merge.");
+               
+            AssemblyDefinition mergeAsm;
             try
             {
-                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) {AssemblyResolver = options.GlobalAssemblyResolver};
-                // read PDB/MDB?
-                if (options.DebugInfo && (file.Exists(Path.ChangeExtension(assembly, "pdb")) || file.Exists(assembly + ".mdb")))
-                {
-                    rp.ReadSymbols = true;
-                }
-                AssemblyDefinition mergeAsm;
-                try
-                {
-                    mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                }
-                catch
-                {
-                    // cope with invalid symbol file
-                    if (rp.ReadSymbols)
-                    {
-                        rp.ReadSymbols = false;
-                        mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                        logger.INFO("Failed to load debug information for " + assembly);
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                if (!options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
-                    throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
-
-                return new AssemblyDefinitionContainer
-                {
-                    Assembly = assembly,
-                    Definition = mergeAsm,
-                    IsPrimary = isPrimary,
-                    SymbolsRead = rp.ReadSymbols
-                };
+                mergeAsm = AssemblyDefinition.ReadAssembly(assembly, readerParameters);
             }
             catch
             {
-                logger.ERROR("Failed to load assembly " + assembly);
-                throw;
+                // cope with invalid symbol file
+                if (readerParameters.ReadSymbols)
+                {
+                    options.DebugInfo = false;
+                    readerParameters.ReadSymbols = false;
+                    mergeAsm = AssemblyDefinition.ReadAssembly(assembly, readerParameters);
+                    logger.INFO("Failed to load debug information for " + assembly);
+                }
+                else
+                {
+                    logger.ERROR("Failed to load assembly " + assembly);
+                    throw;
+                }
             }
+            if (!options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
+            {
+                logger.ERROR("Failed to load assembly " + assembly);
+                throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+            }
+
+            return new AssemblyDefinitionContainer
+            {
+                Assembly = assembly,
+                Definition = mergeAsm,
+                SymbolsRead = readerParameters.ReadSymbols
+            };
         }
 
         public class AssemblyDefinitionContainer
@@ -113,7 +106,6 @@ namespace ILRepacking
             public bool SymbolsRead { get; set; }
             public AssemblyDefinition Definition { get; set; }
             public string Assembly { get; set; }
-            public bool IsPrimary { get; set; }
         }
 
         private IEnumerable<string> ResolveFile(string s)
@@ -155,15 +147,14 @@ namespace ILRepacking
 
         public ModuleKind GetTargetModuleKind()
         {
-            ModuleKind kind = PrimaryAssemblyDefinition.MainModule.Kind;
-            if (options.TargetKind.HasValue)
+            var kind = PrimaryAssemblyDefinition.MainModule.Kind;
+            if (!options.TargetKind.HasValue) 
+                return kind;
+            switch (options.TargetKind.Value)
             {
-                switch (options.TargetKind.Value)
-                {
-                    case ILRepack.Kind.Dll: kind = ModuleKind.Dll; break;
-                    case ILRepack.Kind.Exe: kind = ModuleKind.Console; break;
-                    case ILRepack.Kind.WinExe: kind = ModuleKind.Windows; break;
-                }
+                case ILRepack.Kind.Dll: kind = ModuleKind.Dll; break;
+                case ILRepack.Kind.Exe: kind = ModuleKind.Console; break;
+                case ILRepack.Kind.WinExe: kind = ModuleKind.Windows; break;
             }
             return kind;
         }
