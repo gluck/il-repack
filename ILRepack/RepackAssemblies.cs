@@ -15,14 +15,11 @@ namespace ILRepacking
         private readonly IFile file;
 
         internal List<string> MergedAssemblyFileNames { get; set; }
-        internal string PrimaryAssemblyFileName { get; set; }
-        // contains all 'other' assemblies, but not the primary fileName
-        internal List<AssemblyDefinition> OtherAssemblies { get; set; }
-        // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
 
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
+        internal string PrimaryAssemblyFileName { get; set; }
 
         internal Dictionary<AssemblyDefinition, int> AspOffsets { get; set; }
 
@@ -32,14 +29,21 @@ namespace ILRepacking
             this.logger = logger;
             this.file = file;
 
-             AspOffsets = new Dictionary<AssemblyDefinition, int>();
+            AspOffsets = new Dictionary<AssemblyDefinition, int>();
+            MergedAssemblies = new List<AssemblyDefinition>();
+        }
+
+        internal IEnumerable<AssemblyDefinition> MergedAssembliesExceptPrimary
+        {
+            get
+            {
+                return MergedAssemblies.Where(assembly => assembly.Name.Name != Path.GetFileNameWithoutExtension(PrimaryAssemblyFileName));
+            }
         }
 
         public void ReadInputAssemblies()
         {
             MergedAssemblyFileNames = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
-            OtherAssemblies = new List<AssemblyDefinition>();
-            MergedAssemblies = new List<AssemblyDefinition>();
 
             PrimaryAssemblyFileName = MergedAssemblyFileNames.FirstOrDefault();
             foreach (var assemblyDefinition in MergedAssemblyFileNames.AsParallel().Select(ReadInputAssembly))
@@ -47,10 +51,6 @@ namespace ILRepacking
                 if (assemblyDefinition.Name.Name == Path.GetFileNameWithoutExtension(PrimaryAssemblyFileName))
                 {
                     PrimaryAssemblyDefinition = assemblyDefinition;
-                }
-                else
-                { 
-                    OtherAssemblies.Add(assemblyDefinition);
                 }
                 MergedAssemblies.Add(assemblyDefinition);
             }
@@ -178,7 +178,7 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyDefinition.MainModule.Attributes = PrimaryAssemblyDefinition.MainModule.Attributes;
-            TargetAssemblyDefinition.MainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyDefinition.MainModule.Win32ResourceDirectory, OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
+            TargetAssemblyDefinition.MainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyDefinition.MainModule.Win32ResourceDirectory, MergedAssembliesExceptPrimary.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
 
             if (options.Version != null)
                 TargetAssemblyDefinition.Name.Version = options.Version;
@@ -229,7 +229,7 @@ namespace ILRepacking
         {
             if (primary == null)
                 return null;
-            foreach (var ass in OtherAssemblies)
+            foreach (var ass in MergedAssembliesExceptPrimary)
             {
                 MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
             }
