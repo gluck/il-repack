@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,11 +15,10 @@ namespace ILRepacking
         private readonly ILogger logger;
         private readonly IFile file;
 
-        internal List<string> MergedAssemblyFileNames { get; set; }
-        internal List<AssemblyDefinition> MergedAssemblies { get; set; }
+        private readonly ConcurrentDictionary<string, AssemblyDefinition> assemblies;
 
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
-        internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
+
         internal string PrimaryAssemblyFileName { get; set; }
 
         internal Dictionary<AssemblyDefinition, int> AspOffsets { get; set; }
@@ -30,7 +30,22 @@ namespace ILRepacking
             this.file = file;
 
             AspOffsets = new Dictionary<AssemblyDefinition, int>();
-            MergedAssemblies = new List<AssemblyDefinition>();
+            assemblies = new ConcurrentDictionary<string, AssemblyDefinition>();
+        }
+
+        internal IEnumerable<string> MergedAssemblyFileNames
+        {
+            get { return assemblies.Keys; }
+        }
+
+        internal IEnumerable<AssemblyDefinition> MergedAssemblies
+        {
+            get { return assemblies.Values; }
+        }
+
+        internal AssemblyDefinition PrimaryAssemblyDefinition
+        {
+            get { return assemblies[PrimaryAssemblyFileName]; }
         }
 
         internal IEnumerable<AssemblyDefinition> MergedAssembliesExceptPrimary
@@ -43,16 +58,13 @@ namespace ILRepacking
 
         public void ReadInputAssemblies()
         {
-            MergedAssemblyFileNames = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
+            var assemblyFileNames = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
 
-            PrimaryAssemblyFileName = MergedAssemblyFileNames.FirstOrDefault();
-            foreach (var assemblyDefinition in MergedAssemblyFileNames.AsParallel().Select(ReadInputAssembly))
+            PrimaryAssemblyFileName = assemblyFileNames.FirstOrDefault();
+            foreach (var assemblyFileName in assemblyFileNames.AsParallel())
             {
-                if (assemblyDefinition.Name.Name == Path.GetFileNameWithoutExtension(PrimaryAssemblyFileName))
-                {
-                    PrimaryAssemblyDefinition = assemblyDefinition;
-                }
-                MergedAssemblies.Add(assemblyDefinition);
+                var assemblyDefinition = ReadInputAssembly(assemblyFileName);
+                assemblies.TryAdd(assemblyFileName, assemblyDefinition);
             }
         }
 

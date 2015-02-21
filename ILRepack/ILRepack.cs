@@ -21,6 +21,7 @@ using Mono.Collections.Generic;
 using Mono.Unix.Native;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -93,7 +94,7 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
-            Options.GlobalAssemblyResolver.RegisterAssemblies(Assemblies.MergedAssemblies);
+            Options.GlobalAssemblyResolver.RegisterAssemblies(Assemblies.MergedAssemblies.ToList());
 
             mappingHandler = new MappingHandler();
             bool hadStrongName = Assemblies.PrimaryAssemblyDefinition.Name.HasPublicKey;
@@ -153,8 +154,8 @@ namespace ILRepacking
             if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 Stat stat;
-                Logger.INFO("Copying permissions from " + Assemblies.PrimaryAssemblyFile);
-                Syscall.stat(Assemblies.PrimaryAssemblyFile, out stat);
+                Logger.INFO("Copying permissions from " + Assemblies.PrimaryAssemblyFileName);
+                Syscall.stat(Assemblies.PrimaryAssemblyFileName, out stat);
                 Syscall.chmod(Options.OutputFile, stat.st_mode);
             }
             if (hadStrongName && !Assemblies.TargetAssemblyDefinition.Name.HasPublicKey)
@@ -237,13 +238,11 @@ namespace ILRepacking
                 Logger.VERBOSE("- Importing " + r);
                 Import(r, Assemblies.TargetAssemblyDefinition.MainModule.Types, false);
             }
-            foreach (var m in Assemblies.OtherAssemblies.SelectMany(x => x.Modules))
+            var modules = Assemblies.MergedAssembliesExceptPrimary.SelectMany(x => x.Modules).ToList();
+            foreach (var r in modules.SelectMany(module => module.Types))
             {
-                foreach (var r in m.Types)
-                {
-                    Logger.VERBOSE("- Importing " + r);
-                    Import(r, Assemblies.TargetAssemblyDefinition.MainModule.Types, ShouldInternalize(r.FullName));
-                }
+                Logger.VERBOSE("- Importing " + r);
+                Import(r, Assemblies.TargetAssemblyDefinition.MainModule.Types, ShouldInternalize(r.FullName));
             }
         }
 
@@ -262,7 +261,7 @@ namespace ILRepacking
                 Logger.VERBOSE("- Importing Exported Type" + r);
                 Import(r, Assemblies.TargetAssemblyDefinition.MainModule.ExportedTypes, Assemblies.TargetAssemblyDefinition.MainModule);
             }
-            foreach (var m in Assemblies.OtherAssemblies.SelectMany(x => x.Modules))
+            foreach (var m in Assemblies.MergedAssembliesExceptPrimary.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.ExportedTypes)
                 {
@@ -279,7 +278,7 @@ namespace ILRepacking
             }
         }
 
-        private void RepackReferences()
+        internal void RepackReferences()
         {
             Logger.INFO("Processing references");
             // Add all AssemblyReferences to merged assembly (probably not necessary)
