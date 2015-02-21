@@ -14,12 +14,13 @@ namespace ILRepacking
         private readonly ILogger logger;
         private readonly IFile file;
 
-        internal List<string> MergedAssemblyFiles { get; set; }
-        internal string PrimaryAssemblyFile { get; set; }
+        internal List<string> MergedAssemblyFileNames { get; set; }
+        internal string PrimaryAssemblyFileName { get; set; }
         // contains all 'other' assemblies, but not the primary fileName
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
+
         internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
 
@@ -36,14 +37,14 @@ namespace ILRepacking
 
         public void ReadInputAssemblies()
         {
-            MergedAssemblyFiles = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
+            MergedAssemblyFileNames = options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
             OtherAssemblies = new List<AssemblyDefinition>();
             MergedAssemblies = new List<AssemblyDefinition>();
 
-            PrimaryAssemblyFile = MergedAssemblyFiles.FirstOrDefault();
-            foreach (var assemblyDefinition in MergedAssemblyFiles.AsParallel().Select(ReadInputAssembly))
+            PrimaryAssemblyFileName = MergedAssemblyFileNames.FirstOrDefault();
+            foreach (var assemblyDefinition in MergedAssemblyFileNames.AsParallel().Select(ReadInputAssembly))
             {
-                if (result.Definition.Name.Name == Path.GetFileNameWithoutExtension(PrimaryAssemblyFile))
+                if (assemblyDefinition.Name.Name == Path.GetFileNameWithoutExtension(PrimaryAssemblyFileName))
                 {
                     PrimaryAssemblyDefinition = assemblyDefinition;
                 }

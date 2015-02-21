@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.XPath;
-using Mono.Cecil;
 
 namespace ILRepacking
 {
@@ -30,7 +29,7 @@ namespace ILRepacking
             {
                 var validXmlFiles = new List<XmlDocument>();
                 XmlDocument doc;
-                foreach (string assembly in repack.Assemblies.MergedAssemblyFiles)
+                foreach (string assembly in repack.Assemblies.MergedAssemblyFileNames)
                 {
                     string assemblyDoc = Path.ChangeExtension(assembly, ".xml");
                     if (File.Exists (assemblyDoc))
