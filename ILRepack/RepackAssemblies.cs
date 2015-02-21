@@ -16,7 +16,7 @@ namespace ILRepacking
 
         internal List<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
-        // contains all 'other' assemblies, but not the primary assembly
+        // contains all 'other' assemblies, but not the primary fileName
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
         internal List<AssemblyDefinition> MergedAssemblies { get; set; }
@@ -41,35 +41,35 @@ namespace ILRepacking
             MergedAssemblies = new List<AssemblyDefinition>();
 
             PrimaryAssemblyFile = MergedAssemblyFiles.FirstOrDefault();
-            foreach (var result in MergedAssemblyFiles.AsParallel().Select(ReadInputAssembly))
+            foreach (var assemblyDefinition in MergedAssemblyFiles.AsParallel().Select(ReadInputAssembly))
             {
-                if (result.Assembly == PrimaryAssemblyFile)
+                if (result.Definition.Name.Name == Path.GetFileNameWithoutExtension(PrimaryAssemblyFile))
                 {
-                    PrimaryAssemblyDefinition = result.Definition;
+                    PrimaryAssemblyDefinition = assemblyDefinition;
                 }
                 else
                 { 
-                    OtherAssemblies.Add(result.Definition);
+                    OtherAssemblies.Add(assemblyDefinition);
                 }
-                MergedAssemblies.Add(result.Definition);
+                MergedAssemblies.Add(assemblyDefinition);
             }
         }
 
-        private AssemblyDefinitionContainer ReadInputAssembly(string assembly)
+        private AssemblyDefinition ReadInputAssembly(string fileName)
         {
-            logger.INFO("Adding assembly for merge: " + assembly);
+            logger.INFO("Adding fileName for merge: " + fileName);
             var readerParameters = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = options.GlobalAssemblyResolver };
 
-            var debugFileExists = file.Exists(Path.ChangeExtension(assembly, "pdb")) || file.Exists(assembly + ".mdb");
+            var debugFileExists = file.Exists(Path.ChangeExtension(fileName, "pdb")) || file.Exists(fileName + ".mdb");
             options.DebugInfo &= debugFileExists;
             readerParameters.ReadSymbols = options.DebugInfo;
             if (readerParameters.ReadSymbols)
                 logger.INFO("Adding pdb for merge.");
                
-            AssemblyDefinition mergeAsm;
+            AssemblyDefinition assemblyDefinition;
             try
             {
-                mergeAsm = AssemblyDefinition.ReadAssembly(assembly, readerParameters);
+                assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, readerParameters);
             }
             catch
             {
@@ -78,34 +78,22 @@ namespace ILRepacking
                 {
                     options.DebugInfo = false;
                     readerParameters.ReadSymbols = false;
-                    mergeAsm = AssemblyDefinition.ReadAssembly(assembly, readerParameters);
-                    logger.INFO("Failed to load debug information for " + assembly);
+                    assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, readerParameters);
+                    logger.INFO("Failed to load debug information for " + fileName);
                 }
                 else
                 {
-                    logger.ERROR("Failed to load assembly " + assembly);
+                    logger.ERROR("Failed to load fileName " + fileName);
                     throw;
                 }
             }
-            if (!options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
+            if (!options.AllowZeroPeKind && (assemblyDefinition.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
             {
-                logger.ERROR("Failed to load assembly " + assembly);
-                throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                logger.ERROR("Failed to load fileName " + fileName);
+                throw new ArgumentException("Failed to load fileName with Zero PeKind: " + fileName);
             }
 
-            return new AssemblyDefinitionContainer
-            {
-                Assembly = assembly,
-                Definition = mergeAsm,
-                SymbolsRead = readerParameters.ReadSymbols
-            };
-        }
-
-        public class AssemblyDefinitionContainer
-        {
-            public bool SymbolsRead { get; set; }
-            public AssemblyDefinition Definition { get; set; }
-            public string Assembly { get; set; }
+            return assemblyDefinition;
         }
 
         private IEnumerable<string> ResolveFile(string s)
@@ -163,7 +151,7 @@ namespace ILRepacking
         {
             var kind = GetTargetModuleKind();
             var runtime = GetTargetRuntime();
-            // change assembly's name to correspond to the file we create
+            // change fileName's name to correspond to the file we create
             string mainModuleName = Path.GetFileNameWithoutExtension(options.OutputFile);
             if (TargetAssemblyDefinition == null)
             {
@@ -222,7 +210,7 @@ namespace ILRepacking
 
         // Real stuff below //
         // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
-        // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
+        // They use Cecil's MetaDataImporter to rebase imported stuff into the new fileName, but then another pass is required
         //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
         private AssemblyNameDefinition Clone(AssemblyNameDefinition assemblyName)
         {
@@ -273,7 +261,7 @@ namespace ILRepacking
                 }
                 else if (!IsVersionInfoRes(parents, exist))
                 {
-                    logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
+                    logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in fileName {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
                 return;
             }
