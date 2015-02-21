@@ -83,14 +83,14 @@ namespace ILRepacking
                 }
                 else
                 {
-                    logger.ERROR("Failed to load fileName " + fileName);
+                    logger.ERROR("Failed to load assembly" + fileName);
                     throw;
                 }
             }
             if (!options.AllowZeroPeKind && (assemblyDefinition.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
             {
-                logger.ERROR("Failed to load fileName " + fileName);
-                throw new ArgumentException("Failed to load fileName with Zero PeKind: " + fileName);
+                logger.ERROR("Failed to load assembly" + fileName);
+                throw new ArgumentException("Failed to load assembly with Zero PeKind: " + fileName);
             }
 
             return assemblyDefinition;
@@ -151,7 +151,7 @@ namespace ILRepacking
         {
             var kind = GetTargetModuleKind();
             var runtime = GetTargetRuntime();
-            // change fileName's name to correspond to the file we create
+            // change assembly's name to correspond to the file we create
             string mainModuleName = Path.GetFileNameWithoutExtension(options.OutputFile);
             if (TargetAssemblyDefinition == null)
             {
@@ -210,7 +210,7 @@ namespace ILRepacking
 
         // Real stuff below //
         // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
-        // They use Cecil's MetaDataImporter to rebase imported stuff into the new fileName, but then another pass is required
+        // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
         //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
         private AssemblyNameDefinition Clone(AssemblyNameDefinition assemblyName)
         {
@@ -261,7 +261,7 @@ namespace ILRepacking
                 }
                 else if (!IsVersionInfoRes(parents, exist))
                 {
-                    logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in fileName {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
+                    logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
                 return;
             }
