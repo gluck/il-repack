@@ -22,8 +22,8 @@ Syntax
 ------
 
 A console application has been released (can be used as DLL as well), using same syntax as ILMerge:
-<pre>
-`Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]`
+```
+Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]
 
   - /help              displays this usage
  - /keyfile:<path>    specifies a keyfile to sign the output assembly
@@ -55,7 +55,7 @@ A console application has been released (can be used as DLL as well), using same
  - <other_assemblies> ...
 
 Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.
-</pre>
+```
 
 How to build
 ------
