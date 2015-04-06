@@ -21,11 +21,11 @@ namespace ILRepacking
                 }
                 options.Parse();
 
+                logger.ShouldLogVerbose = options.LogVerbose;
                 //TODO: Open the Logger before the parse
                 if (logger.Open(options.LogFile))
                 {
                     options.Log = true;
-                    logger.ShouldLogVerbose = options.LogVerbose;
                 }
 
                 ILRepack repack = new ILRepack(options, logger);
