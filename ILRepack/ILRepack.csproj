@@ -72,6 +72,7 @@
     <Compile Include="FileWrapper.cs" />
     <Compile Include="ICommandLine.cs" />
     <Compile Include="IFile.cs" />
+    <Compile Include="IRepackContext.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="IRepackCopier.cs" />

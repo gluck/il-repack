@@ -35,7 +35,7 @@ using MethodBody = Mono.Cecil.Cil.MethodBody;
 
 namespace ILRepacking
 {
-    public class ILRepack : IRepackImporter, IRepackCopier
+    public class ILRepack : IRepackContext,IRepackImporter, IRepackCopier
     {
         internal RepackOptions Options;
         internal ILogger Logger;
