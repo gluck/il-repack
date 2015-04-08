@@ -18,5 +18,7 @@ namespace ILRepacking
         void INFO(string msg);
 
         void VERBOSE(string msg);
+
+        void DuplicateIgnored(string ignoredType, object ignoredObject);
     }
 }

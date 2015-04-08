@@ -869,7 +869,7 @@ namespace ILRepacking
         {
             if (nt.Fields.Any(x => x.Name == field.Name))
             {
-                IGNOREDUP("field", field);
+                Logger.DuplicateIgnored("field", field);
                 return;
             }
             FieldDefinition nf = new FieldDefinition(field.Name, field.Attributes, Import(field.FieldType, nt));
@@ -910,7 +910,7 @@ namespace ILRepacking
             // ignore duplicate event
             if (nt.Events.Any(x => x.Name == evt.Name))
             {
-                IGNOREDUP("event", evt);
+                Logger.DuplicateIgnored("event", evt);
                 return;
             }
 
@@ -961,7 +961,7 @@ namespace ILRepacking
                 }
                 if (skip)
                 {
-                    IGNOREDUP("property", prop);
+                    Logger.DuplicateIgnored("property", prop);
                     return;
                 }
             }
@@ -995,7 +995,7 @@ namespace ILRepacking
                   (x.Parameters.Count == meth.Parameters.Count) &&
                   (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
             {
-                IGNOREDUP("method", meth);
+                Logger.DuplicateIgnored("method", meth);
                 return;
             }
             // use void placeholder as we'll do the return type import later on (after generic parameters)
@@ -1190,12 +1190,6 @@ namespace ILRepacking
 
                 nb.ExceptionHandlers.Add(neh);
             }
-        }
-
-        internal void IGNOREDUP(string ignoredType, object ignoredObject)
-        {
-            // TODO: put on a list and log a summary
-            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
         public CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
