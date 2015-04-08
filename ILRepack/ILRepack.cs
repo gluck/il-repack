@@ -35,7 +35,7 @@ using MethodBody = Mono.Cecil.Cil.MethodBody;
 
 namespace ILRepacking
 {
-    public class ILRepack : IRepackImporter
+    public class ILRepack : IRepackImporter, IRepackCopier
     {
         internal RepackOptions Options;
         internal ILogger Logger;
@@ -1198,12 +1198,12 @@ namespace ILRepacking
             //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
 
-        private CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
+        public CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
         {
             return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
         }
 
-        private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        public CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
         {
             return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
         }
@@ -1222,7 +1222,7 @@ namespace ILRepacking
         /// <summary>
         /// Clones a collection of SecurityDeclarations
         /// </summary>
-        private void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
+        public void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
         {
             foreach (SecurityDeclaration sec in input)
             {
@@ -1269,7 +1269,7 @@ namespace ILRepacking
             }
         }
 
-        private void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
+        public void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
         {
             foreach (GenericParameter gp in input)
             {
@@ -1293,12 +1293,12 @@ namespace ILRepacking
             return ret;
         }
 
-        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
+        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
         {
             CopyCustomAttributes(input, output, true, context);
         }
 
-        private CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
+        public CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
         {
             CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
             foreach (var arg in ca.ConstructorArguments)
@@ -1310,7 +1310,7 @@ namespace ILRepacking
             return newCa;
         }
 
-        private void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
+        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
         {
             foreach (CustomAttribute ca in input)
             {
@@ -1357,7 +1357,7 @@ namespace ILRepacking
             return false;
         }
 
-        private void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
+        public void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
         {
             foreach (TypeReference ta in input)
             {
