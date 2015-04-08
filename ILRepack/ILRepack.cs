@@ -30,13 +30,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security;
 using System.Text.RegularExpressions;
-using System.Threading;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
 
 namespace ILRepacking
 {
-    public class ILRepack
+    public class ILRepack : IRepackImporter
     {
         internal RepackOptions Options;
         internal ILogger Logger;
@@ -1203,7 +1202,7 @@ namespace ILRepacking
         {
             return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
         }
-        
+
         private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
         {
             return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
@@ -1219,7 +1218,7 @@ namespace ILRepacking
                 return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
             return obj;
         }
-        
+
         /// <summary>
         /// Clones a collection of SecurityDeclarations
         /// </summary>
@@ -1371,7 +1370,7 @@ namespace ILRepacking
             return mappingHandler.GetRemappedType(reference);
         }
 
-        private TypeReference Import(TypeReference reference, IGenericParameterProvider context)
+        public TypeReference Import(TypeReference reference, IGenericParameterProvider context)
         {
             TypeDefinition type = GetMergedTypeFromTypeRef(reference);
             if (type != null)
@@ -1394,20 +1393,20 @@ namespace ILRepacking
             }
         }
 
-        private FieldReference Import(FieldReference reference, IGenericParameterProvider context)
+        public FieldReference Import(FieldReference reference, IGenericParameterProvider context)
         {
             FieldReference importReference = platformFixer.FixPlatformVersion(reference);
 
             return TargetAssemblyMainModule.Import(importReference, context);
         }
 
-        private MethodReference Import(MethodReference reference)
+        public MethodReference Import(MethodReference reference)
         {
             MethodReference importReference = platformFixer.FixPlatformVersion(reference);
             return TargetAssemblyMainModule.Import(importReference);
         }
 
-        private MethodReference Import(MethodReference reference, IGenericParameterProvider context)
+        public MethodReference Import(MethodReference reference, IGenericParameterProvider context)
         {
             // If this is a Method/TypeDefinition, it will be corrected to a definition again later
 
@@ -1461,7 +1460,7 @@ namespace ILRepacking
             return null /*newBody.Instructions.Outside*/;
         }
 
-        internal TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
+        public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             Logger.VERBOSE("- Importing " + type);
 
@@ -1548,7 +1547,7 @@ namespace ILRepacking
             };
         }
 
-        internal void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
+        public void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
         {
             var nt = new ExportedType(type.Namespace, type.Name, module, type.Scope)
                 {

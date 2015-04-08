@@ -74,6 +74,7 @@
     <Compile Include="IFile.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="IRepackImporter.cs" />
     <Compile Include="LineNumberWriter.cs" />
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
