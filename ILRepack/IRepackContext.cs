@@ -13,9 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using Mono.Cecil;
+using System.Collections.Generic;
+
 namespace ILRepacking
 {
     internal interface IRepackContext
     {
+        List<AssemblyDefinition> MergedAssemblies { get; }
+        ModuleDefinition TargetAssemblyMainModule { get; }
+        PlatformFixer PlatformFixer { get; }
+        ReflectionHelper ReflectionHelper { get; }
+        MappingHandler MappingHandler { get; }
+        IKVMLineIndexer LineIndexer { get; }
+
+        TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
     }
 }

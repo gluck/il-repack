@@ -13,15 +13,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 using Mono.Collections.Generic;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ILRepacking
 {
-    internal class ReflectionHelper
+    public class ReflectionHelper
     {
         private readonly ILRepack repack;
 
@@ -33,7 +32,7 @@ namespace ILRepacking
         internal MethodDefinition FindMethodDefinitionInType(TypeDefinition type, MethodReference method)
         {
 			return type.Methods.FirstOrDefault(
-                    x => x.Name == method.Name && 
+                    x => x.Name == method.Name &&
                          AreSame(x.Parameters, method.Parameters) &&
                          AreSame(x.ReturnType, method.ReturnType) &&
 						 x.GenericParameters.Count == method.GenericParameters.Count

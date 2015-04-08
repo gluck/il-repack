@@ -13,18 +13,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+using Mono.Cecil;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-
-using Mono.Cecil;
 
 namespace ILRepacking
 {
-    class PlatformFixer
+    public class PlatformFixer
     {
         private TargetRuntime sourceRuntime;
         private TargetRuntime targetRuntime;
