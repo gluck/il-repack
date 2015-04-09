@@ -78,6 +78,13 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir $(TargetDir)\merged
-$(TargetDir)ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibrary.dll</PostBuildEvent>
+$(TargetDir)ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibrary.dll
+REM Ensure re-build is done every time to use latest built ILRepack version
+del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*
+</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>
