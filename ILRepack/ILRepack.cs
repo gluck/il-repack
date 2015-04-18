@@ -725,11 +725,18 @@ namespace ILRepacking
             {
                 foreach (var res in rr)
                 {
+                    Logger.VERBOSE(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
+
                     if (res.type == "ResourceTypeCode.String" || res.type.StartsWith("System.String"))
                     {
                         string content = (string)rr.GetObject(res);
                         content = FixStr(content);
                         rw.AddResource(res.name, content);
+                    }
+                    else if (res.type == "ResourceTypeCode.Stream" && res.name.EndsWith(".baml"))
+                    {
+                        var bamlResourceProcessor = new BamlResourceProcessor(PrimaryAssemblyDefinition, MergedAssemblies, res);
+                        rw.AddResourceData(res.name, res.type, bamlResourceProcessor.GetProcessedResource());
                     }
                     else
                     {
