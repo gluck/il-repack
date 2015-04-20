@@ -48,6 +48,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BamlParser, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\BamlParser.1.0.0\lib\net35\BamlParser.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Mono.Posix">
       <HintPath>..\packages\Mono.Posix.2.0.0.0\lib\net35\Mono.Posix.dll</HintPath>
     </Reference>
@@ -66,14 +70,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
+    <Compile Include="BamlResourceProcessor.cs" />
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
     <Compile Include="FileWrapper.cs" />
     <Compile Include="ICommandLine.cs" />
     <Compile Include="IFile.cs" />
+    <Compile Include="IRepackContext.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="IRepackCopier.cs" />
+    <Compile Include="IRepackImporter.cs" />
     <Compile Include="LineNumberWriter.cs" />
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
@@ -83,6 +91,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReferenceFixator.cs" />
     <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="RepackImporter.cs" />
     <Compile Include="RepackLogger.cs" />
     <Compile Include="RepackOptions.cs" />
     <Compile Include="RepackAssemblyResolver.cs" />

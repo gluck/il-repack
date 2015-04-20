@@ -43,7 +43,7 @@ msbuild {
 }
 
 nunit {
-    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ]
+    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 
 ext.repackList = ['ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
@@ -116,7 +116,7 @@ task nugetPackLib(type: com.ullink.NuGetPack) {
             id archivesBaseName+'.Lib'
             delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
-            
+
             This package provides a library, for use within tools/build projects.
             If you need the tool as an executable, this is not the package you're looking for, this one is: http://www.nuget.org/packages/ILRepack/.'''
             requireLicenseAcceptance false

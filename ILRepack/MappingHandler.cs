@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Mono.Cecil;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Mono.Cecil;
-using System.Diagnostics;
 
 namespace ILRepacking
 {
-    class MappingHandler
+    public class MappingHandler
     {
         internal class Pair
         {

@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Mono.Cecil;
+using Mono.Cecil.Cil;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace ILRepacking
 {
@@ -13,7 +13,7 @@ namespace ILRepacking
     /// It was inspired by IKVM (which does it for Java assemblies), and re-uses the same attributes.
     /// It then allows at runtime to display file:line information on all stacktraces, by resolving the IL offset provided.
     /// </summary>
-    internal class IKVMLineIndexer
+    public class IKVMLineIndexer
     {
         private readonly ILRepack repack;
         private bool enabled;

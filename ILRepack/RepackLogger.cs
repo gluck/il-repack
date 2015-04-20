@@ -20,7 +20,7 @@ namespace ILRepacking
 
         public bool Open(string file)
         {
-            if (string.IsNullOrEmpty(file)) 
+            if (string.IsNullOrEmpty(file))
                 return false;
             outputFile = file;
             writer = new StreamWriter(outputFile);
@@ -29,7 +29,7 @@ namespace ILRepacking
 
         public void Close()
         {
-            if (writer == null) 
+            if (writer == null)
                 return;
             writer.Close();
             writer = null;
@@ -54,6 +54,12 @@ namespace ILRepacking
         {
             if (ShouldLogVerbose)
                 Log("INFO: " + msg);
+        }
+
+        public void DuplicateIgnored(string ignoredType, object ignoredObject)
+        {
+            // TODO: put on a list and log a summary
+            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
         }
     }
 }
