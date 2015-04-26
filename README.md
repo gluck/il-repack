@@ -3,6 +3,8 @@
 Introduction
 ============
 
+[![Join the chat at https://gitter.im/gluck/il-repack](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gluck/il-repack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ILRepack is meant at replacing [ILMerge](http://www.microsoft.com/downloads/details.aspx?FamilyID=22914587-B4AD-4EAE-87CF-B14AE6A939B0&displaylang=en) / [Mono.Merge](http://evain.net/blog/articles/2006/11/06/an-introduction-to-mono-merge).
 
 The former being closed-source, impossible to customize, slow, resource consuming and many more.
