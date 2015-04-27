@@ -90,3 +90,9 @@ DONE
   * Delay signing (Simon)
   * Target platform selection (Simon)
   * Automatic internal type renaming
+
+Sponsoring / Donations
+------
+If you like this tool and want to express your thanks, you can contribute either time to the project (issue triage or pull-requests) or donate money to the Free Software Foundation.
+
+[![Donate](https://www.gnu.org/graphics/logo-fsf.org-tiny.png)](https://my.fsf.org/donate/)
