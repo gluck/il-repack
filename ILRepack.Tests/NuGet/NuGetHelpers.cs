@@ -9,7 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 
-namespace ILRepack.Tests
+namespace ILRepack.Tests.NuGet
 {
     static class NuGetHelpers
     {
@@ -55,7 +55,7 @@ namespace ILRepack.Tests
                     return new CompositeDisposable() { z, sub };
                 });
             })
-            .Select(t => Tuple.Create<string, Func<Stream>>(t.Item2.Name, () => t.Item1.GetInputStream(t.Item2)));
+            .Select(t => Tuple.Create<string, Func<Stream>>(t.Item2.Name.Replace('/', Path.DirectorySeparatorChar), () => t.Item1.GetInputStream(t.Item2)));
         }
     }
 }

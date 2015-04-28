@@ -62,10 +62,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLineTests.cs" />
-    <Compile Include="NuGetHelpers.cs" />
+    <Compile Include="NuGet\NuGetHelpers.cs" />
+    <Compile Include="NuGet\Package.cs" />
+    <Compile Include="NuGet\Platform.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RepackLoggerTests.cs" />
-    <Compile Include="RepackNuGetTests.cs" />
+    <Compile Include="NuGet\RepackNuGetTests.cs" />
     <Compile Include="RepackOptionsTests.cs" />
   </ItemGroup>
   <ItemGroup>

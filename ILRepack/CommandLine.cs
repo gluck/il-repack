@@ -24,7 +24,7 @@ namespace ILRepacking
     {
         private readonly List<string> parameters;
 
-        public CommandLine(string[] args)
+        public CommandLine(IEnumerable<string> args)
         {
             parameters = new List<string>(args);
         }
