@@ -31,5 +31,11 @@ namespace ILRepack.Tests.NuGet
         {
             return new Package { Name = name, Version = version };
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}:{1}", Name, Version);
+        }
+
     }
 }

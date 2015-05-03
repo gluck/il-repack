@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace ILRepacking
 {
-    class RepackOptions
+    public class RepackOptions
     {
         public class InvalidTargetKindException : Exception 
         {
