@@ -1,4 +1,4 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/hq1jqalcxe6d18rm?svg=true)](https://ci.appveyor.com/project/gluck/il-repack)
+[![Build status](https://ci.appveyor.com/api/projects/status/hq1jqalcxe6d18rm?svg=true)](https://ci.appveyor.com/project/gluck/il-repack) [![Join the chat at https://gitter.im/gluck/il-repack](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gluck/il-repack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Introduction
 ============
@@ -90,3 +90,9 @@ DONE
   * Delay signing (Simon)
   * Target platform selection (Simon)
   * Automatic internal type renaming
+
+Sponsoring / Donations
+------
+If you like this tool and want to express your thanks, you can contribute either time to the project (issue triage or pull-requests) or donate money to the Free Software Foundation.
+
+[![Donate](https://www.gnu.org/graphics/logo-fsf.org-tiny.png)](https://my.fsf.org/donate/)
