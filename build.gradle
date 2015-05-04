@@ -22,7 +22,7 @@ apply plugin:'nunit'
 apply plugin:'com.ullink.opencover-nunit'
 
 archivesBaseName = 'ILRepack'
-version = '1.25.0'
+version = '1.26.0'
 
 defaultTasks('nugetPack')
 
@@ -51,7 +51,7 @@ ext.repackList = ['ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.
 // repacking of all dependencies in a single exe
 task repack(dependsOn: msbuild) {
     inputs.files {
-        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+        def workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
         return project.ext.repackList.collect { new File(workingDir, it) }
     }
     ext.repacked = new File(temporaryDir, 'ILRepack.exe')
@@ -67,19 +67,6 @@ repack << {
     exec {
         workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
         commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
-    }
-}
-
-// bootstrap ILRepack exe for integrity checking
-task bootstrap(dependsOn: repack) {
-    inputs.files repack.outputs
-    ext.tmp = new File(temporaryDir, 'ILRepack_tmp.exe')
-    outputs.files([ext.tmp, removeExtension(ext.tmp.path)+'.pdb'])
-}
-
-bootstrap << {
-    exec {
-        commandLine = [repack.ext.repacked, '/log', '/out:'+ext.tmp, repack.ext.repacked]
     }
 }
 
@@ -123,19 +110,21 @@ task nugetPackLib(type: com.ullink.NuGetPack) {
             summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
         }
         delegate.files() {
-            delegate.file(src: repack.ext.repackedLib, target: 'lib')
+            delegate.file(src: repack.ext.repackedLib, target: 'lib/net35')
         }
     }
 }
 
-nugetPack.dependsOn([repack, bootstrap, msbuild, nugetPackLib])
+nugetPack.dependsOn([repack, msbuild, nugetPackLib])
 
 // nuget package upload, requires API key to be set
 nugetPush {
+    apiKey = project.properties.nugetApiKey
     nupkgFile = nugetPack.getPackageFile()
 }
 
 task nugetPushLib(type: com.ullink.NuGetPush) {
+    apiKey = project.properties.nugetApiKey
     nupkgFile = nugetPackLib.getPackageFile()
 }
 
