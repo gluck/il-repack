@@ -336,6 +336,13 @@ namespace ILRepacking
             // write PDB/MDB?
             if (Options.DebugInfo)
                 parameters.WriteSymbols = true;
+            // create output directory if it does not exist
+            var outputDir = Path.GetDirectoryName(Options.OutputFile);
+            if (!Directory.Exists(outputDir))
+            {
+                Logger.INFO("Output directory does not exist. Creating output directory: " + outputDir);
+                Directory.CreateDirectory(outputDir);
+            }
             TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
             Logger.INFO("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
