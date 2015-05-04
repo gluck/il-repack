@@ -14,9 +14,19 @@ namespace ILRepack.Tests.NuGet
             return new Platform() { Packages = packages };
         }
 
+        public static Platform From(params Package[] packages)
+        {
+            return From((IEnumerable<Package>)packages);
+        }
+
         public IEnumerable<Platform> WithFwks(IEnumerable<string> fwks)
         {
             return fwks.Select(fwk => WithFwk(fwk));
+        }
+
+        public IEnumerable<Platform> WithFwks(params string[] fwks)
+        {
+            return WithFwks((IEnumerable<string>)fwks);
         }
 
         public Platform WithFwk(string fwk)
@@ -26,7 +36,7 @@ namespace ILRepack.Tests.NuGet
 
         public override string ToString()
         {
-            return string.Join(",", Packages.Select(p => string.Format("{0}:{1}@{2}", p.Name, p.Version, string.Join("/", p.Assemblies))));
+            return string.Join(",", Packages.Select(p => string.Format("{0}:{1}", p.Name, p.Version)));
         }
     }
 }
