@@ -19,6 +19,7 @@ namespace ILRepack.Tests.NuGet
             Package.From("Iesi.Collections", "4.0.1.4000"),
             Package.From("MahApps.Metro", "1.1.2"),
             Package.From("Microsoft.Bcl", "1.1.10"),
+            Package.From("Microsoft.Bcl.Async", "1.0.168"),
             Package.From("Microsoft.TeamFoundation.Common", "12.0.21005.1"),
             Package.From("Newtonsoft.Json", "6.0.8"),
             Package.From("NHibernate", "4.0.3.4000"),
