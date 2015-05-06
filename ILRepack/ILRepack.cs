@@ -272,7 +272,6 @@ namespace ILRepacking
             new ResourcesRepackStep(Logger, this, Options).Perform();
             new AttributesRepackStep(Logger, this, this, Options).Perform();
 
-            var fixator = new ReferenceFixator(this);
             if (PrimaryAssemblyMainModule.EntryPoint != null)
             {
                 TargetAssemblyMainModule.EntryPoint = fixator.Fix(_repackImporter.Import(PrimaryAssemblyDefinition.EntryPoint)).Resolve();
@@ -286,6 +285,7 @@ namespace ILRepacking
                 fixator.FixReferences(r);
             }
             foreach (var r in TargetAssemblyMainModule.Types)
+            var fixator = new ReferenceFixator(Logger, this);
             {
                 fixator.FixMethodVisibility(r);
             }
