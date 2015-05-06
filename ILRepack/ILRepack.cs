@@ -574,51 +574,55 @@ namespace ILRepacking
                 repackListRes = GetRepackListResource(repackList);
                 TargetAssemblyMainModule.Resources.Add(repackListRes);
             }
-            foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
+
+            foreach (var assembly in MergedAssemblies)
             {
-                if (r.Name == "ILRepack.List")
+                foreach (var r in assembly.Modules.SelectMany(x => x.Resources))
                 {
-                    if (!Options.NoRepackRes && r is EmbeddedResource)
+                    if (r.Name == "ILRepack.List")
                     {
-                        MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)r);
+                        if (!Options.NoRepackRes && r is EmbeddedResource)
+                        {
+                            MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)r);
+                        }
                     }
-                }
-                else if (r.Name == "ikvm.exports")
-                {
-                    if (r is EmbeddedResource)
+                    else if (r.Name == "ikvm.exports")
                     {
-                        MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)r);
-                    }
-                }
-                else
-                {
-                    if (!Options.AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
-                    {
-                        // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                        Logger.WARN("Ignoring duplicate resource " + r.Name);
+                        if (r is EmbeddedResource)
+                        {
+                            MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)r);
+                        }
                     }
                     else
                     {
-                        Logger.VERBOSE("- Importing " + r.Name);
-                        var nr = r;
-                        switch (r.ResourceType)
+                        if (!Options.AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
                         {
-                            case ResourceType.AssemblyLinked:
-                                // TODO
-                                Logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
-                                break;
-                            case ResourceType.Linked:
-                                // TODO ? (or not)
-                                break;
-                            case ResourceType.Embedded:
-                                var er = (EmbeddedResource)r;
-                                if (er.Name.EndsWith(".resources"))
-                                {
-                                    nr = FixResxResource(er);
-                                }
-                                break;
+                            // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
+                            Logger.WARN("Ignoring duplicate resource " + r.Name);
                         }
-                        TargetAssemblyMainModule.Resources.Add(nr);
+                        else
+                        {
+                            Logger.VERBOSE("- Importing " + r.Name);
+                            var nr = r;
+                            switch (r.ResourceType)
+                            {
+                                case ResourceType.AssemblyLinked:
+                                    // TODO
+                                    Logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
+                                    break;
+                                case ResourceType.Linked:
+                                    // TODO ? (or not)
+                                    break;
+                                case ResourceType.Embedded:
+                                    var er = (EmbeddedResource)r;
+                                    if (er.Name.EndsWith(".resources"))
+                                    {
+                                        nr = FixResxResource(er, assembly == PrimaryAssemblyDefinition);
+                                    }
+                                    break;
+                            }
+                            TargetAssemblyMainModule.Resources.Add(nr);
+                        }
                     }
                 }
             }
@@ -716,7 +720,7 @@ namespace ILRepacking
             }
         }
 
-        private Resource FixResxResource(EmbeddedResource er)
+        private Resource FixResxResource(EmbeddedResource er, bool patchBaml)
         {
             MemoryStream stream = (MemoryStream)er.GetResourceStream();
             var output = new MemoryStream((int)stream.Length);
@@ -733,7 +737,7 @@ namespace ILRepacking
                         content = FixStr(content);
                         rw.AddResource(res.name, content);
                     }
-                    else if (res.type == "ResourceTypeCode.Stream" && res.name.EndsWith(".baml"))
+                    else if (patchBaml && res.type == "ResourceTypeCode.Stream" && res.name.EndsWith(".baml"))
                     {
                         var bamlResourceProcessor = new BamlResourceProcessor(PrimaryAssemblyDefinition, MergedAssemblies, res);
                         rw.AddResourceData(res.name, res.type, bamlResourceProcessor.GetProcessedResource());
