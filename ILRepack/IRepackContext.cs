@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace ILRepacking
 {
-    internal interface IRepackContext
+    public interface IRepackContext
     {
         List<AssemblyDefinition> MergedAssemblies { get; }
         ModuleDefinition TargetAssemblyMainModule { get; }
@@ -31,5 +31,11 @@ namespace ILRepacking
         AssemblyDefinition PrimaryAssemblyDefinition { get; }
 
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
+
+        string FixTypeName(string assemblyName, string typeName);
+
+        string FixAssemblyName(string assemblyName);
+
+        string FixStr(string content);
     }
 }
