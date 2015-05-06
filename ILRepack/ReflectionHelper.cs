@@ -22,20 +22,20 @@ namespace ILRepacking
 {
     public class ReflectionHelper
     {
-        private readonly ILRepack repack;
+        private readonly IRepackContext _repack;
 
-        internal ReflectionHelper(ILRepack repack)
+        internal ReflectionHelper(IRepackContext repack)
         {
-            this.repack = repack;
+            _repack = repack;
         }
 
         internal MethodDefinition FindMethodDefinitionInType(TypeDefinition type, MethodReference method)
         {
-			return type.Methods.FirstOrDefault(
+            return type.Methods.FirstOrDefault(
                     x => x.Name == method.Name &&
                          AreSame(x.Parameters, method.Parameters) &&
                          AreSame(x.ReturnType, method.ReturnType) &&
-						 x.GenericParameters.Count == method.GenericParameters.Count
+                         x.GenericParameters.Count == method.GenericParameters.Count
                   );
         }
 
@@ -118,8 +118,8 @@ namespace ILRepacking
                 return true;
             if (a == null || b == null)
                 return false;
-            a = repack.GetMergedTypeFromTypeRef(a) ?? a;
-            b = repack.GetMergedTypeFromTypeRef(b) ?? b;
+            a = _repack.GetMergedTypeFromTypeRef(a) ?? a;
+            b = _repack.GetMergedTypeFromTypeRef(b) ?? b;
 
             if (a.MetadataType != b.MetadataType)
                 return false;

@@ -36,5 +36,7 @@ namespace ILRepacking
         string FixTypeName(string assemblyName, string typeName);
         string FixAssemblyName(string assemblyName);
         string FixStr(string content);
+
+        TypeReference GetExportedTypeFromTypeRef(TypeReference type);
     }
 }
