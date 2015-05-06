@@ -38,5 +38,12 @@ namespace ILRepacking
         string FixStr(string content);
 
         TypeReference GetExportedTypeFromTypeRef(TypeReference type);
+
+        /// <summary>
+        /// Fix assembly reference in attribute
+        /// </summary>
+        /// <param name="content">string to search in</param>
+        /// <returns>new string with references fixed</returns>
+        string FixReferenceInIkvmAttribute(string content);
     }
 }

@@ -267,45 +267,18 @@ namespace ILRepacking
             }
             LineIndexer = new IKVMLineIndexer(this);
 
-            new ReferencesRepackStep(Logger, this).Perform();
-            new TypesRepackStep(Logger, this, _repackImporter, Options).Perform();
-            new ResourcesRepackStep(Logger, this, Options).Perform();
-            new AttributesRepackStep(Logger, this, this, Options).Perform();
-
-            if (PrimaryAssemblyMainModule.EntryPoint != null)
+            List<IRepackStep> repackSteps = new List<IRepackStep>
             {
-                TargetAssemblyMainModule.EntryPoint = fixator.Fix(_repackImporter.Import(PrimaryAssemblyDefinition.EntryPoint)).Resolve();
-            }
+                new ReferencesRepackStep(Logger, this),
+                new TypesRepackStep(Logger, this, _repackImporter, Options),
+                new ResourcesRepackStep(Logger, this, Options),
+                new AttributesRepackStep(Logger, this, this, Options),
+                new ReferencesFixStep(Logger, this, _repackImporter, Options)
+            };
 
-            Logger.INFO("Fixing references");
-            // this step travels through all TypeRefs & replaces them by matching TypeDefs
-
-            foreach (var r in TargetAssemblyMainModule.Types)
+            foreach (var step in repackSteps)
             {
-                fixator.FixReferences(r);
-            }
-            foreach (var r in TargetAssemblyMainModule.Types)
-            var fixator = new ReferenceFixator(Logger, this);
-            {
-                fixator.FixMethodVisibility(r);
-            }
-            fixator.FixReferences(TargetAssemblyDefinition.MainModule.ExportedTypes);
-            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes);
-            fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations);
-            fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes);
-
-            // final reference cleanup (Cecil Import automatically added them)
-            foreach (AssemblyDefinition asm in MergedAssemblies)
-            {
-                foreach (var refer in TargetAssemblyMainModule.AssemblyReferences.ToArray())
-                {
-                    // remove all referenced assemblies with same same, as we didn't bother on the version when merging
-                    // in case we reference same assemblies with different versions, there might be prior errors if we don't merge the 'largest one'
-                    if (Options.KeepOtherVersionReferences ? refer.FullName == asm.FullName : refer.Name == asm.Name.Name)
-                    {
-                        TargetAssemblyMainModule.AssemblyReferences.Remove(refer);
-                    }
-                }
+                step.Perform();
             }
 
             var parameters = new WriterParameters();
@@ -414,12 +387,7 @@ namespace ILRepacking
             return FixStr(content, false);
         }
 
-        /// <summary>
-        /// Fix assembly reference in attribute
-        /// </summary>
-        /// <param name="content">string to search in</param>
-        /// <returns>new string with references fixed</returns>
-        internal string FixReferenceInIkvmAttribute(string content)
+        public string FixReferenceInIkvmAttribute(string content)
         {
             return FixStr(content, true);
         }
