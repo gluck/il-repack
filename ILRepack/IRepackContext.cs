@@ -33,9 +33,7 @@ namespace ILRepacking
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
 
         string FixTypeName(string assemblyName, string typeName);
-
         string FixAssemblyName(string assemblyName);
-
         string FixStr(string content);
     }
 }

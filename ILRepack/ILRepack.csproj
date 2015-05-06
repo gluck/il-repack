@@ -99,6 +99,7 @@
     <Compile Include="SerReader.cs" />
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
+    <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
   </ItemGroup>
   <ItemGroup>
