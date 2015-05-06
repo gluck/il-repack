@@ -29,6 +29,7 @@ namespace ILRepacking
         AssemblyDefinition TargetAssemblyDefinition { get; }
         List<AssemblyDefinition> OtherAssemblies { get; }
         AssemblyDefinition PrimaryAssemblyDefinition { get; }
+        ModuleDefinition PrimaryAssemblyMainModule { get; }
 
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
 

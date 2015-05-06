@@ -97,6 +97,7 @@
     <Compile Include="RepackAssemblyResolver.cs" />
     <Compile Include="ResReader.cs" />
     <Compile Include="SerReader.cs" />
+    <Compile Include="Steps\AttributesRepackStep.cs" />
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />

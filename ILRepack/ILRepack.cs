@@ -23,8 +23,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
 using System.Text.RegularExpressions;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 
@@ -48,7 +46,7 @@ namespace ILRepacking
         // helpers
         public ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
-        private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
+        public ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
         public ReflectionHelper ReflectionHelper { get;private set; }
         private static readonly Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
@@ -272,7 +270,7 @@ namespace ILRepacking
             new ReferencesRepackStep(Logger, this).Perform();
             new TypesRepackStep(Logger, this, _repackImporter, Options).Perform();
             new ResourcesRepackStep(Logger, this, Options).Perform();
-            RepackAttributes();
+            new AttributesRepackStep(Logger, this, this, Options).Perform();
 
             var fixator = new ReferenceFixator(this);
             if (PrimaryAssemblyMainModule.EntryPoint != null)
@@ -411,53 +409,6 @@ namespace ILRepacking
             return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
-        private void RepackAttributes()
-        {
-            if (Options.CopyAttributes)
-            {
-                CleanupAttributes(typeof(CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
-                CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, null);
-                CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
-                RemoveAttributes(typeof(InternalsVisibleToAttribute).FullName, ca =>
-                                                                                {
-                                                                                    String name = (string)ca.ConstructorArguments[0].Value;
-                                                                                    int idx;
-                                                                                    if ((idx = name.IndexOf(", PublicKey=")) != -1)
-                                                                                    {
-                                                                                        name = name.Substring(0, idx);
-                                                                                    }
-                                                                                    return MergedAssemblies.Any(x => x.Name.Name == name);
-                                                                                });
-                RemoveAttributes(typeof(AssemblyDelaySignAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyFileAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyNameAttribute).FullName, null);
-                foreach (var ass in MergedAssemblies)
-                {
-                    CopyCustomAttributes(ass.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
-                }
-                foreach (var mod in MergedAssemblies.SelectMany(x => x.Modules))
-                {
-                    CopyCustomAttributes(mod.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
-                }
-            }
-            else if (Options.AttributeFile != null)
-            {
-                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(Options.AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver });
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            else
-            {
-                CopyCustomAttributes(PrimaryAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
-        }
-
         public string FixStr(string content)
         {
             return FixStr(content, false);
@@ -509,36 +460,6 @@ namespace ILRepacking
                 return TargetAssemblyDefinition.FullName;
             }
             return assemblyName;
-        }
-
-        private bool RemoveAttributes(string attrTypeName, Func<CustomAttribute, bool> predicate)
-        {
-            bool ret = false;
-            foreach (var ass in MergedAssemblies)
-            {
-                for (int i = 0; i < ass.CustomAttributes.Count; )
-                {
-                    if (ass.CustomAttributes[i].AttributeType.FullName == attrTypeName && (predicate == null || predicate(ass.CustomAttributes[i])))
-                    {
-                        ass.CustomAttributes.RemoveAt(i);
-                        ret = true;
-                        continue;
-                    }
-                    i++;
-                }
-            }
-            return ret;
-        }
-
-        private void CleanupAttributes(string type, Func<CustomAttribute, bool> extra)
-        {
-            if (!MergedAssemblies.All(ass => ass.CustomAttributes.Any(attr => attr.AttributeType.FullName == type && (extra == null || extra(attr)))))
-            {
-                if (RemoveAttributes(type, null))
-                {
-                    Logger.WARN("[" + type + "] attribute wasn't merged because of inconsistency accross merged assemblies");
-                }
-            }
         }
 
         private AssemblyNameDefinition Clone(AssemblyNameDefinition assemblyName)
