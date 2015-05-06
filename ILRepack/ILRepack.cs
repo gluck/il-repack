@@ -15,6 +15,7 @@
 //   limitations under the License.
 //
 
+using ILRepacking.Steps;
 using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
@@ -44,7 +45,7 @@ namespace ILRepacking
         internal List<AssemblyDefinition> OtherAssemblies { get; set; }
         // contains all assemblies, primary and 'other'
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
-        internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
+        public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
         internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
         public IKVMLineIndexer LineIndexer { get; private set; }
 
@@ -288,7 +289,7 @@ namespace ILRepacking
             }
             LineIndexer = new IKVMLineIndexer(this);
 
-            RepackReferences();
+            new ReferencesRepackStep(Logger, this).Perform();
             RepackTypes();
             RepackExportedTypes();
             RepackResources();
@@ -526,36 +527,6 @@ namespace ILRepacking
                     {
                         Logger.VERBOSE("- Skipping Exported Type " + r);
                     }
-                }
-            }
-        }
-
-        private void RepackReferences()
-        {
-            Logger.INFO("Processing references");
-            // Add all AssemblyReferences to merged assembly (probably not necessary)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
-            {
-                string name = z.Name;
-                if (!MergedAssemblies.Any(y => y.Name.Name == name) && TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
-                {
-                    // TODO: fix .NET runtime references?
-                    // - to target a specific runtime version or
-                    // - to target a single version if merged assemblies target different versions
-                    Logger.VERBOSE("- add reference " + z);
-                    AssemblyNameReference fixedRef = PlatformFixer.FixPlatformVersion(z);
-                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
-                }
-            }
-            LineIndexer.PostRepackReferences();
-
-            // add all module references (pinvoke dlls)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
-            {
-                string name = z.Name;
-                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
-                {
-                    TargetAssemblyMainModule.ModuleReferences.Add(z);
                 }
             }
         }
