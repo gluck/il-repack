@@ -27,6 +27,8 @@ namespace ILRepacking
         MappingHandler MappingHandler { get; }
         IKVMLineIndexer LineIndexer { get; }
         AssemblyDefinition TargetAssemblyDefinition { get; }
+        List<AssemblyDefinition> OtherAssemblies { get; }
+        AssemblyDefinition PrimaryAssemblyDefinition { get; }
 
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
     }

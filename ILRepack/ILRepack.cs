@@ -42,11 +42,11 @@ namespace ILRepacking
         internal List<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
-        internal List<AssemblyDefinition> OtherAssemblies { get; set; }
+        public List<AssemblyDefinition> OtherAssemblies { get; private set; }
         // contains all assemblies, primary and 'other'
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
         public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
-        internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
+        public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
         public IKVMLineIndexer LineIndexer { get; private set; }
 
         // helpers
@@ -195,22 +195,6 @@ namespace ILRepacking
         }
 
         /// <summary>
-        /// Check if a type's FullName matches a Reges to exclude it from internalizing.
-        /// </summary>
-        private bool ShouldInternalize(string typeFullName)
-        {
-            if (Options.ExcludeInternalizeMatches == null)
-            {
-                return Options.Internalize;
-            }
-            string withSquareBrackets = "[" + typeFullName + "]";
-            foreach (Regex r in Options.ExcludeInternalizeMatches)
-                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
-                    return false;
-            return true;
-        }
-
-        /// <summary>
         /// The actual repacking process, called by main after parsing arguments.
         /// When referencing this assembly, call this after setting the merge properties.
         /// </summary>
@@ -290,8 +274,7 @@ namespace ILRepacking
             LineIndexer = new IKVMLineIndexer(this);
 
             new ReferencesRepackStep(Logger, this).Perform();
-            RepackTypes();
-            RepackExportedTypes();
+            new TypesRepackStep(Logger, this, _repackImporter, Options).Perform();
             RepackResources();
             RepackAttributes();
 
@@ -477,58 +460,6 @@ namespace ILRepacking
                 // TODO: should copy Win32 resources, too
             }
             CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
-        }
-
-        private void RepackTypes()
-        {
-            Logger.INFO("Processing types");
-            // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
-
-            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
-            {
-                Logger.VERBOSE("- Importing " + r);
-                _repackImporter.Import(r, TargetAssemblyMainModule.Types, false);
-            }
-            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.Types)
-                {
-                    Logger.VERBOSE("- Importing " + r);
-                    _repackImporter.Import(r, TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
-                }
-            }
-        }
-
-        private void RepackExportedTypes()
-        {
-            Logger.INFO("Processing types");
-            foreach (var m in MergedAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.ExportedTypes)
-                {
-                    MappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
-                }
-            }
-            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
-            {
-                Logger.VERBOSE("- Importing Exported Type" + r);
-                _repackImporter.Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
-            }
-            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.ExportedTypes)
-                {
-                    if (!ShouldInternalize(r.FullName))
-                    {
-                        Logger.VERBOSE("- Importing Exported Type " + r);
-                        _repackImporter.Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
-                    }
-                    else
-                    {
-                        Logger.VERBOSE("- Skipping Exported Type " + r);
-                    }
-                }
-            }
         }
 
         private void RepackResources()
@@ -1000,14 +931,6 @@ namespace ILRepacking
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
         {
             return MappingHandler.GetRemappedType(reference);
-        }
-
-        internal TypeReference CreateReference(ExportedType type)
-        {
-            return new TypeReference(type.Namespace, type.Name, TargetAssemblyMainModule, type.Scope)
-            {
-                DeclaringType = type.DeclaringType != null ? CreateReference(type.DeclaringType) : null,
-            };
         }
 
         public TypeReference GetExportedTypeFromTypeRef(TypeReference type)

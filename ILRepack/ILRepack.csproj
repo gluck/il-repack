@@ -99,6 +99,7 @@
     <Compile Include="SerReader.cs" />
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
+    <Compile Include="Steps\TypesRepackStep.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
