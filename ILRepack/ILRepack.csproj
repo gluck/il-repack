@@ -103,6 +103,7 @@
     <Compile Include="Steps\ReferencesRepackStep.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
+    <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

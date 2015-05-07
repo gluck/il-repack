@@ -273,7 +273,8 @@ namespace ILRepacking
                 new TypesRepackStep(Logger, this, _repackImporter, Options),
                 new ResourcesRepackStep(Logger, this, Options),
                 new AttributesRepackStep(Logger, this, this, Options),
-                new ReferencesFixStep(Logger, this, _repackImporter, Options)
+                new ReferencesFixStep(Logger, this, _repackImporter, Options),
+                new XamlResourcePathPatcherStep(Logger, this)
             };
 
             foreach (var step in repackSteps)
