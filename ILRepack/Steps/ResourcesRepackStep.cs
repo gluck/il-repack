@@ -58,44 +58,44 @@ namespace ILRepacking.Steps
 
             foreach (var assembly in _repackContext.MergedAssemblies)
             {
-                foreach (var r in assembly.Modules.SelectMany(x => x.Resources))
+                foreach (var resource in assembly.Modules.SelectMany(x => x.Resources))
                 {
-                    if (r.Name == "ILRepack.List")
+                    if (resource.Name == "ILRepack.List")
                     {
-                        if (!_options.NoRepackRes && r is EmbeddedResource)
+                        if (!_options.NoRepackRes && resource is EmbeddedResource)
                         {
-                            MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)r);
+                            MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)resource);
                         }
                     }
-                    else if (r.Name == "ikvm.exports")
+                    else if (resource.Name == "ikvm.exports")
                     {
-                        if (r is EmbeddedResource)
+                        if (resource is EmbeddedResource)
                         {
-                            MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)r);
+                            MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)resource);
                         }
                     }
                     else
                     {
-                        if (!_options.AllowDuplicateResources && _targetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
+                        if (!_options.AllowDuplicateResources && _targetAssemblyMainModule.Resources.Any(x => x.Name == resource.Name))
                         {
                             // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                            _logger.WARN("Ignoring duplicate resource " + r.Name);
+                            _logger.WARN("Ignoring duplicate resource " + resource.Name);
                         }
                         else
                         {
-                            _logger.VERBOSE("- Importing " + r.Name);
-                            var nr = r;
-                            switch (r.ResourceType)
+                            _logger.VERBOSE("- Importing " + resource.Name);
+                            var nr = resource;
+                            switch (resource.ResourceType)
                             {
                                 case ResourceType.AssemblyLinked:
                                     // TODO
-                                    _logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
+                                    _logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + resource.Name);
                                     break;
                                 case ResourceType.Linked:
                                     // TODO ? (or not)
                                     break;
                                 case ResourceType.Embedded:
-                                    var er = (EmbeddedResource)r;
+                                    var er = (EmbeddedResource)resource;
                                     if (er.Name.EndsWith(".resources"))
                                     {
                                         nr = FixResxResource(er, assembly == _repackContext.PrimaryAssemblyDefinition);
@@ -212,13 +212,13 @@ namespace ILRepacking.Steps
                 {
                     _logger.VERBOSE(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
 
-                    if (res.type == "ResourceTypeCode.String" || res.type.StartsWith("System.String"))
+                    if (res.IsString)
                     {
                         string content = (string)rr.GetObject(res);
                         content = _repackContext.FixStr(content);
                         rw.AddResource(res.name, content);
                     }
-                    else if (patchBaml && res.type == "ResourceTypeCode.Stream" && res.name.EndsWith(".baml"))
+                    else if (patchBaml && res.IsBamlStream)
                     {
                         var bamlResourceProcessor = new BamlResourceProcessor(
                             _repackContext.PrimaryAssemblyDefinition, _repackContext.MergedAssemblies, res);
