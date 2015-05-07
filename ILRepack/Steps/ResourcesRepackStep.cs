@@ -45,15 +45,12 @@ namespace ILRepacking.Steps
         {
             _logger.INFO("Processing resources");
             // merge resources
-            List<string> repackList = null;
-            EmbeddedResource repackListRes = null;
+            IEnumerable<string> repackList = new List<string>();
             Dictionary<string, List<int>> ikvmExportsLists = null;
             EmbeddedResource ikvmExports = null;
             if (!_options.NoRepackRes)
             {
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
-                repackListRes = GetRepackListResource(repackList);
-                _targetAssemblyMainModule.Resources.Add(repackListRes);
             }
 
             foreach (var assembly in _repackContext.MergedAssemblies)
@@ -64,7 +61,7 @@ namespace ILRepacking.Steps
                     {
                         if (!_options.NoRepackRes && resource is EmbeddedResource)
                         {
-                            MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)resource);
+                            repackList = repackList.Union(GetRepackListFromResource((EmbeddedResource)resource));
                         }
                     }
                     else if (resource.Name == "ikvm.exports")
@@ -107,16 +104,9 @@ namespace ILRepacking.Steps
                     }
                 }
             }
-        }
 
-        private void MergeRepackListResource(ref List<string> repackList, ref EmbeddedResource repackListRes, EmbeddedResource r)
-        {
-            var others = (string[])new BinaryFormatter().Deserialize(r.GetResourceStream());
-            repackList = repackList.Union(others).ToList();
-            EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
-            _targetAssemblyMainModule.Resources.Remove(repackListRes);
-            _targetAssemblyMainModule.Resources.Add(repackListRes2);
-            repackListRes = repackListRes2;
+            if (!_options.NoRepackRes)
+                _targetAssemblyMainModule.Resources.Add(GenerateRepackListResource(repackList.ToList()));
         }
 
         private void MergeIkvmExportsResource(ref Dictionary<string, List<int>> lists, ref EmbeddedResource existing, EmbeddedResource extra)
@@ -246,7 +236,12 @@ namespace ILRepacking.Steps
             return new EmbeddedResource(er.Name, er.Attributes, output);
         }
 
-        private EmbeddedResource GetRepackListResource(List<string> repackList)
+        private static string[] GetRepackListFromResource(EmbeddedResource resource)
+        {
+            return (string[])new BinaryFormatter().Deserialize(resource.GetResourceStream());
+        }
+
+        private static EmbeddedResource GenerateRepackListResource(List<string> repackList)
         {
             repackList.Sort();
             using (var stream = new MemoryStream())
