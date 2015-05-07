@@ -46,8 +46,7 @@ namespace ILRepacking.Steps
             _logger.INFO("Processing resources");
             // merge resources
             IEnumerable<string> repackList = new List<string>();
-            Dictionary<string, List<int>> ikvmExportsLists = null;
-            EmbeddedResource ikvmExports = null;
+            Dictionary<string, List<int>> ikvmExportsLists = new Dictionary<string, List<int>>();
             if (!_options.NoRepackRes)
             {
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
@@ -68,7 +67,9 @@ namespace ILRepacking.Steps
                     {
                         if (resource is EmbeddedResource)
                         {
-                            MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)resource);
+                            ikvmExportsLists = MergeIkvmExports(
+                                ikvmExportsLists,
+                                GetIkvmExportsListsFromResource((EmbeddedResource)resource));
                         }
                     }
                     else
@@ -105,42 +106,39 @@ namespace ILRepacking.Steps
                 }
             }
 
+            if (ikvmExportsLists.Count > 0)
+                _targetAssemblyMainModule.Resources.Add(GenerateIkvmExports(ikvmExportsLists));
+
             if (!_options.NoRepackRes)
                 _targetAssemblyMainModule.Resources.Add(GenerateRepackListResource(repackList.ToList()));
         }
 
-        private void MergeIkvmExportsResource(ref Dictionary<string, List<int>> lists, ref EmbeddedResource existing, EmbeddedResource extra)
+        private static Dictionary<string, List<int>> MergeIkvmExports(
+            Dictionary<string, List<int>> currentExports,
+            Dictionary<string, List<int>> extraExports)
         {
-            if (existing == null)
+            Dictionary<string, List<int>> result = new Dictionary<string, List<int>>(currentExports);
+
+            foreach (var pair in extraExports)
             {
-                lists = ExtractIkvmExportsLists(extra);
-                _targetAssemblyMainModule.Resources.Add(existing = extra);
-            }
-            else
-            {
-                _targetAssemblyMainModule.Resources.Remove(existing);
-                var lists2 = ExtractIkvmExportsLists(extra);
-                foreach (KeyValuePair<string, List<int>> kv in lists2)
+                List<int> values;
+                if (!currentExports.TryGetValue(pair.Key, out values))
                 {
-                    List<int> v;
-                    if (!lists.TryGetValue(kv.Key, out v))
-                    {
-                        lists.Add(kv.Key, kv.Value);
-                    }
-                    else if (v != null)
-                    {
-                        if (kv.Value == null) // wildcard export
-                            lists[kv.Key] = null;
-                        else
-                            lists[kv.Key] = v.Union(kv.Value).ToList();
-                    }
+                    currentExports.Add(pair.Key, pair.Value);
                 }
-                existing = GenerateIkvmExports(lists);
-                _targetAssemblyMainModule.Resources.Add(existing);
+                else if (values != null)
+                {
+                    if (pair.Value == null) // wildcard export
+                        currentExports[pair.Key] = null;
+                    else
+                        currentExports[pair.Key] = values.Union(pair.Value).ToList();
+                }
             }
+
+            return result;
         }
 
-        private static Dictionary<string, List<int>> ExtractIkvmExportsLists(EmbeddedResource extra)
+        private static Dictionary<string, List<int>> GetIkvmExportsListsFromResource(EmbeddedResource extra)
         {
             Dictionary<string, List<int>> ikvmExportsLists = new Dictionary<string, List<int>>();
             BinaryReader rdr = new BinaryReader(extra.GetResourceStream());
