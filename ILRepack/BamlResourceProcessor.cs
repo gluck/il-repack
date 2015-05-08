@@ -79,17 +79,13 @@ namespace ILRepacking
             var assemblyDefinition =  _mergedAssemblies.FirstOrDefault(
                 asm => asm.Name.Name == record.AssemblyFullName || asm.Name.FullName == record.AssemblyFullName);
 
-            // not interested in WPF/.NET Framework related assemblies
-            if (assemblyDefinition == null)
-                return;
-
             _assemblyMappings[record.AssemblyId] = assemblyDefinition;
         }
 
         private void ProcessRecord(TypeInfoRecord record)
         {
             AssemblyDefinition recordAssembly = _assemblyMappings[record.AssemblyId];
-            if (_mergedAssemblies.Where(asm => asm != _mainAssembly).Contains(recordAssembly))
+            if (_mergedAssemblies.Contains(recordAssembly))
             {
                 record.AssemblyId = GetAssemblyId(_mainAssembly);
             }
