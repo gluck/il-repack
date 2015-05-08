@@ -36,7 +36,7 @@ namespace ILRepack.Tests.NuGet
 
         public override string ToString()
         {
-            return string.Join(",", Packages.Select(p => string.Format("{0}:{1}", p.Name, p.Version)));
+            return string.Join(",", Packages);
         }
     }
 }
