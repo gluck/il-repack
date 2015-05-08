@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace ILRepacking
 {
-    internal interface IRepackContext
+    public interface IRepackContext
     {
         List<AssemblyDefinition> MergedAssemblies { get; }
         ModuleDefinition TargetAssemblyMainModule { get; }
@@ -26,7 +26,24 @@ namespace ILRepacking
         ReflectionHelper ReflectionHelper { get; }
         MappingHandler MappingHandler { get; }
         IKVMLineIndexer LineIndexer { get; }
+        AssemblyDefinition TargetAssemblyDefinition { get; }
+        List<AssemblyDefinition> OtherAssemblies { get; }
+        AssemblyDefinition PrimaryAssemblyDefinition { get; }
+        ModuleDefinition PrimaryAssemblyMainModule { get; }
 
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
+
+        string FixTypeName(string assemblyName, string typeName);
+        string FixAssemblyName(string assemblyName);
+        string FixStr(string content);
+
+        TypeReference GetExportedTypeFromTypeRef(TypeReference type);
+
+        /// <summary>
+        /// Fix assembly reference in attribute
+        /// </summary>
+        /// <param name="content">string to search in</param>
+        /// <returns>new string with references fixed</returns>
+        string FixReferenceInIkvmAttribute(string content);
     }
 }

@@ -1,5 +1,4 @@
-﻿
-//
+﻿//
 // Copyright (c) 2011 Francois Valdy
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +13,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-
+using ILRepacking.Steps;
 using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
@@ -24,10 +23,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Resources;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security;
 using System.Text.RegularExpressions;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 
@@ -41,17 +36,17 @@ namespace ILRepacking
         internal List<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
-        internal List<AssemblyDefinition> OtherAssemblies { get; set; }
+        public List<AssemblyDefinition> OtherAssemblies { get; private set; }
         // contains all assemblies, primary and 'other'
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
-        internal AssemblyDefinition TargetAssemblyDefinition { get; set; }
-        internal AssemblyDefinition PrimaryAssemblyDefinition { get; set; }
+        public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
+        public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
         public IKVMLineIndexer LineIndexer { get; private set; }
 
         // helpers
         public ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
 
-        private ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
+        public ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
 
         public ReflectionHelper ReflectionHelper { get;private set; }
         private static readonly Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
@@ -194,22 +189,6 @@ namespace ILRepacking
         }
 
         /// <summary>
-        /// Check if a type's FullName matches a Reges to exclude it from internalizing.
-        /// </summary>
-        private bool ShouldInternalize(string typeFullName)
-        {
-            if (Options.ExcludeInternalizeMatches == null)
-            {
-                return Options.Internalize;
-            }
-            string withSquareBrackets = "[" + typeFullName + "]";
-            foreach (Regex r in Options.ExcludeInternalizeMatches)
-                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
-                    return false;
-            return true;
-        }
-
-        /// <summary>
         /// The actual repacking process, called by main after parsing arguments.
         /// When referencing this assembly, call this after setting the merge properties.
         /// </summary>
@@ -288,46 +267,19 @@ namespace ILRepacking
             }
             LineIndexer = new IKVMLineIndexer(this);
 
-            RepackReferences();
-            RepackTypes();
-            RepackExportedTypes();
-            RepackResources();
-            RepackAttributes();
-
-            var fixator = new ReferenceFixator(this);
-            if (PrimaryAssemblyMainModule.EntryPoint != null)
+            List<IRepackStep> repackSteps = new List<IRepackStep>
             {
-                TargetAssemblyMainModule.EntryPoint = fixator.Fix(_repackImporter.Import(PrimaryAssemblyDefinition.EntryPoint)).Resolve();
-            }
+                new ReferencesRepackStep(Logger, this),
+                new TypesRepackStep(Logger, this, _repackImporter, Options),
+                new ResourcesRepackStep(Logger, this, Options),
+                new AttributesRepackStep(Logger, this, this, Options),
+                new ReferencesFixStep(Logger, this, _repackImporter, Options),
+                new XamlResourcePathPatcherStep(Logger, this)
+            };
 
-            Logger.INFO("Fixing references");
-            // this step travels through all TypeRefs & replaces them by matching TypeDefs
-
-            foreach (var r in TargetAssemblyMainModule.Types)
+            foreach (var step in repackSteps)
             {
-                fixator.FixReferences(r);
-            }
-            foreach (var r in TargetAssemblyMainModule.Types)
-            {
-                fixator.FixMethodVisibility(r);
-            }
-            fixator.FixReferences(TargetAssemblyDefinition.MainModule.ExportedTypes);
-            fixator.FixReferences(TargetAssemblyDefinition.CustomAttributes);
-            fixator.FixReferences(TargetAssemblyDefinition.SecurityDeclarations);
-            fixator.FixReferences(TargetAssemblyMainModule.CustomAttributes);
-
-            // final reference cleanup (Cecil Import automatically added them)
-            foreach (AssemblyDefinition asm in MergedAssemblies)
-            {
-                foreach (var refer in TargetAssemblyMainModule.AssemblyReferences.ToArray())
-                {
-                    // remove all referenced assemblies with same same, as we didn't bother on the version when merging
-                    // in case we reference same assemblies with different versions, there might be prior errors if we don't merge the 'largest one'
-                    if (Options.KeepOtherVersionReferences ? refer.FullName == asm.FullName : refer.Name == asm.Name.Name)
-                    {
-                        TargetAssemblyMainModule.AssemblyReferences.Remove(refer);
-                    }
-                }
+                step.Perform();
             }
 
             var parameters = new WriterParameters();
@@ -336,6 +288,13 @@ namespace ILRepacking
             // write PDB/MDB?
             if (Options.DebugInfo)
                 parameters.WriteSymbols = true;
+            // create output directory if it does not exist
+            var outputDir = Path.GetDirectoryName(Options.OutputFile);
+            if (!Directory.Exists(outputDir))
+            {
+                Logger.INFO("Output directory does not exist. Creating output directory: " + outputDir);
+                Directory.CreateDirectory(outputDir);
+            }
             TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
             Logger.INFO("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
@@ -431,346 +390,12 @@ namespace ILRepacking
             return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
-        private void RepackAttributes()
-        {
-            if (Options.CopyAttributes)
-            {
-                CleanupAttributes(typeof(CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
-                CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, null);
-                CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
-                RemoveAttributes(typeof(InternalsVisibleToAttribute).FullName, ca =>
-                                                                                {
-                                                                                    String name = (string)ca.ConstructorArguments[0].Value;
-                                                                                    int idx;
-                                                                                    if ((idx = name.IndexOf(", PublicKey=")) != -1)
-                                                                                    {
-                                                                                        name = name.Substring(0, idx);
-                                                                                    }
-                                                                                    return MergedAssemblies.Any(x => x.Name.Name == name);
-                                                                                });
-                RemoveAttributes(typeof(AssemblyDelaySignAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyFileAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyNameAttribute).FullName, null);
-                foreach (var ass in MergedAssemblies)
-                {
-                    CopyCustomAttributes(ass.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
-                }
-                foreach (var mod in MergedAssemblies.SelectMany(x => x.Modules))
-                {
-                    CopyCustomAttributes(mod.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, Options.AllowMultipleAssemblyLevelAttributes, null);
-                }
-            }
-            else if (Options.AttributeFile != null)
-            {
-                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(Options.AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver });
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(attributeAsm.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            else
-            {
-                CopyCustomAttributes(PrimaryAssemblyDefinition.CustomAttributes, TargetAssemblyDefinition.CustomAttributes, null);
-                CopyCustomAttributes(PrimaryAssemblyMainModule.CustomAttributes, TargetAssemblyMainModule.CustomAttributes, null);
-                // TODO: should copy Win32 resources, too
-            }
-            CopySecurityDeclarations(PrimaryAssemblyDefinition.SecurityDeclarations, TargetAssemblyDefinition.SecurityDeclarations, null);
-        }
-
-        private void RepackTypes()
-        {
-            Logger.INFO("Processing types");
-            // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
-
-            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
-            {
-                Logger.VERBOSE("- Importing " + r);
-                _repackImporter.Import(r, TargetAssemblyMainModule.Types, false);
-            }
-            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.Types)
-                {
-                    Logger.VERBOSE("- Importing " + r);
-                    _repackImporter.Import(r, TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
-                }
-            }
-        }
-
-        private void RepackExportedTypes()
-        {
-            Logger.INFO("Processing types");
-            foreach (var m in MergedAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.ExportedTypes)
-                {
-                    MappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
-                }
-            }
-            foreach (var r in PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
-            {
-                Logger.VERBOSE("- Importing Exported Type" + r);
-                _repackImporter.Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
-            }
-            foreach (var m in OtherAssemblies.SelectMany(x => x.Modules))
-            {
-                foreach (var r in m.ExportedTypes)
-                {
-                    if (!ShouldInternalize(r.FullName))
-                    {
-                        Logger.VERBOSE("- Importing Exported Type " + r);
-                        _repackImporter.Import(r, TargetAssemblyMainModule.ExportedTypes, TargetAssemblyMainModule);
-                    }
-                    else
-                    {
-                        Logger.VERBOSE("- Skipping Exported Type " + r);
-                    }
-                }
-            }
-        }
-
-        private void RepackReferences()
-        {
-            Logger.INFO("Processing references");
-            // Add all AssemblyReferences to merged assembly (probably not necessary)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
-            {
-                string name = z.Name;
-                if (!MergedAssemblies.Any(y => y.Name.Name == name) && TargetAssemblyDefinition.Name.Name != name && !TargetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
-                {
-                    // TODO: fix .NET runtime references?
-                    // - to target a specific runtime version or
-                    // - to target a single version if merged assemblies target different versions
-                    Logger.VERBOSE("- add reference " + z);
-                    AssemblyNameReference fixedRef = PlatformFixer.FixPlatformVersion(z);
-                    TargetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
-                }
-            }
-            LineIndexer.PostRepackReferences();
-
-            // add all module references (pinvoke dlls)
-            foreach (var z in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
-            {
-                string name = z.Name;
-                if (!TargetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
-                {
-                    TargetAssemblyMainModule.ModuleReferences.Add(z);
-                }
-            }
-        }
-
-        private void RepackResources()
-        {
-            Logger.INFO("Processing resources");
-            // merge resources
-            List<string> repackList = null;
-            EmbeddedResource repackListRes = null;
-            Dictionary<string, List<int>> ikvmExportsLists = null;
-            EmbeddedResource ikvmExports = null;
-            if (!Options.NoRepackRes)
-            {
-                repackList = MergedAssemblies.Select(a => a.FullName).ToList();
-                repackListRes = GetRepackListResource(repackList);
-                TargetAssemblyMainModule.Resources.Add(repackListRes);
-            }
-            foreach (var r in MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.Resources))
-            {
-                if (r.Name == "ILRepack.List")
-                {
-                    if (!Options.NoRepackRes && r is EmbeddedResource)
-                    {
-                        MergeRepackListResource(ref repackList, ref repackListRes, (EmbeddedResource)r);
-                    }
-                }
-                else if (r.Name == "ikvm.exports")
-                {
-                    if (r is EmbeddedResource)
-                    {
-                        MergeIkvmExportsResource(ref ikvmExportsLists, ref ikvmExports, (EmbeddedResource)r);
-                    }
-                }
-                else
-                {
-                    if (!Options.AllowDuplicateResources && TargetAssemblyMainModule.Resources.Any(x => x.Name == r.Name))
-                    {
-                        // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                        Logger.WARN("Ignoring duplicate resource " + r.Name);
-                    }
-                    else
-                    {
-                        Logger.VERBOSE("- Importing " + r.Name);
-                        var nr = r;
-                        switch (r.ResourceType)
-                        {
-                            case ResourceType.AssemblyLinked:
-                                // TODO
-                                Logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + r.Name);
-                                break;
-                            case ResourceType.Linked:
-                                // TODO ? (or not)
-                                break;
-                            case ResourceType.Embedded:
-                                var er = (EmbeddedResource)r;
-                                if (er.Name.EndsWith(".resources"))
-                                {
-                                    nr = FixResxResource(er);
-                                }
-                                break;
-                        }
-                        TargetAssemblyMainModule.Resources.Add(nr);
-                    }
-                }
-            }
-        }
-
-        private void MergeRepackListResource(ref List<string> repackList, ref EmbeddedResource repackListRes, EmbeddedResource r)
-        {
-            var others = (string[])new BinaryFormatter().Deserialize(r.GetResourceStream());
-            repackList = repackList.Union(others).ToList();
-            EmbeddedResource repackListRes2 = GetRepackListResource(repackList);
-            TargetAssemblyMainModule.Resources.Remove(repackListRes);
-            TargetAssemblyMainModule.Resources.Add(repackListRes2);
-            repackListRes = repackListRes2;
-        }
-
-        private void MergeIkvmExportsResource(ref Dictionary<string, List<int>> lists, ref EmbeddedResource existing, EmbeddedResource extra)
-        {
-            if (existing == null)
-            {
-                lists = ExtractIkvmExportsLists(extra);
-                TargetAssemblyMainModule.Resources.Add(existing = extra);
-            }
-            else
-            {
-                TargetAssemblyMainModule.Resources.Remove(existing);
-                var lists2 = ExtractIkvmExportsLists(extra);
-                foreach (KeyValuePair<string, List<int>> kv in lists2)
-                {
-                    List<int> v;
-                    if (!lists.TryGetValue(kv.Key, out v))
-                    {
-                        lists.Add(kv.Key, kv.Value);
-                    }
-                    else if (v != null)
-                    {
-                        if (kv.Value == null) // wildcard export
-                            lists[kv.Key] = null;
-                        else
-                            lists[kv.Key] = v.Union(kv.Value).ToList();
-                    }
-                }
-                existing = GenerateIkvmExports(lists);
-                TargetAssemblyMainModule.Resources.Add(existing);
-            }
-        }
-
-        private static Dictionary<string, List<int>> ExtractIkvmExportsLists(EmbeddedResource extra)
-        {
-            Dictionary<string, List<int>> ikvmExportsLists = new Dictionary<string, List<int>>();
-            BinaryReader rdr = new BinaryReader(extra.GetResourceStream());
-            int assemblyCount = rdr.ReadInt32();
-            for (int i = 0; i < assemblyCount; i++)
-            {
-                var str = rdr.ReadString();
-                int typeCount = rdr.ReadInt32();
-                if (typeCount == 0)
-                {
-                    ikvmExportsLists.Add(str, null);
-                }
-                else
-                {
-                    var types = new List<int>();
-                    ikvmExportsLists.Add(str, types);
-                    for (int j = 0; j < typeCount; j++)
-                        types.Add(rdr.ReadInt32());
-                }
-            }
-            return ikvmExportsLists;
-        }
-
-        private static EmbeddedResource GenerateIkvmExports(Dictionary<string, List<int>> lists)
-        {
-            using (var stream = new MemoryStream())
-            {
-                var bw = new BinaryWriter(stream);
-                bw.Write(lists.Count);
-                foreach (KeyValuePair<string, List<int>> kv in lists)
-                {
-                    bw.Write(kv.Key);
-                    if (kv.Value == null)
-                    {
-                        // wildcard export
-                        bw.Write(0);
-                    }
-                    else
-                    {
-                        bw.Write(kv.Value.Count);
-                        foreach (int hash in kv.Value)
-                        {
-                            bw.Write(hash);
-                        }
-                    }
-                }
-                return new EmbeddedResource("ikvm.exports", ManifestResourceAttributes.Public, stream.ToArray());
-            }
-        }
-
-        private Resource FixResxResource(EmbeddedResource er)
-        {
-            MemoryStream stream = (MemoryStream)er.GetResourceStream();
-            var output = new MemoryStream((int)stream.Length);
-            var rw = new ResourceWriter(output);
-            using (var rr = new ResReader(stream))
-            {
-                foreach (var res in rr)
-                {
-                    Logger.VERBOSE(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
-
-                    if (res.type == "ResourceTypeCode.String" || res.type.StartsWith("System.String"))
-                    {
-                        string content = (string)rr.GetObject(res);
-                        content = FixStr(content);
-                        rw.AddResource(res.name, content);
-                    }
-                    else if (res.type == "ResourceTypeCode.Stream" && res.name.EndsWith(".baml"))
-                    {
-                        var bamlResourceProcessor = new BamlResourceProcessor(PrimaryAssemblyDefinition, MergedAssemblies, res);
-                        rw.AddResourceData(res.name, res.type, bamlResourceProcessor.GetProcessedResource());
-                    }
-                    else
-                    {
-                        string fix = FixStr(res.type);
-                        if (fix == res.type)
-                        {
-                            rw.AddResourceData(res.name, res.type, res.data);
-                        }
-                        else
-                        {
-                            var output2 = new MemoryStream(res.data.Length);
-                            var sr = new SerReader(this, new MemoryStream(res.data), output2);
-                            sr.Stream();
-                            rw.AddResourceData(res.name, fix, output2.ToArray());
-                        }
-                    }
-                }
-            }
-            rw.Generate();
-            output.Position = 0;
-            return new EmbeddedResource(er.Name, er.Attributes, output);
-        }
-
-        internal string FixStr(string content)
+        public string FixStr(string content)
         {
             return FixStr(content, false);
         }
 
-        /// <summary>
-        /// Fix assembly reference in attribute
-        /// </summary>
-        /// <param name="content">string to search in</param>
-        /// <returns>new string with references fixed</returns>
-        internal string FixReferenceInIkvmAttribute(string content)
+        public string FixReferenceInIkvmAttribute(string content)
         {
             return FixStr(content, true);
         }
@@ -797,13 +422,13 @@ namespace ILRepacking
             return content;
         }
 
-        internal string FixTypeName(string assemblyName, string typeName)
+        public string FixTypeName(string assemblyName, string typeName)
         {
             // TODO handle renames
             return typeName;
         }
 
-        internal string FixAssemblyName(string assemblyName)
+        public string FixAssemblyName(string assemblyName)
         {
             if (MergedAssemblies.Any(x => x.FullName == assemblyName))
             {
@@ -811,46 +436,6 @@ namespace ILRepacking
                 return TargetAssemblyDefinition.FullName;
             }
             return assemblyName;
-        }
-
-        private bool RemoveAttributes(string attrTypeName, Func<CustomAttribute, bool> predicate)
-        {
-            bool ret = false;
-            foreach (var ass in MergedAssemblies)
-            {
-                for (int i = 0; i < ass.CustomAttributes.Count; )
-                {
-                    if (ass.CustomAttributes[i].AttributeType.FullName == attrTypeName && (predicate == null || predicate(ass.CustomAttributes[i])))
-                    {
-                        ass.CustomAttributes.RemoveAt(i);
-                        ret = true;
-                        continue;
-                    }
-                    i++;
-                }
-            }
-            return ret;
-        }
-
-        private void CleanupAttributes(string type, Func<CustomAttribute, bool> extra)
-        {
-            if (!MergedAssemblies.All(ass => ass.CustomAttributes.Any(attr => attr.AttributeType.FullName == type && (extra == null || extra(attr)))))
-            {
-                if (RemoveAttributes(type, null))
-                {
-                    Logger.WARN("[" + type + "] attribute wasn't merged because of inconsistency accross merged assemblies");
-                }
-            }
-        }
-
-        private EmbeddedResource GetRepackListResource(List<string> repackList)
-        {
-            repackList.Sort();
-            using (var stream = new MemoryStream())
-            {
-                new BinaryFormatter().Serialize(stream, repackList.ToArray());
-                return new EmbeddedResource("ILRepack.List", ManifestResourceAttributes.Public, stream.ToArray());
-            }
         }
 
         private AssemblyNameDefinition Clone(AssemblyNameDefinition assemblyName)
@@ -1025,14 +610,6 @@ namespace ILRepacking
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
         {
             return MappingHandler.GetRemappedType(reference);
-        }
-
-        internal TypeReference CreateReference(ExportedType type)
-        {
-            return new TypeReference(type.Namespace, type.Name, TargetAssemblyMainModule, type.Scope)
-            {
-                DeclaringType = type.DeclaringType != null ? CreateReference(type.DeclaringType) : null,
-            };
         }
 
         public TypeReference GetExportedTypeFromTypeRef(TypeReference type)

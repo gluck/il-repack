@@ -22,7 +22,7 @@ apply plugin:'nunit'
 apply plugin:'com.ullink.opencover-nunit'
 
 archivesBaseName = 'ILRepack'
-version = '1.26.0'
+version = '2.0.0'
 
 defaultTasks('nugetPack')
 
@@ -76,7 +76,7 @@ def commonNuspecMetadata(def meta) {
     meta.authors 'Francois Valdy'
     meta.owners 'Francois Valdy'
     meta.projectUrl('https://github.com/gluck/il-repack')
-    meta.copyright 'Copyright © Francois Valdy 2011-2014'
+    meta.copyright 'Copyright © Francois Valdy 2011-2015'
 }
 
 // nuget package for upload to nuget
