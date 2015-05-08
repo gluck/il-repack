@@ -101,7 +101,11 @@
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\ReferencesFixStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlResourcePatcher.cs" />
+    <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
+    <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />
+    <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
@@ -156,5 +160,6 @@
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

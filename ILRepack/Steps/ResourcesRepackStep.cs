@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using ILRepacking.Steps.ResourceProcessing;
 using Mono.Cecil;
 using System.Collections.Generic;
 using System.IO;
@@ -52,8 +53,14 @@ namespace ILRepacking.Steps
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
             }
 
+            var primaryAssemblyProcessors = new[] { new BamlResourcePatcher(_repackContext) }.Union(GetCommonResourceProcessors()).ToList();
+            var otherAssemblyProcessors =GetCommonResourceProcessors();
+
             foreach (var assembly in _repackContext.MergedAssemblies)
             {
+                bool isPrimaryAssembly = (assembly == _repackContext.PrimaryAssemblyDefinition);
+                var assemblyProcessors = isPrimaryAssembly ? primaryAssemblyProcessors : otherAssemblyProcessors;
+
                 foreach (var resource in assembly.Modules.SelectMany(x => x.Resources))
                 {
                     if (resource.Name == "ILRepack.List")
@@ -96,7 +103,7 @@ namespace ILRepacking.Steps
                                     var er = (EmbeddedResource)resource;
                                     if (er.Name.EndsWith(".resources"))
                                     {
-                                        nr = FixResxResource(er, assembly == _repackContext.PrimaryAssemblyDefinition);
+                                        nr = FixResxResource(er, assemblyProcessors);
                                     }
                                     break;
                             }
@@ -111,6 +118,15 @@ namespace ILRepacking.Steps
 
             if (!_options.NoRepackRes)
                 _targetAssemblyMainModule.Resources.Add(GenerateRepackListResource(repackList.ToList()));
+        }
+
+        private List<IResProcessor> GetCommonResourceProcessors()
+        {
+            return new List<IResProcessor>
+            {
+                new StringResourceProcessor(_repackContext),
+                new GenericResourceProcessor(_repackContext)
+            };
         }
 
         private static Dictionary<string, List<int>> MergeIkvmExports(
@@ -189,7 +205,7 @@ namespace ILRepacking.Steps
             }
         }
 
-        private Resource FixResxResource(EmbeddedResource er, bool patchBaml)
+        private Resource FixResxResource(EmbeddedResource er, List<IResProcessor> resourcePrcessors)
         {
             MemoryStream stream = (MemoryStream)er.GetResourceStream();
             var output = new MemoryStream((int)stream.Length);
@@ -200,35 +216,15 @@ namespace ILRepacking.Steps
                 {
                     _logger.VERBOSE(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
 
-                    if (res.IsString)
+                    foreach (var processor in resourcePrcessors)
                     {
-                        string content = (string)rr.GetObject(res);
-                        content = _repackContext.FixStr(content);
-                        rw.AddResource(res.name, content);
-                    }
-                    else if (patchBaml && res.IsBamlStream)
-                    {
-                        var bamlResourceProcessor = new BamlResourceProcessor(
-                            _repackContext.PrimaryAssemblyDefinition, _repackContext.MergedAssemblies, res);
-                        rw.AddResourceData(res.name, res.type, bamlResourceProcessor.GetProcessedResource());
-                    }
-                    else
-                    {
-                        string fix = _repackContext.FixStr(res.type);
-                        if (fix == res.type)
-                        {
-                            rw.AddResourceData(res.name, res.type, res.data);
-                        }
-                        else
-                        {
-                            var output2 = new MemoryStream(res.data.Length);
-                            var sr = new SerReader(_repackContext, new MemoryStream(res.data), output2);
-                            sr.Stream();
-                            rw.AddResourceData(res.name, fix, output2.ToArray());
-                        }
+                        if (processor.Process(res, rr, rw))
+                            break;
                     }
                 }
+
             }
+
             rw.Generate();
             output.Position = 0;
             return new EmbeddedResource(er.Name, er.Attributes, output);
