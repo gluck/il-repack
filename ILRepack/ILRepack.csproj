@@ -102,7 +102,9 @@
     <Compile Include="Steps\ReferencesFixStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlResourcePatcher.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlStreamCollector.cs" />
     <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
+    <Compile Include="Steps\ResourceProcessing\IEmbeddedResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />

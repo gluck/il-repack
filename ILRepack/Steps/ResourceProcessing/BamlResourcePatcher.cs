@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using Mono.Cecil;
 using System.Resources;
 
 namespace ILRepacking.Steps.ResourceProcessing
@@ -26,7 +27,7 @@ namespace ILRepacking.Steps.ResourceProcessing
             _repackContext = repackContext;
         }
 
-        public bool Process(Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
             if (!resource.IsBamlStream)
                 return false;

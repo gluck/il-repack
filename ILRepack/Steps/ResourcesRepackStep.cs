@@ -53,8 +53,12 @@ namespace ILRepacking.Steps
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
             }
 
-            var primaryAssemblyProcessors = new[] { new BamlResourcePatcher(_repackContext) }.Union(GetCommonResourceProcessors()).ToList();
-            var otherAssemblyProcessors =GetCommonResourceProcessors();
+            BamlStreamCollector bamlStreamCollector = new BamlStreamCollector(_repackContext.PrimaryAssemblyDefinition);
+
+            var primaryAssemblyProcessors =
+                new[] { new BamlResourcePatcher(_repackContext) }.Union(GetCommonResourceProcessors()).ToList();
+            var otherAssemblyProcessors =
+                new[] { bamlStreamCollector }.Union(GetCommonResourceProcessors()).ToList();
 
             foreach (var assembly in _repackContext.MergedAssemblies)
             {
@@ -89,7 +93,7 @@ namespace ILRepacking.Steps
                         else
                         {
                             _logger.VERBOSE("- Importing " + resource.Name);
-                            var nr = resource;
+                            var newResource = resource;
                             switch (resource.ResourceType)
                             {
                                 case ResourceType.AssemblyLinked:
@@ -103,11 +107,12 @@ namespace ILRepacking.Steps
                                     var er = (EmbeddedResource)resource;
                                     if (er.Name.EndsWith(".resources"))
                                     {
-                                        nr = FixResxResource(er, assemblyProcessors);
+                                        newResource = FixResxResource(assembly, er, assemblyProcessors,
+                                            isPrimaryAssembly ? bamlStreamCollector : null);
                                     }
                                     break;
                             }
-                            _targetAssemblyMainModule.Resources.Add(nr);
+                            _targetAssemblyMainModule.Resources.Add(newResource);
                         }
                     }
                 }
@@ -205,11 +210,16 @@ namespace ILRepacking.Steps
             }
         }
 
-        private Resource FixResxResource(EmbeddedResource er, List<IResProcessor> resourcePrcessors)
+        private Resource FixResxResource(
+            AssemblyDefinition containingAssembly,
+            EmbeddedResource er,
+            List<IResProcessor> resourcePrcessors,
+            IEmbeddedResourceProcessor embeddedResourceProcessor)
         {
             MemoryStream stream = (MemoryStream)er.GetResourceStream();
             var output = new MemoryStream((int)stream.Length);
             var rw = new ResourceWriter(output);
+
             using (var rr = new ResReader(stream))
             {
                 foreach (var res in rr)
@@ -218,11 +228,16 @@ namespace ILRepacking.Steps
 
                     foreach (var processor in resourcePrcessors)
                     {
-                        if (processor.Process(res, rr, rw))
+                        if (processor.Process(containingAssembly, res, rr, rw))
                             break;
                     }
                 }
+            }
 
+            // do a final processing, if any, on the embeddedResource itself
+            if (embeddedResourceProcessor != null)
+            {
+                embeddedResourceProcessor.Process(er, rw);
             }
 
             rw.Generate();

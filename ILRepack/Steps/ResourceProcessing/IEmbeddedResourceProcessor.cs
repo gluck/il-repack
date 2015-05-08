@@ -18,14 +18,8 @@ using System.Resources;
 
 namespace ILRepacking.Steps.ResourceProcessing
 {
-    /// <summary>
-    /// The processor handles the specified <see cref="Res"/>. After it has finished
-    /// the processing it is up to the processor to properly add the resource
-    /// to the resource writer, otherwise the resource won't be saved in the final assembly.
-    /// </summary>
-    internal interface IResProcessor
+    internal interface IEmbeddedResourceProcessor
     {
-        /// <returns>True to stop further processing, false otherwise</returns>
-        bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter);
+        void Process(EmbeddedResource embeddedResource, ResourceWriter resourceWriter);
     }
 }

@@ -64,23 +64,23 @@ namespace ILRepacking.Steps
 
         private string PatchResourcePath(string path)
         {
+            // path looks like: "/LibraryUserControlUsageInXAML;component/dummyusercontrol.xaml"
             foreach (var assemblyToReplace in _repackContext.OtherAssemblies)
             {
-                string patternToReplace = GetPackedUriAssemblyPath(assemblyToReplace);
+                string patternToReplace = string.Format("/{0};component", assemblyToReplace.Name.Name);
+
                 if (path.Contains(patternToReplace))
                 {
-                    return path.Replace(
-                        patternToReplace,
-                        GetPackedUriAssemblyPath(_repackContext.PrimaryAssemblyDefinition));
+                    string newPath = string.Format(
+                        "/{0};component/{1}",
+                        _repackContext.PrimaryAssemblyDefinition.Name.Name,
+                        assemblyToReplace.Name.Name.ToLowerInvariant());
+
+                    return path.Replace(patternToReplace, newPath);
                 }
             }
 
             return path;
-        }
-
-        private string GetPackedUriAssemblyPath(AssemblyDefinition assembly)
-        {
-            return string.Format("/{0};", assembly.Name.Name);
         }
     }
 }

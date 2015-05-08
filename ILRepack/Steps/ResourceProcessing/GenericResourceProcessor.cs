@@ -1,3 +1,4 @@
+using Mono.Cecil;
 //
 // Copyright (c) 2011 Francois Valdy
 // Copyright (c) 2015 Timotei Dolean
@@ -28,7 +29,7 @@ namespace ILRepacking.Steps.ResourceProcessing
             _repackContext = repackContext;
         }
 
-        public bool Process(Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
             string fix = _repackContext.FixStr(resource.type);
             if (fix == resource.type)
