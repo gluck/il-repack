@@ -29,7 +29,6 @@ namespace ILRepacking
         private readonly Res _resource;
 
         private readonly Dictionary<Type, Action<BamlRecord>> _nodeProcessors;
-        private readonly Dictionary<ushort, AssemblyDefinition> _assemblyMappings = new Dictionary<ushort, AssemblyDefinition>();
 
         public BamlResourceProcessor(
             AssemblyDefinition mainAssembly,
@@ -43,7 +42,7 @@ namespace ILRepacking
             _nodeProcessors = new Dictionary<Type, Action<BamlRecord>>
             {
                 { typeof(AssemblyInfoRecord), r => ProcessRecord((AssemblyInfoRecord)r) },
-                { typeof(TypeInfoRecord), r => ProcessRecord((TypeInfoRecord)r) },
+                { typeof(XmlnsPropertyRecord), r => ProcessRecord((XmlnsPropertyRecord)r) }
             };
         }
 
@@ -64,6 +63,8 @@ namespace ILRepacking
                     }
                 }
 
+                //TODO: diminishing return optimisation: remove duplications + update assembly ids
+
                 using (var targetStream = new MemoryStream())
                 {
                     BamlWriter.WriteDocument(bamlDocument, targetStream);
@@ -77,23 +78,24 @@ namespace ILRepacking
         private void ProcessRecord(AssemblyInfoRecord record)
         {
             var assemblyDefinition =  _mergedAssemblies.FirstOrDefault(
-                asm => asm.Name.Name == record.AssemblyFullName || asm.Name.FullName == record.AssemblyFullName);
+                asm => asm.Name.Name == record.AssemblyFullName ||asm.Name.FullName == record.AssemblyFullName);
 
-            _assemblyMappings[record.AssemblyId] = assemblyDefinition;
-        }
-
-        private void ProcessRecord(TypeInfoRecord record)
-        {
-            AssemblyDefinition recordAssembly = _assemblyMappings[record.AssemblyId];
-            if (_mergedAssemblies.Contains(recordAssembly))
+            if (assemblyDefinition != null)
             {
-                record.AssemblyId = GetAssemblyId(_mainAssembly);
+                record.AssemblyFullName = _mainAssembly.Name.Name;
             }
         }
 
-        private ushort GetAssemblyId(AssemblyDefinition assemblyDefinition)
+        private void ProcessRecord(XmlnsPropertyRecord record)
         {
-            return _assemblyMappings.First(kvp => kvp.Value == assemblyDefinition).Key;
+            string xmlNamespace = record.XmlNamespace;
+            const string AssemblyDef = "assembly=";
+            int assemblyStart = xmlNamespace.IndexOf(AssemblyDef, StringComparison.Ordinal);
+            if (assemblyStart == -1)
+                return;
+
+            string xmlNsWithoutAssembly = xmlNamespace.Substring(0, assemblyStart);
+            record.XmlNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
         }
     }
 }
