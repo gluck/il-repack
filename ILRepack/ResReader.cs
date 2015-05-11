@@ -161,7 +161,7 @@ namespace ILRepacking
     {
         public readonly String name;
         public readonly String type;
-        public readonly byte[] data;
+        public byte[] data;
         internal readonly int typeCode;
         internal readonly int dataPos;
 

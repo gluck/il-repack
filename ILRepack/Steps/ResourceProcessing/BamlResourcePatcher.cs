@@ -37,8 +37,9 @@ namespace ILRepacking.Steps.ResourceProcessing
                 _repackContext.MergedAssemblies,
                 resource);
 
-            resourceWriter.AddResourceData(resource.name, resource.type, bamlResourceProcessor.GetProcessedResource());
-            return true;
+            resource.data = bamlResourceProcessor.GetProcessedResource();
+
+            return false;
         }
     }
 }

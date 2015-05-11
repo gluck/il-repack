@@ -53,12 +53,13 @@ namespace ILRepacking.Steps
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
             }
 
-            BamlStreamCollector bamlStreamCollector = new BamlStreamCollector(_repackContext.PrimaryAssemblyDefinition);
+            var bamlStreamCollector = new BamlStreamCollector(_repackContext.PrimaryAssemblyDefinition);
+            var bamlResourcePatcher = new BamlResourcePatcher(_repackContext);
 
             var primaryAssemblyProcessors =
-                new[] { new BamlResourcePatcher(_repackContext) }.Union(GetCommonResourceProcessors()).ToList();
+                new[] { bamlResourcePatcher }.Union(GetCommonResourceProcessors()).ToList();
             var otherAssemblyProcessors =
-                new[] { bamlStreamCollector }.Union(GetCommonResourceProcessors()).ToList();
+                new List<IResProcessor> { bamlResourcePatcher, bamlStreamCollector }.Union(GetCommonResourceProcessors()).ToList();
 
             foreach (var assembly in _repackContext.MergedAssemblies)
             {
