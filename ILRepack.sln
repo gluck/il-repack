@@ -29,6 +29,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepack.IntegrationTests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryUserControlUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryUserControlUsageInXAML\LibraryUserControlUsageInXAML.csproj", "{2D4C999E-8175-4505-AC33-7A641ED32F2B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NestedLibraryUserControlUsageInXAML", "ILRepack.IntegrationTests\Scenarios\NestedLibraryUserControlUsageInXAML\NestedLibraryUserControlUsageInXAML.csproj", "{B8282E50-564D-4E5B-B96F-4A8E53067551}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnotherClassLibrary", "ILRepack.IntegrationTests\Scenarios\AnotherClassLibrary\AnotherClassLibrary.csproj", "{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +75,14 @@ Global
 		{2D4C999E-8175-4505-AC33-7A641ED32F2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D4C999E-8175-4505-AC33-7A641ED32F2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D4C999E-8175-4505-AC33-7A641ED32F2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8282E50-564D-4E5B-B96F-4A8E53067551}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8282E50-564D-4E5B-B96F-4A8E53067551}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8282E50-564D-4E5B-B96F-4A8E53067551}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8282E50-564D-4E5B-B96F-4A8E53067551}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,5 +91,7 @@ Global
 		{801489B7-46CB-42D0-8581-0120F3566A8F} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{CE27F333-D875-43D0-9D3C-4F8F102FC92D} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{2D4C999E-8175-4505-AC33-7A641ED32F2B} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+		{B8282E50-564D-4E5B-B96F-4A8E53067551} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+		{F92CF620-F1A5-4A3E-A774-4199F54FEF2E} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 	EndGlobalSection
 EndGlobal

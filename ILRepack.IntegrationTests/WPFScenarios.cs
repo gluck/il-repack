@@ -22,6 +22,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("LibraryUserControlUsageInXAML");
         }
 
+        [Test]
+        public void GivenXAMLThatUsesNestedLibraryUserControl_MergedWPFApplicationRunsSuccessfully()
+        {
+            RunScenario("NestedLibraryUserControlUsageInXAML");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);
