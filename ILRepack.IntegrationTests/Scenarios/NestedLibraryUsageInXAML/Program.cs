@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace NestedLibraryUserControlUsageInXAML
+namespace NestedLibraryUsageInXAML
 {
     public class Program
     {

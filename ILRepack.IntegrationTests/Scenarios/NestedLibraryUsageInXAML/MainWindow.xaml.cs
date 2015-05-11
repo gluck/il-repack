@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace NestedLibraryUserControlUsageInXAML
+namespace NestedLibraryUsageInXAML
 {
     public partial class MainWindow
     {
