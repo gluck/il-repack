@@ -28,6 +28,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("NestedLibraryUsageInXAML");
         }
 
+        [Test]
+        public void GivenApplicationThatUsesThemingAndStylesFromA_MergedWPFApplicationRunsSuccessfully()
+        {
+            RunScenario("WPFThemingAndLibraryStyles");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);
