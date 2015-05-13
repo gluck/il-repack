@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 using Confuser.Renamer.BAML;
+using ILRepacking.Steps;
 using Mono.Cecil;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,7 @@ namespace ILRepacking
             _nodeProcessors = new Dictionary<Type, Action<BamlRecord>>
             {
                 { typeof(AssemblyInfoRecord), r => ProcessRecord((AssemblyInfoRecord)r) },
+                { typeof(PropertyWithConverterRecord), r => ProcessRecord((PropertyWithConverterRecord)r) },
                 { typeof(XmlnsPropertyRecord), r => ProcessRecord((XmlnsPropertyRecord)r) }
             };
         }
@@ -64,7 +66,6 @@ namespace ILRepacking
                 }
 
                 //TODO: diminishing return optimisation: remove duplications + update assembly ids
-
                 using (var targetStream = new MemoryStream())
                 {
                     BamlWriter.WriteDocument(bamlDocument, targetStream);
@@ -73,6 +74,11 @@ namespace ILRepacking
                     return BitConverter.GetBytes((int)targetStream.Length).Concat(targetStream.ToArray()).ToArray();
                 }
             }
+        }
+
+        private void ProcessRecord(PropertyWithConverterRecord record)
+        {
+            record.Value = XamlResourcePathPatcherStep.PatchPath(record.Value, _mainAssembly, _mergedAssemblies);
         }
 
         private void ProcessRecord(AssemblyInfoRecord record)

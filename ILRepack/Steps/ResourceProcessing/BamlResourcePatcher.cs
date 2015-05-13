@@ -27,13 +27,13 @@ namespace ILRepacking.Steps.ResourceProcessing
             _repackContext = repackContext;
         }
 
-        public bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(
+            AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
             if (!resource.IsBamlStream)
                 return false;
 
-            var bamlResourceProcessor = new BamlResourceProcessor(
-                _repackContext.PrimaryAssemblyDefinition,
+            var bamlResourceProcessor = new BamlResourceProcessor(_repackContext.PrimaryAssemblyDefinition,
                 _repackContext.MergedAssemblies,
                 resource);
 

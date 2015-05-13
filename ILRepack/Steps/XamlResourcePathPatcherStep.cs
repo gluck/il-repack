@@ -1,5 +1,4 @@
-﻿
-//
+﻿//
 // Copyright (c) 2015 Timotei Dolean
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +15,7 @@
 //
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ILRepacking.Steps
@@ -55,17 +55,20 @@ namespace ILRepacking.Steps
             foreach (var stringInstruction in method.Body.Instructions.Where(i => i.OpCode == OpCodes.Ldstr))
             {
                 string path = stringInstruction.Operand as string;
-                if (path == null)
+                if (string.IsNullOrEmpty(path))
                     continue;
 
-                stringInstruction.Operand = PatchResourcePath(path);
+                stringInstruction.Operand = PatchPath(
+                    path, _repackContext.PrimaryAssemblyDefinition, _repackContext.OtherAssemblies);
             }
         }
 
-        private string PatchResourcePath(string path)
+        public static string PatchPath(string path, AssemblyDefinition mainAssembly, List<AssemblyDefinition> otherAssemblies)
         {
-            // path looks like: "/LibraryUserControlUsageInXAML;component/dummyusercontrol.xaml"
-            foreach (var assemblyToReplace in _repackContext.OtherAssemblies)
+            if (string.IsNullOrEmpty(path) || !(path.StartsWith("/") || path.StartsWith("pack://")))
+                return path;
+
+            foreach (var assemblyToReplace in otherAssemblies)
             {
                 string patternToReplace = string.Format("/{0};component", assemblyToReplace.Name.Name);
 
@@ -73,8 +76,8 @@ namespace ILRepacking.Steps
                 {
                     string newPath = string.Format(
                         "/{0};component/{1}",
-                        _repackContext.PrimaryAssemblyDefinition.Name.Name,
-                        assemblyToReplace.Name.Name.ToLowerInvariant());
+                        mainAssembly.Name.Name,
+                        assemblyToReplace.Name.Name);
 
                     return path.Replace(patternToReplace, newPath);
                 }
