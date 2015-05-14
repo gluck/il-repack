@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 using ILRepacking.Steps.ResourceProcessing;
 using Mono.Cecil;
 using System.Collections.Generic;
@@ -53,7 +54,7 @@ namespace ILRepacking.Steps
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
             }
 
-            var bamlStreamCollector = new BamlStreamCollector(_repackContext.PrimaryAssemblyDefinition);
+            var bamlStreamCollector = new BamlStreamCollector(_repackContext);
             var bamlResourcePatcher = new BamlResourcePatcher(_repackContext);
 
             var primaryAssemblyProcessors =
