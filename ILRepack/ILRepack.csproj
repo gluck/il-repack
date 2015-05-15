@@ -109,6 +109,7 @@
     <Compile Include="Steps\ResourceProcessing\BamlGenerator.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlResourcePatcher.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlStreamCollector.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlUtils.cs" />
     <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IEmbeddedResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />

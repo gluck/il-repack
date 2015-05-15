@@ -15,6 +15,7 @@
 //
 using Confuser.Renamer.BAML;
 using ILRepacking.Steps;
+using ILRepacking.Steps.ResourceProcessing;
 using Mono.Cecil;
 using System;
 using System.Collections.Generic;
@@ -50,30 +51,21 @@ namespace ILRepacking
 
         public byte[] GetProcessedResource()
         {
-            byte[] streamBytes = _resource.data.Skip(4).ToArray();
-            using (var bamlStream = new MemoryStream(streamBytes))
+            BamlDocument bamlDocument = BamlUtils.FromResourceBytes(_resource.data);
+
+            foreach (BamlRecord node in bamlDocument)
             {
-                BamlDocument bamlDocument = BamlReader.ReadDocument(bamlStream);
+                Action<BamlRecord> recordProcessor;
 
-                foreach (BamlRecord node in bamlDocument)
+                if (_nodeProcessors.TryGetValue(node.GetType(), out recordProcessor))
                 {
-                    Action<BamlRecord> recordProcessor;
-
-                    if (_nodeProcessors.TryGetValue(node.GetType(), out recordProcessor))
-                    {
-                        recordProcessor(node);
-                    }
-                }
-
-                //TODO: diminishing return optimisation: remove duplications + update assembly ids
-                using (var targetStream = new MemoryStream())
-                {
-                    BamlWriter.WriteDocument(bamlDocument, targetStream);
-                    targetStream.Position = 0;
-
-                    return BitConverter.GetBytes((int)targetStream.Length).Concat(targetStream.ToArray()).ToArray();
+                    recordProcessor(node);
                 }
             }
+
+            //TODO: diminishing return optimisation: remove duplications + update assembly ids
+
+            return BamlUtils.ToResourceBytes(bamlDocument);
         }
 
         private void ProcessRecord(PropertyWithConverterRecord record)
