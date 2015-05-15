@@ -34,6 +34,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("WPFThemingAndLibraryStyles");
         }
 
+        [Test]
+        public void GivenSampleApplicationWithMahAppsAndSystemWindowsInteractivityWPF_MergedWPFApplicationRunsSuccessfully()
+        {
+            RunScenario("WPFSampleApplication");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);
