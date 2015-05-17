@@ -35,15 +35,12 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private readonly AssemblyDefinition _primaryAssemblyDefinition;
         private readonly BamlGenerator _bamlGenerator;
-        private readonly List<string> _genericThemeResources = new List<string>();
-
-        public Dictionary<Res, AssemblyDefinition> BamlStreams { get; private set; }
+        private readonly IDictionary<Res, AssemblyDefinition> _bamlStreams = new Dictionary<Res, AssemblyDefinition>();
 
         public BamlStreamCollector(IRepackContext repackContext)
         {
             _primaryAssemblyDefinition = repackContext.PrimaryAssemblyDefinition;
 
-            BamlStreams = new Dictionary<Res, AssemblyDefinition>();
             _bamlGenerator = new BamlGenerator(
                 repackContext.TargetAssemblyMainModule.AssemblyReferences, _primaryAssemblyDefinition);
         }
@@ -51,17 +48,11 @@ namespace ILRepacking.Steps.ResourceProcessing
         public bool Process(AssemblyDefinition containingAssembly,
             Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
-            if (resource.IsBamlStream)
-            {
-                if (resource.name.EndsWith(GenericThemesBamlName, StringComparison.OrdinalIgnoreCase))
-                {
-                    _genericThemeResources.Add(GetResourceName(resource, containingAssembly));
-                }
+            if (!resource.IsBamlStream)
+                return false;
 
-                BamlStreams.Add(resource, containingAssembly);
-                return true;
-            }
-            return false;
+            _bamlStreams.Add(resource, containingAssembly);
+            return true;
         }
 
         public void Process(EmbeddedResource embeddedResource, ResourceWriter resourceWriter)
@@ -72,7 +63,7 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private void WriteCollectedBamlStreams(ResourceWriter resourceWriter)
         {
-            foreach (var bamlStream in BamlStreams)
+            foreach (var bamlStream in _bamlStreams)
             {
                 resourceWriter.AddResourceData(
                     GetResourceName(bamlStream.Key, bamlStream.Value), bamlStream.Key.type, bamlStream.Key.data);
@@ -84,7 +75,10 @@ namespace ILRepacking.Steps.ResourceProcessing
             byte[] existingGenericBaml;
             if (!TryGetPreserializedData(resourceWriter, GenericThemesBamlName, out existingGenericBaml))
             {
-                BamlDocument generatedDocument = _bamlGenerator.GenerateThemesGenericXaml(_genericThemeResources);
+                var genericThemeResources = _bamlStreams
+                    .Where(e => e.Key.name.EndsWith(GenericThemesBamlName, StringComparison.OrdinalIgnoreCase))
+                    .Select(e => GetResourceName(e.Key, e.Value));
+                BamlDocument generatedDocument = _bamlGenerator.GenerateThemesGenericXaml(genericThemeResources);
                 using (var stream = new MemoryStream())
                 {
                     BamlWriter.WriteDocument(generatedDocument, stream);
