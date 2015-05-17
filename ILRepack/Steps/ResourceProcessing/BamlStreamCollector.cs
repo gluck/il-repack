@@ -105,8 +105,8 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private static bool TryGetPreserializedData(ResourceWriter resourceWriter, string resourceName, out byte[] preserializedData)
         {
-            Hashtable resourcesHashtable = (Hashtable)resourceWriter.GetFieldValue("_preserializedData");
-            if (!resourcesHashtable.ContainsKey(resourceName))
+            IDictionary resourcesHashtable = (IDictionary)resourceWriter.GetFieldValue("_preserializedData");
+            if (resourcesHashtable == null || !resourcesHashtable.Contains(resourceName))
             {
                 preserializedData = null;
                 return false;
