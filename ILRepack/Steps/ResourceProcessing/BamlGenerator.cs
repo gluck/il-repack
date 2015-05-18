@@ -14,8 +14,10 @@
 // limitations under the License.
 //
 using Confuser.Renamer.BAML;
+using Fasterflect;
 using Mono.Cecil;
 using Mono.Collections.Generic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -23,6 +25,9 @@ namespace ILRepacking.Steps.ResourceProcessing
 {
     internal class BamlGenerator
     {
+        private const int ResourceDictionaryTypeId = 65012;
+        private const string ComponentString = ";component/";
+
         private static readonly BamlDocument.BamlVersion BamlVersion =
             new BamlDocument.BamlVersion { Major = 0, Minor = 96 };
 
@@ -38,6 +43,75 @@ namespace ILRepacking.Steps.ResourceProcessing
             _logger = logger;
             _targetAssemblyReferences = targetAssemblyReferences;
             _mainAssemblyName = mainAssembly.Name.Name;
+        }
+
+        public BamlDocument GenerateThemesGenericXaml(IEnumerable<string> importedFiles)
+        {
+            BamlDocument document = new BamlDocument
+            {
+                Signature = "MSBAML",
+                ReaderVersion = BamlVersion,
+                WriterVersion = BamlVersion,
+                UpdaterVersion = BamlVersion
+            };
+
+            document.Add(new DocumentStartRecord());
+
+            AddAssemblyInfos(document);
+            document.AddRange(GetMergedDictionariesAttributes());
+
+            document.Add(new ElementStartRecord
+            {
+                TypeId = ResourceDictionaryTypeId
+            });
+            document.Add(new XmlnsPropertyRecord
+            {
+                Prefix = string.Empty,
+                XmlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml/presentation",
+                AssemblyIds = document.OfType<AssemblyInfoRecord>().Select(asm => asm.AssemblyId).ToArray()
+            });
+
+            document.AddRange(GetDictionariesList(importedFiles));
+
+            ElementEndRecord lastEndRecord = new ElementEndRecord();
+            document.Add(new DeferableContentStartRecord
+            {
+                Record = lastEndRecord
+            });
+            document.Add(lastEndRecord);
+            document.Add(new DocumentEndRecord());
+
+            return document;
+        }
+
+        public void AddMergedDictionaries(
+            BamlDocument document, IEnumerable<string> importedFiles)
+        {
+            BamlRecord mergedDictionaryRecord = document.FirstOrDefault(IsMergedDictionaryAttribute);
+
+            if (mergedDictionaryRecord != null)
+            {
+                HandleMergedDictionary(document, importedFiles, mergedDictionaryRecord as AttributeInfoRecord);
+            }
+            else
+            {
+                if (document.FindIndex(IsResourceDictionaryElementStart) == -1)
+                {
+                    _logger.ERROR(string.Format(
+                        "Existing 'Themes/generic.xaml' in {0} is *not* a ResourceDictionary. " +
+                        "This will prevent proper WPF application merging.", _mainAssemblyName));
+                    return;
+                }
+
+                int attributeInfosStartIndex = document.FindLastIndex(r => r is AssemblyInfoRecord) + 1;
+
+                AdjustAttributeIds(document, 2);
+                document.InsertRange(attributeInfosStartIndex, GetMergedDictionariesAttributes());
+
+                int defferableRecordIndex = document.FindIndex(r => r is DeferableContentStartRecord);
+
+                document.InsertRange(defferableRecordIndex, GetDictionariesList(importedFiles));
+            }
         }
 
         private void AddAssemblyInfos(BamlDocument document)
@@ -59,78 +133,124 @@ namespace ILRepacking.Steps.ResourceProcessing
             }
         }
 
-        public BamlDocument GenerateThemesGenericXaml(IEnumerable<string> importedFiles)
+        private static void AdjustAttributeIds(BamlDocument document, ushort offset)
         {
-            BamlDocument document = new BamlDocument
-            {
-                Signature = "MSBAML",
-                ReaderVersion = BamlVersion,
-                WriterVersion = BamlVersion,
-                UpdaterVersion = BamlVersion
-            };
+            var existingAttributeInfoRecords = document.OfType<AttributeInfoRecord>().ToList();
 
-            document.Add(new DocumentStartRecord());
-
-            AddAssemblyInfos(document);
-
-            document.Add(new AttributeInfoRecord
+            foreach (var record in document)
             {
-                Name = "MergedDictionaries",
-                OwnerTypeId = 65012,
-            });
-            document.Add(new AttributeInfoRecord
-            {
-                Name = "Source",
-                OwnerTypeId = 65012,
-                AttributeId = 1,
-            });
-
-            document.Add(new ElementStartRecord
-            {
-                TypeId = 65012
-            });
-            document.Add(new XmlnsPropertyRecord
-            {
-                Prefix = string.Empty,
-                XmlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml/presentation",
-                AssemblyIds = document.OfType<AssemblyInfoRecord>().Select(asm => asm.AssemblyId).ToArray()
-            });
-            document.Add(new PropertyListStartRecord());
-
-            foreach (string file in importedFiles)
-            {
-                document.Add(new ElementStartRecord
+                ushort? attributeId = record.TryGetPropertyValue("AttributeId") as ushort?;
+                if (attributeId == null ||
+                    record is AttributeInfoRecord ||
+                    !existingAttributeInfoRecords.Any(r => r.AttributeId == attributeId))
                 {
-                    TypeId = 65012,
-                });
-                document.Add(new PropertyWithConverterRecord
-                {
-                    AttributeId = 1,
-                    ConverterTypeId = 64831,
-                    Value = GetPackUri(file)
-                });
-                document.Add(new ElementEndRecord());
+                    continue;
+                }
+
+                record.TrySetPropertyValue("AttributeId", (ushort)(attributeId.Value + offset));
             }
 
-            document.Add(new PropertyListEndRecord());
-
-            ElementEndRecord lastEndRecord = new ElementEndRecord();
-            document.Add(new DeferableContentStartRecord
+            foreach (var attributeInfoRecord in existingAttributeInfoRecords)
             {
-                Record = lastEndRecord
-            });
-            document.Add(lastEndRecord);
-            document.Add(new DocumentEndRecord());
+                attributeInfoRecord.AttributeId += offset;
+            }
+        }
 
-            return document;
+        private static IEnumerable<BamlRecord> GetMergedDictionariesAttributes()
+        {
+            yield return new AttributeInfoRecord
+            {
+                Name = "MergedDictionaries",
+                OwnerTypeId = ResourceDictionaryTypeId,
+            };
+
+            yield return new AttributeInfoRecord
+            {
+                Name = "Source",
+                OwnerTypeId = ResourceDictionaryTypeId,
+                AttributeId = 1,
+            };
+        }
+
+        private void HandleMergedDictionary(
+            BamlDocument document,
+            IEnumerable<string> importedFiles,
+            AttributeInfoRecord mergedDictionariesRecord)
+        {
+            int indexStart = document.FindIndex(
+                r => r is PropertyListStartRecord &&
+                    ((PropertyListStartRecord)r).AttributeId == mergedDictionariesRecord.AttributeId);
+
+            List<string> existingUris = document.Skip(indexStart)
+                .TakeWhile(r => !(r is PropertyListEndRecord))
+                .OfType<PropertyWithConverterRecord>()
+                .Select(GetFileNameFromPropertyRecord)
+                .ToList();
+
+            //TODO: what about non-pack URI?:)
+            document.InsertRange(indexStart + 2, GetImportRecords(importedFiles.Except(existingUris)));
+        }
+
+        private static string GetFileNameFromPropertyRecord(PropertyWithConverterRecord record)
+        {
+            int fileNameStartIndex = record.Value.IndexOf(ComponentString, StringComparison.Ordinal) +
+                                     ComponentString.Length;
+
+            return record.Value.Substring(fileNameStartIndex);
+        }
+
+        private static bool IsMergedDictionaryAttribute(BamlRecord record)
+        {
+            AttributeInfoRecord attributeRecord = record as AttributeInfoRecord;
+            if (attributeRecord == null)
+                return false;
+
+            return attributeRecord.Name.Equals("MergedDictionaries") &&
+                   attributeRecord.OwnerTypeId == ResourceDictionaryTypeId;
+        }
+
+        private static bool IsResourceDictionaryElementStart(BamlRecord record)
+        {
+            return record is ElementStartRecord && ((ElementStartRecord)record).TypeId == ResourceDictionaryTypeId;
         }
 
         private string GetPackUri(string file)
         {
             return string.Format(
-                "pack://application:,,,/{0};component/{1}",
-                _mainAssemblyName,
-                file.Replace(".baml", ".xaml"));
+                "pack://application:,,,/{0};component/{1}", _mainAssemblyName, file);
+        }
+
+        private List<BamlRecord> GetDictionariesList(IEnumerable<string> importedFiles)
+        {
+            List<BamlRecord> records = new List<BamlRecord>();
+
+            records.Add(new PropertyListStartRecord());
+            records.AddRange(GetImportRecords(importedFiles));
+            records.Add(new PropertyListEndRecord());
+
+            return records;
+        }
+
+        private List<BamlRecord> GetImportRecords(IEnumerable<string> importedFiles)
+        {
+            List<BamlRecord> records = new List<BamlRecord>();
+
+            foreach (string file in importedFiles)
+            {
+                records.Add(new ElementStartRecord
+                {
+                    TypeId = ResourceDictionaryTypeId,
+                });
+                records.Add(new PropertyWithConverterRecord
+                {
+                    AttributeId = 1,
+                    ConverterTypeId = 64831,
+                    Value = GetPackUri(file)
+                });
+                records.Add(new ElementEndRecord());
+            }
+
+            return records;
         }
     }
 }

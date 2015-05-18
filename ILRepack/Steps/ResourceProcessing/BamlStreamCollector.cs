@@ -19,6 +19,7 @@ using Mono.Cecil;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Resources;
 
 namespace ILRepacking.Steps.ResourceProcessing
@@ -75,20 +76,42 @@ namespace ILRepacking.Steps.ResourceProcessing
         private void PatchGenericThemesBaml(ResourceWriter resourceWriter)
         {
             byte[] existingGenericBaml;
+
+            var genericThemeResources = _bamlStreams
+                    .Where(e => e.Key.name.EndsWith(GenericThemesBamlName, StringComparison.OrdinalIgnoreCase))
+                    .Select(e => GetResourceName(e.Key, e.Value).Replace(".baml", ".xaml"));
+
             if (!TryGetPreserializedData(resourceWriter, GenericThemesBamlName, out existingGenericBaml))
             {
-                var genericThemeResources = _bamlStreams
-                    .Where(e => e.Key.name.EndsWith(GenericThemesBamlName, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => GetResourceName(e.Key, e.Value));
-                BamlDocument generatedDocument = _bamlGenerator.GenerateThemesGenericXaml(genericThemeResources);
-                using (var stream = new MemoryStream())
-                {
-                    BamlWriter.WriteDocument(generatedDocument, stream);
-
-                    resourceWriter.AddResourceData(
-                        GenericThemesBamlName, "ResourceTypeCode.Stream", BitConverter.GetBytes((int)stream.Length).Concat(stream.ToArray()).ToArray());
-                }
+                AddNewGenericThemesXaml(resourceWriter, genericThemeResources);
             }
+            else
+            {
+                PatchExistingGenericThemesXaml(
+                    resourceWriter, BamlUtils.FromResourceBytes(existingGenericBaml), genericThemeResources);
+            }
+        }
+
+        private void PatchExistingGenericThemesXaml(
+            ResourceWriter resourceWriter, BamlDocument bamlDocument, IEnumerable<string> genericThemeResources)
+        {
+            _logger.INFO("Patching existing themes/generic.xaml");
+
+            _bamlGenerator.AddMergedDictionaries(bamlDocument, genericThemeResources);
+
+            SetPreserializedData(resourceWriter, GenericThemesBamlName,
+                BamlUtils.ToResourceBytes(bamlDocument));
+        }
+
+        private void AddNewGenericThemesXaml(
+            ResourceWriter resourceWriter, IEnumerable<string> genericThemeResources)
+        {
+            _logger.INFO("Creating new themes/generic.xaml");
+            var newBamlDocument = _bamlGenerator.GenerateThemesGenericXaml(genericThemeResources);
+
+            resourceWriter.AddResourceData(
+                GenericThemesBamlName, "ResourceTypeCode.Stream",
+                BamlUtils.ToResourceBytes(newBamlDocument));
         }
 
         private string GetResourceName(Res resource, AssemblyDefinition assembly)
@@ -112,6 +135,13 @@ namespace ILRepacking.Steps.ResourceProcessing
             preserializedData = precannedResource.GetFieldValue("Data") as byte[];
 
             return true;
+        }
+
+        private static void SetPreserializedData(ResourceWriter resourceWriter, string resourceName, byte[] data)
+        {
+            Hashtable resourcesHashtable = (Hashtable)resourceWriter.GetFieldValue("_preserializedData");
+
+            resourcesHashtable[resourceName].SetFieldValue("Data", data);
         }
     }
 }

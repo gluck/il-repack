@@ -28,31 +28,26 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
                 "TextBlockStyles.xaml"
             });
 
-            Assert.That(actualBamlDocument, new BamlDocumentMatcher(expectedBamlDocument));
-
-            // Verify that we can parse the generated document
-            byte[] actualDocumentBytes = BamlUtils.ToResourceBytes(actualBamlDocument);
-            BamlDocument newDocument = BamlUtils.FromResourceBytes(actualDocumentBytes);
-            Assert.That(newDocument, new BamlDocumentMatcher(expectedBamlDocument));
+            AssertDocumentsAreEquivalent(actualBamlDocument, expectedBamlDocument);
         }
 
         [Test]
         public void AddMergedDictionaries_GivenExistingGenericXamlThatIsNotAResourceDictionary_LogsErrorAndReturnsSameBaml()
         {
-            var initialBamlDocument = GetResourceBamlDocument("NonResourceDictionary.xaml");
+            var initialDocument = GetResourceBamlDocument("NonResourceDictionary.xaml");
+            var modifiedDocument = GetResourceBamlDocument("NonResourceDictionary.xaml");
             var logger = new Mock<ILogger>();
             var bamlGenerator = CreateBamlGenerator(logger.Object);
 
-            var actualBamlDocument = bamlGenerator.AddMergedDictionaries(initialBamlDocument, new[]
+            bamlGenerator.AddMergedDictionaries(modifiedDocument, new[]
             {
                 "ButtonStyles.xaml",
                 "TextBlockStyles.xaml"
             });
 
-            Assert.That(actualBamlDocument, Is.SameAs(initialBamlDocument));
-            Assert.That(actualBamlDocument, new BamlDocumentMatcher(initialBamlDocument));
+            Assert.That(modifiedDocument, new BamlDocumentMatcher(initialDocument));
             logger.Verify(l => l.ERROR("Existing 'Themes/generic.xaml' in ClassLibrary is *not* a ResourceDictionary. " +
-                                          "This will prevent proper WPF application merging."));
+                                       "This will prevent proper WPF application merging."));
         }
 
         public IEnumerable GetExistingGenericXamlTestCases()
@@ -76,17 +71,23 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
             var initialBamlDocument = GetResourceBamlDocument(startingGenericXaml);
             var bamlGenerator = CreateBamlGenerator();
 
-            var actualDocument = bamlGenerator.AddMergedDictionaries(initialBamlDocument, new[]
+            bamlGenerator.AddMergedDictionaries(initialBamlDocument, new[]
             {
                 "ButtonStyles.xaml",
                 "TextBlockStyles.xaml"
             });
 
             var expectedBamlDocument = GetResourceBamlDocument(endResultGenericXaml);
+            AssertDocumentsAreEquivalent(initialBamlDocument, expectedBamlDocument);
+        }
+
+        private static void AssertDocumentsAreEquivalent(BamlDocument actualDocument, BamlDocument expectedBamlDocument)
+        {
             Assert.That(actualDocument, new BamlDocumentMatcher(expectedBamlDocument));
 
             // Verify that we can parse the generated document
             byte[] actualDocumentBytes = BamlUtils.ToResourceBytes(actualDocument);
+
             BamlDocument newDocument = BamlUtils.FromResourceBytes(actualDocumentBytes);
             Assert.That(newDocument, new BamlDocumentMatcher(expectedBamlDocument));
         }
