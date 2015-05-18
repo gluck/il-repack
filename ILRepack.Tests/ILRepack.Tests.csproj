@@ -114,19 +114,19 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionary\Start.xaml">
+    <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionaries\Start.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionary\End.xaml">
+    <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionaries\End.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionary\End.xaml">
+    <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionaries\End.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionary\Start.xaml">
+    <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionaries\Start.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -55,8 +55,8 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
             string[] testCases =
             {
                 "EmptyResourceDictionary",
-                "NonExistingMergedDictionary",
-                "ExistingMergedDictionary"
+                "NonExistingMergedDictionaries",
+                "ExistingMergedDictionaries"
             };
 
             return testCases.Select(testCase =>
