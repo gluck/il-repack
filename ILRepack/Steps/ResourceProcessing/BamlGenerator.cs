@@ -97,18 +97,29 @@ namespace ILRepacking.Steps.ResourceProcessing
             {
                 if (document.FindIndex(IsResourceDictionaryElementStart) == -1)
                 {
+                    //TODO: throw? (Let's hope people read the logs ^_^)
                     _logger.ERROR(string.Format(
                         "Existing 'Themes/generic.xaml' in {0} is *not* a ResourceDictionary. " +
                         "This will prevent proper WPF application merging.", _mainAssemblyName));
                     return;
                 }
 
-                int attributeInfosStartIndex = document.FindLastIndex(r => r is AssemblyInfoRecord) + 1;
+                int attributeInfosStartIndex = document.FindLastIndex(r => r is AssemblyInfoRecord);
+                if (attributeInfosStartIndex == -1)
+                {
+                    _logger.ERROR("Invalid BAML detected. (no AssemblyInfoRecord)");
+                    return;
+                }
 
-                AdjustAttributeIds(document, 2);
-                document.InsertRange(attributeInfosStartIndex, GetMergedDictionariesAttributes());
+                var extraAttributes = GetMergedDictionariesAttributes().ToList();
+                AdjustAttributeIds(document, (ushort)extraAttributes.Count);
+                document.InsertRange(attributeInfosStartIndex + 1, extraAttributes);
 
                 int defferableRecordIndex = document.FindIndex(r => r is DeferableContentStartRecord);
+                if (attributeInfosStartIndex == -1)
+                {
+                    _logger.ERROR("Invalid BAML detected. (No DeferableContentStartRecord)");
+                }
 
                 document.InsertRange(defferableRecordIndex, GetDictionariesList(importedFiles));
             }
@@ -135,11 +146,12 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private static void AdjustAttributeIds(BamlDocument document, ushort offset)
         {
+            const string AttributeIdPropertyName = "AttributeId";
             var existingAttributeInfoRecords = document.OfType<AttributeInfoRecord>().ToList();
 
             foreach (var record in document)
             {
-                ushort? attributeId = record.TryGetPropertyValue("AttributeId") as ushort?;
+                ushort? attributeId = record.TryGetPropertyValue(AttributeIdPropertyName) as ushort?;
                 if (attributeId == null ||
                     record is AttributeInfoRecord ||
                     !existingAttributeInfoRecords.Any(r => r.AttributeId == attributeId))
@@ -147,7 +159,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                     continue;
                 }
 
-                record.TrySetPropertyValue("AttributeId", (ushort)(attributeId.Value + offset));
+                record.TrySetPropertyValue(AttributeIdPropertyName, (ushort)(attributeId.Value + offset));
             }
 
             foreach (var attributeInfoRecord in existingAttributeInfoRecords)
