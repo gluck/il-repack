@@ -19,8 +19,6 @@ using Mono.Cecil;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Resources;
 
 namespace ILRepacking.Steps.ResourceProcessing
@@ -33,16 +31,20 @@ namespace ILRepacking.Steps.ResourceProcessing
     {
         private const string GenericThemesBamlName = "themes/generic.baml";
 
+        private readonly ILogger _logger;
         private readonly AssemblyDefinition _primaryAssemblyDefinition;
         private readonly BamlGenerator _bamlGenerator;
         private readonly IDictionary<Res, AssemblyDefinition> _bamlStreams = new Dictionary<Res, AssemblyDefinition>();
 
-        public BamlStreamCollector(IRepackContext repackContext)
+        public BamlStreamCollector(ILogger logger, IRepackContext repackContext)
         {
+            _logger = logger;
             _primaryAssemblyDefinition = repackContext.PrimaryAssemblyDefinition;
 
             _bamlGenerator = new BamlGenerator(
-                repackContext.TargetAssemblyMainModule.AssemblyReferences, _primaryAssemblyDefinition);
+                _logger,
+                repackContext.TargetAssemblyMainModule.AssemblyReferences,
+                _primaryAssemblyDefinition);
         }
 
         public bool Process(AssemblyDefinition containingAssembly,

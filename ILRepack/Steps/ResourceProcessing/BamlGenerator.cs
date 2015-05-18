@@ -25,12 +25,17 @@ namespace ILRepacking.Steps.ResourceProcessing
     {
         private static readonly BamlDocument.BamlVersion BamlVersion =
             new BamlDocument.BamlVersion { Major = 0, Minor = 96 };
+
+        private readonly ILogger _logger;
         private readonly Collection<AssemblyNameReference> _targetAssemblyReferences;
         private readonly string _mainAssemblyName;
 
         public BamlGenerator(
-            Collection<AssemblyNameReference> targetAssemblyReferences, AssemblyDefinition mainAssembly)
+            ILogger logger,
+            Collection<AssemblyNameReference> targetAssemblyReferences,
+            AssemblyDefinition mainAssembly)
         {
+            _logger = logger;
             _targetAssemblyReferences = targetAssemblyReferences;
             _mainAssemblyName = mainAssembly.Name.Name;
         }
