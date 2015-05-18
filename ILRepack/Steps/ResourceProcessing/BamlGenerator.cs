@@ -187,7 +187,6 @@ namespace ILRepacking.Steps.ResourceProcessing
                 .Select(GetFileNameFromPropertyRecord)
                 .ToList();
 
-            //TODO: what about non-pack URI?:)
             document.InsertRange(indexStart + 2, GetImportRecords(importedFiles.Except(existingUris)));
         }
 

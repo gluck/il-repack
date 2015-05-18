@@ -3,6 +3,7 @@
                     xmlns:classLibrary="clr-namespace:ClassLibrary;assembly=ClassLibrary">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/ClassLibrary;component/ButtonStyles.xaml" />
+        <ResourceDictionary Source="/ClassLibrary;component/BogusStyles.xaml" />
         <ResourceDictionary Source="pack://application:,,,/ClassLibrary;component/TextBlockStyles.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
