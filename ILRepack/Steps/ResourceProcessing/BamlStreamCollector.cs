@@ -139,7 +139,7 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private static void SetPreserializedData(ResourceWriter resourceWriter, string resourceName, byte[] data)
         {
-            Hashtable resourcesHashtable = (Hashtable)resourceWriter.GetFieldValue("_preserializedData");
+            IDictionary resourcesHashtable = (IDictionary)resourceWriter.GetFieldValue("_preserializedData");
 
             resourcesHashtable[resourceName].SetFieldValue("Data", data);
         }
