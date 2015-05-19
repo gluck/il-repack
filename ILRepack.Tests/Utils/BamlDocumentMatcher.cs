@@ -27,7 +27,9 @@ namespace ILRepack.Tests.Utils
             { typeof(AttributeInfoRecord), new List<string> { "AttributeId", "Name", "AttributeUsage", "OwnerTypeId" } },
             { typeof(ElementStartRecord), new List<string> { "Flags", "TypeId" } },
             { typeof(XmlnsPropertyRecord), new List<string> { "Prefix", "XmlNamespace", "AssemblyIds" } },
-            { typeof(PropertyListStartRecord), new List<string> { "AttributeId" } },
+            { typeof(PropertyComplexStartRecord), new List<string> { "AttributeId" } },
+            { typeof(PropertyRecord), new List<string> { "AttributeId", "Value" } },
+            { typeof(PropertyCustomRecord), new List<string> { "AttributeId", "SerializerTypeId", "Data" } },
             { typeof(PropertyWithConverterRecord), new List<string> { "AttributeId", "ConverterTypeId", "Value" } },
             //TODO: Too lazy to do reference-only check for this.
             //   { typeof(DeferableContentStartRecord), new List<string> { "Record" } }
@@ -103,7 +105,7 @@ namespace ILRepack.Tests.Utils
                 return false;
 
             List<string> propertiesToCheck;
-            if (!_propertiesToCheck.TryGetValue(expectedRecord.GetType(), out propertiesToCheck))
+            if (!TryGetRecordPropertiesToCheck(expectedRecord, out propertiesToCheck))
                 return true;
 
             foreach (string propertyName in propertiesToCheck)
@@ -121,6 +123,22 @@ namespace ILRepack.Tests.Utils
             }
 
             return true;
+        }
+
+        private bool TryGetRecordPropertiesToCheck(BamlRecord expectedRecord, out List<string> propertiesToCheck)
+        {
+            foreach (var pair in _propertiesToCheck)
+            {
+                Type type = pair.Key;
+                if (type.IsInstanceOfType(expectedRecord))
+                {
+                    propertiesToCheck = pair.Value;
+                    return true;
+                }
+            }
+
+            propertiesToCheck = null;
+            return false;
         }
 
         private bool Equals(IEnumerable expected, IEnumerable actual)

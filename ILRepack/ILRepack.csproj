@@ -75,7 +75,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
-    <Compile Include="BamlResourceProcessor.cs" />
     <Compile Include="CommandLine.cs" />
     <Compile Include="ConfigMerger.cs" />
     <Compile Include="DocumentationMerger.cs" />
@@ -109,6 +108,7 @@
     <Compile Include="Steps\ResourceProcessing\BamlGenerator.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlResourcePatcher.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlStreamCollector.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlUtils.cs" />
     <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IEmbeddedResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
