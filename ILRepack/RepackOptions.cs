@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ILRepacking
@@ -79,8 +78,10 @@ namespace ILRepacking
         private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
         private List<Regex> excludeInternalizeMatches;
 
-        public void SetSearchDirectories(string[] dirs)
+        public void SetSearchDirectories(IEnumerable<string> dirs)
         {
+            if (TargetPlatformDirectory != null)
+                dirs = new[] { TargetPlatformDirectory }.Concat(dirs);
             foreach (var dir in dirs)
             {
                 globalAssemblyResolver.AddSearchDirectory(dir);
@@ -188,6 +189,9 @@ namespace ILRepacking
                 TargetPlatformVersion = "v2";
             if (cmd.Modifier("v4"))
                 TargetPlatformVersion = "v4";
+            if (TargetPlatformVersion != null && TargetPlatformDirectory == null)
+                ResolveTargetPlatformDirectory();
+
             UnionMerge = cmd.Modifier("union");
             var version = cmd.Option("ver");
             if (!string.IsNullOrEmpty(version))
@@ -197,7 +201,7 @@ namespace ILRepacking
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
             SetSearchDirectories(cmd.Options("lib"));
-
+            
             // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
@@ -212,6 +216,27 @@ namespace ILRepacking
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
         }
+
+        private void ResolveTargetPlatformDirectory()
+        {
+            // TODO: obviously, this only works for Windows, not for Mono!
+            string platformBasePath = Path.GetFullPath(Path.Combine(Environment.SystemDirectory, "..\\Microsoft.NET\\Framework\\"));
+            List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
+            switch (TargetPlatformVersion)
+            {
+                case "v1":
+                case "v2":
+                case "v4":
+                    TargetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith(TargetPlatformVersion + ".0."));
+                    break;
+                case "v1.1":
+                    TargetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith(TargetPlatformVersion + "."));
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
 
         /// <summary>
         /// Parse contents of properties: central point for checking (set on assembly or through command-line).

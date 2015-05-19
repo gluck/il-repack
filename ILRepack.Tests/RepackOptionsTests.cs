@@ -240,7 +240,7 @@ namespace ILRepack.Tests
         public void WithNoSetup__SetSearchDirectories__SetGlobalAssemblyResolver()
         {
             var dirs = new List<string> { "dir1", "dir2", "dir3" };
-            options.SetSearchDirectories(dirs.ToArray());
+            options.SetSearchDirectories(dirs);
             var searchDirs = dirs.Concat(new string[] { ".", "bin"});
             CollectionAssert.AreEquivalent(searchDirs, options.GlobalAssemblyResolver.GetSearchDirectories());
         }
