@@ -60,6 +60,9 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         public void Process(EmbeddedResource embeddedResource, ResourceWriter resourceWriter)
         {
+            if (_bamlStreams.Count == 0)
+                return;
+
             WriteCollectedBamlStreams(resourceWriter);
             PatchGenericThemesBaml(resourceWriter);
         }
