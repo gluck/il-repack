@@ -290,7 +290,7 @@ namespace ILRepacking
                 parameters.WriteSymbols = true;
             // create output directory if it does not exist
             var outputDir = Path.GetDirectoryName(Options.OutputFile);
-            if (!Directory.Exists(outputDir))
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
             {
                 Logger.INFO("Output directory does not exist. Creating output directory: " + outputDir);
                 Directory.CreateDirectory(outputDir);
