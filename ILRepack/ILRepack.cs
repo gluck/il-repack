@@ -30,7 +30,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security;
 using System.Text.RegularExpressions;
-using System.Threading;
 using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
 
@@ -338,7 +337,7 @@ namespace ILRepacking
                 parameters.WriteSymbols = true;
             // create output directory if it does not exist
             var outputDir = Path.GetDirectoryName(Options.OutputFile);
-            if (!Directory.Exists(outputDir))
+            if (!Directory.Exists(outputDir) && !string.IsNullOrEmpty(outputDir))
             {
                 Logger.INFO("Output directory does not exist. Creating output directory: " + outputDir);
                 Directory.CreateDirectory(outputDir);
@@ -1210,7 +1209,7 @@ namespace ILRepacking
         {
             return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
         }
-        
+
         private CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
         {
             return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
@@ -1226,7 +1225,7 @@ namespace ILRepacking
                 return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
             return obj;
         }
-        
+
         /// <summary>
         /// Clones a collection of SecurityDeclarations
         /// </summary>
