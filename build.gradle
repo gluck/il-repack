@@ -11,7 +11,7 @@ buildscript {
     dependencies {
         classpath "com.ullink.gradle:gradle-msbuild-plugin:2.4"
         classpath "com.ullink.gradle:gradle-nuget-plugin:2.5"
-        classpath "com.ullink.gradle:gradle-nunit-plugin:1.0"
+        classpath "com.ullink.gradle:gradle-nunit-plugin:1.1"
         classpath "com.ullink.gradle:gradle-opencover-plugin:1.1"
     }
 }
