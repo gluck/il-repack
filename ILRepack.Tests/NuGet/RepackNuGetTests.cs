@@ -40,7 +40,7 @@ namespace ILRepack.Tests.NuGet
             Assert.IsTrue(count > 0);
         }
 
-        [Ignore("Should be excluded by category, but gradle plugin doesn't (yet) supports that")]
+        [Category("LongRunning")]
         [TestCaseSource(typeof(Data), "Platforms", Category = "ComplexTests")]
         public void NupkgPlatform(Platform platform)
         {

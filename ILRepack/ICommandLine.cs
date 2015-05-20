@@ -15,8 +15,6 @@ namespace ILRepacking
 
         bool OptionBoolean(string name, bool def);
 
-        int OptionsCount { get; }
-
         bool HasNoOptions { get; }
     }
 }

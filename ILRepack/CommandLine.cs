@@ -20,7 +20,7 @@ using System.Text;
 
 namespace ILRepacking
 {
-    internal class CommandLine : ICommandLine
+    public class CommandLine : ICommandLine
     {
         private readonly List<string> parameters;
 

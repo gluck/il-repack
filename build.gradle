@@ -44,13 +44,19 @@ msbuild {
 }
 
 nunit {
+    exclude 'LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
+}
+
+task nunitLongRunning(type: nunit.class) {
+    include 'LongRunning'
+    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ]
 }
 
 ext.repackList = ['ILRepack.exe', 'Fasterflect.dll', 'BamlParser.dll', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
 
 // repacking of all dependencies in a single exe
-task repack(dependsOn: msbuild) {
+task repack(dependsOn: [msbuild, nunitLongRunning]) {
     inputs.files {
         def workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
         return project.ext.repackList.collect { new File(workingDir, it) }

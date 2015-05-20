@@ -8,7 +8,7 @@ namespace ILRepacking
         static int Main(string[] args)
         {
             ICommandLine commandLine = new CommandLine(args);
-            ILogger logger = new RepackLogger();
+            RepackLogger logger = new RepackLogger();
             IFile file = new FileWrapper();
             RepackOptions options = new RepackOptions(commandLine, logger, file);
             int returnCode = -1;

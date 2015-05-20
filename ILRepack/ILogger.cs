@@ -7,10 +7,6 @@ namespace ILRepacking
 
         void Log(object str);
 
-        bool Open(string outputFile);
-
-        void Close();
-
         void ERROR(string msg);
 
         void WARN(string msg);
