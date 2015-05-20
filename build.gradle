@@ -46,7 +46,7 @@ nunit {
     testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 
-ext.repackList = ['ILRepack.exe', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
+ext.repackList = ['ILRepack.exe', 'Fasterflect.dll', 'BamlParser.dll', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
 
 // repacking of all dependencies in a single exe
 task repack(dependsOn: msbuild) {
