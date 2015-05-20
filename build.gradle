@@ -32,6 +32,7 @@ def removeExtension(String path) {
 
 msbuild.dependsOn nugetRestore
 msbuild {
+    version = '14.0'
     def netVersion = project.version + '.0'
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
