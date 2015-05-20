@@ -25,19 +25,21 @@ namespace ILRepacking
 {
     internal class ReferenceFixator
     {
-        private readonly ILRepack repack;
+        private readonly ILogger _logger;
+        private readonly IRepackContext _repackContext;
         private string targetAssemblyPublicKeyBlobString;
         private readonly HashSet<GenericParameter> fixedGenericParameters = new HashSet<GenericParameter>();
         private bool renameIkvmAttributeReference;
 
-        public ReferenceFixator(ILRepack iLRepack)
+        public ReferenceFixator(ILogger logger, IRepackContext repackContext)
         {
-            this.repack = iLRepack;
+            _repackContext = repackContext;
+            _logger = logger;
         }
 
         private ModuleReference Fix(ModuleReference moduleRef)
         {
-            ModuleReference nmr = repack.TargetAssemblyMainModule.ModuleReferences.FirstOrDefault(x => x.Name == moduleRef.Name);
+            ModuleReference nmr = _repackContext.TargetAssemblyMainModule.ModuleReferences.FirstOrDefault(x => x.Name == moduleRef.Name);
             if (nmr == null)
                 throw new NullReferenceException("referenced module not found: \"" + moduleRef.Name + "\".");
             return nmr;
@@ -77,9 +79,9 @@ namespace ILRepacking
             if (type is TypeSpecification)
                 return Fix((TypeSpecification)type);
 
-            type = repack.GetExportedTypeFromTypeRef(type);
+            type = _repackContext.GetExportedTypeFromTypeRef(type);
 
-            var t2 = repack.GetMergedTypeFromTypeRef(type);
+            var t2 = _repackContext.GetMergedTypeFromTypeRef(type);
             if (t2 != null)
                 return t2;
 
@@ -162,7 +164,7 @@ namespace ILRepacking
             if (obj is CustomAttributeArgument[])
                 return ((CustomAttributeArgument[])obj).Select(a => Fix(a)).ToArray();
             if (renameIkvmAttributeReference && obj is string)
-                return repack.FixReferenceInIkvmAttribute((string)obj);
+                return _repackContext.FixReferenceInIkvmAttribute((string)obj);
             return obj;
         }
 
@@ -207,10 +209,10 @@ namespace ILRepacking
                             {
                                 if (prop.Name == "PublicKeyBlob")
                                 {
-                                    if (repack.TargetAssemblyDefinition.Name.HasPublicKey)
+                                    if (_repackContext.TargetAssemblyDefinition.Name.HasPublicKey)
                                     {
                                         if (targetAssemblyPublicKeyBlobString == null)
-                                            foreach (byte b in repack.TargetAssemblyDefinition.Name.PublicKey)
+                                            foreach (byte b in _repackContext.TargetAssemblyDefinition.Name.PublicKey)
                                                 targetAssemblyPublicKeyBlobString += b.ToString("X").PadLeft(2, '0');
                                         if (prop.Argument.Type.FullName != "System.String")
                                             throw new NotSupportedException("Invalid type of argument, expected string");
@@ -221,19 +223,19 @@ namespace ILRepacking
                                     }
                                     else
                                     {
-                                        repack.Logger.WARN("SecurityPermission with PublicKeyBlob found but target has no strong name!");
+                                        _logger.WARN("SecurityPermission with PublicKeyBlob found but target has no strong name!");
                                     }
                                 }
                             }
                         }
                     }
                 }
-                if ((repack.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_0) || (repack.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_1))
+                if ((_repackContext.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_0) || (_repackContext.TargetAssemblyMainModule.Runtime == TargetRuntime.Net_1_1))
                 {
                     SecurityDeclaration[] sdArray = securitydeclarations.ToArray();
                     securitydeclarations.Clear();
                     foreach (SecurityDeclaration sd in sdArray)
-                        securitydeclarations.Add(PermissionsetHelper.Permission2XmlSet(sd, repack.TargetAssemblyMainModule));
+                        securitydeclarations.Add(PermissionsetHelper.Permission2XmlSet(sd, _repackContext.TargetAssemblyMainModule));
                 }
             }
         }
@@ -426,7 +428,7 @@ namespace ILRepacking
             // if declaring type is in our new merged module, return the definition
             if (declaringType.IsDefinition && !method.IsDefinition)
             {
-                MethodDefinition def = new ReflectionHelper(repack).FindMethodDefinitionInType((TypeDefinition)declaringType, method);
+                MethodDefinition def = new ReflectionHelper(_repackContext).FindMethodDefinitionInType((TypeDefinition)declaringType, method);
                 if (def != null)
                     return def;
             }
@@ -445,9 +447,9 @@ namespace ILRepacking
                                      ? method.ReturnType
                                      : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
                 // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
-                repack.Logger.WARN("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
-                repack.Logger.WARN(" - Remove the assembly defining " + culprit + " from the merge");
-                repack.Logger.WARN(" - Add assembly defining " + method + " to the merge");
+                _logger.WARN("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
+                _logger.WARN(" - Remove the assembly defining " + culprit + " from the merge");
+                _logger.WARN(" - Add assembly defining " + method + " to the merge");
 
                 // one case where it'll work correctly however (but doesn't seem common):
                 // A references B

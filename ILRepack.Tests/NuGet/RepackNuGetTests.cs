@@ -10,6 +10,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ILRepack.Tests.NuGet
 {
@@ -52,7 +53,7 @@ namespace ILRepack.Tests.NuGet
             {
                 Assert.IsTrue(list.Count >= platform.Packages.Count());
                 Console.WriteLine("Merging {0}", string.Join(",",list));
-                TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(list.Select(Tmp)));
+                TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp)));
                 Assert.IsTrue(File.Exists(Tmp("test.dll")));
             }).First();
         }
@@ -60,6 +61,15 @@ namespace ILRepack.Tests.NuGet
         string Tmp(string file)
         {
             return Path.Combine(tempDirectory, file);
+        }
+
+        static IEnumerable<string> GetPortable(string lib)
+        {
+            if (lib.StartsWith(@"lib")) lib = lib.Substring(4);
+            var dirName = Path.GetDirectoryName(lib);
+            if (string.IsNullOrEmpty(dirName) || !dirName.StartsWith(@"portable-")) return Enumerable.Empty<string>();
+            dirName = dirName.Substring(9);
+            return new Regex(@"\+|%2[bB]").Split(dirName);
         }
 
         void RepackFoo(string assemblyName)

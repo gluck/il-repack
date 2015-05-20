@@ -48,9 +48,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BamlParser, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\BamlParser.1.0.0\lib\net35\BamlParser.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Fasterflect, Version=2.1.3.0, Culture=neutral, PublicKeyToken=38d18473284c1ca7, processorArchitecture=MSIL">
+      <HintPath>..\packages\fasterflect.2.1.3\lib\net35\Fasterflect.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Mono.Posix">
       <HintPath>..\packages\Mono.Posix.2.0.0.0\lib\net35\Mono.Posix.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -72,8 +81,11 @@
     <Compile Include="FileWrapper.cs" />
     <Compile Include="ICommandLine.cs" />
     <Compile Include="IFile.cs" />
+    <Compile Include="IRepackContext.cs" />
     <Compile Include="IKVMLineIndexer.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="IRepackCopier.cs" />
+    <Compile Include="IRepackImporter.cs" />
     <Compile Include="LineNumberWriter.cs" />
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
@@ -83,11 +95,27 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReferenceFixator.cs" />
     <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="RepackImporter.cs" />
     <Compile Include="RepackLogger.cs" />
     <Compile Include="RepackOptions.cs" />
     <Compile Include="RepackAssemblyResolver.cs" />
     <Compile Include="ResReader.cs" />
     <Compile Include="SerReader.cs" />
+    <Compile Include="Steps\AttributesRepackStep.cs" />
+    <Compile Include="Steps\IRepackStep.cs" />
+    <Compile Include="Steps\ReferencesFixStep.cs" />
+    <Compile Include="Steps\ReferencesRepackStep.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlGenerator.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlResourcePatcher.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlStreamCollector.cs" />
+    <Compile Include="Steps\ResourceProcessing\BamlUtils.cs" />
+    <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
+    <Compile Include="Steps\ResourceProcessing\IEmbeddedResourceProcessor.cs" />
+    <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
+    <Compile Include="Steps\ResourcesRepackStep.cs" />
+    <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
+    <Compile Include="Steps\TypesRepackStep.cs" />
+    <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -140,5 +168,6 @@
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -7,7 +7,8 @@ namespace ILRepack.Tests.NuGet
 {
     public class Platform
     {
-        public IEnumerable<Package> Packages;
+        public IEnumerable<Package> Packages { get; private set; } = Enumerable.Empty<Package>();
+        public IEnumerable<String> Args { get; private set; } = Enumerable.Empty<string>();
 
         public static Platform From(IEnumerable<Package> packages)
         {
@@ -32,6 +33,11 @@ namespace ILRepack.Tests.NuGet
         public Platform WithFwk(string fwk)
         {
             return From(Packages.Select(p => p.WithFwk(fwk)));
+        }
+
+        public Platform WithExtraArgs(params string[] args)
+        {
+            return new Platform { Packages = this.Packages, Args = this.Args.Concat(args) };
         }
 
         public override string ToString()
