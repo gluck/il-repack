@@ -81,7 +81,13 @@ namespace ILRepacking
         public void SetSearchDirectories(IEnumerable<string> dirs)
         {
             if (TargetPlatformDirectory != null)
-                dirs = new[] { TargetPlatformDirectory }.Concat(dirs);
+            {
+                var monoFacadesDirectory = Path.Combine(TargetPlatformDirectory, "Facades");
+                var platformDirectories = Directory.Exists(monoFacadesDirectory) ?
+                    new[] { TargetPlatformDirectory, monoFacadesDirectory } :
+                    new[] { TargetPlatformDirectory };
+                dirs = platformDirectories.Concat(dirs);
+            }
             foreach (var dir in dirs)
             {
                 globalAssemblyResolver.AddSearchDirectory(dir);
