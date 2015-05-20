@@ -40,39 +40,10 @@ namespace ILRepacking
             targetRuntime = runtime;
             targetPlatformDirectory = platformDirectory;
 
-            if (string.IsNullOrEmpty(targetPlatformDirectory) && (runtime != sourceRuntime))
-                GetPlatformPath(runtime);
             if (!string.IsNullOrEmpty(targetPlatformDirectory))
             {
                 if (!Directory.Exists(targetPlatformDirectory))
                     throw new ArgumentException("Platform directory not found: \"" + targetPlatformDirectory + "\".");
-                // TODO: only tested for Windows, not for Mono!
-//if (!File.Exists(Path.Combine(targetPlatformDirectory, "mscorlib.dll")))
-  //                  throw new ArgumentException("Invalid platform directory: \"" + targetPlatformDirectory + "\" (mscorlib.dll not found).");
-            }
-        }
-
-        protected void GetPlatformPath(TargetRuntime runtime)
-        {
-            // TODO: obviously, this only works for Windows, not for Mono!
-            string platformBasePath = Path.GetFullPath(Path.Combine(Environment.SystemDirectory, "..\\Microsoft.NET\\Framework\\"));
-            List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
-            switch (runtime)
-            {
-                case (TargetRuntime.Net_1_0):
-                    targetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith("v1.0."));
-                    break;
-                case (TargetRuntime.Net_1_1):
-                    targetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith("v1.1."));
-                    break;
-                case (TargetRuntime.Net_2_0):
-                    targetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith("v2.0."));
-                    break;
-                case (TargetRuntime.Net_4_0):
-                    targetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith("v4.0."));
-                    break;
-                default:
-                    throw new NotImplementedException();
             }
         }
 
@@ -264,8 +235,6 @@ namespace ILRepacking
                 ngp.Constraints.Add(FixPlatformVersion(tr));
             foreach (CustomAttribute ca in gp.CustomAttributes)
                 ngp.CustomAttributes.Add(FixPlatformVersion(ca));
-            if (gp.DeclaringType != null )
-                ngp.DeclaringType = FixPlatformVersion(gp.DeclaringType);
             foreach (GenericParameter gp1 in gp.GenericParameters)
                 ngp.GenericParameters.Add(FixPlatformVersion(gp1, ngp));
             return ngp;
