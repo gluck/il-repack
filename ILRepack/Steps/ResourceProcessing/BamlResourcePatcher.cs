@@ -25,14 +25,14 @@ namespace ILRepacking.Steps.ResourceProcessing
     internal class BamlResourcePatcher : IResProcessor
     {
         private readonly AssemblyDefinition _mainAssembly;
-        private readonly List<AssemblyDefinition> _mergedAssemblies;
+        private readonly List<AssemblyDefinition> _otherAssemblies;
 
         private readonly Dictionary<Type, Action<BamlRecord>> _nodeProcessors;
 
         public BamlResourcePatcher(IRepackContext repackContext)
         {
             _mainAssembly = repackContext.PrimaryAssemblyDefinition;
-            _mergedAssemblies = repackContext.MergedAssemblies;
+            _otherAssemblies = repackContext.OtherAssemblies;
 
             _nodeProcessors = new Dictionary<Type, Action<BamlRecord>>
             {
@@ -74,12 +74,12 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private void ProcessRecord(PropertyWithConverterRecord record)
         {
-            record.Value = XamlResourcePathPatcherStep.PatchPath(record.Value, _mainAssembly, _mergedAssemblies);
+            record.Value = XamlResourcePathPatcherStep.PatchPath(record.Value, _mainAssembly, _otherAssemblies);
         }
 
         private void ProcessRecord(AssemblyInfoRecord record)
         {
-            var assemblyDefinition = _mergedAssemblies.FirstOrDefault(
+            var assemblyDefinition = _otherAssemblies.FirstOrDefault(
                 asm => asm.Name.Name == record.AssemblyFullName || asm.Name.FullName == record.AssemblyFullName);
 
             if (assemblyDefinition != null)
