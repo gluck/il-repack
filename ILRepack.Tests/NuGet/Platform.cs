@@ -1,14 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ILRepack.Tests.NuGet
 {
     public class Platform
     {
-        public IEnumerable<Package> Packages { get; private set; } = Enumerable.Empty<Package>();
-        public IEnumerable<String> Args { get; private set; } = Enumerable.Empty<string>();
+        public IEnumerable<Package> Packages { get; private set; }
+        public IEnumerable<string> Args { get; private set; }
+
+        public Platform()
+        {
+            Packages = Enumerable.Empty<Package>();
+            Args = Enumerable.Empty<string>();
+        }
 
         public static Platform From(IEnumerable<Package> packages)
         {
