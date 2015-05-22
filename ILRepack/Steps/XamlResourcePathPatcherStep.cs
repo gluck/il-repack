@@ -39,14 +39,56 @@ namespace ILRepacking.Steps
             _logger.VERBOSE("Processing XAML resource paths ...");
             foreach (var type in types)
             {
-                var initializeMethod = type.Methods.FirstOrDefault(m =>
-                    m.Name == "InitializeComponent" && m.Parameters.Count == 0);
+                PatchInitializeComponentMethod(type);
+                PatchWpfToolkitVersionResourceDictionary(type);
+            }
+        }
 
-                if (initializeMethod == null || !initializeMethod.HasBody)
+        private void PatchWpfToolkitVersionResourceDictionary(TypeDefinition type)
+        {
+            // Extended WPF toolkit has a nasty way of including the xamls in the generic.xaml
+            // Instead of a simple ResourceDictionary they use a custom one which hardcodes
+            // the assembly name and version:
+            // <core:VersionResourceDictionary AssemblyName="Xceed.Wpf.Toolkit" SourcePath="Calculator/Themes/Generic.xaml" />
+            if (!"Xceed.Wpf.Toolkit.Core.VersionResourceDictionary".Equals(type.FullName))
+                return;
+
+            var endInitMethod = type.Methods.FirstOrDefault(m =>
+                m.Name == "System.ComponentModel.ISupportInitialize.EndInit");
+
+            if (endInitMethod == null)
+            {
+                _logger.WARN("Could not find a proper 'EndInit' method for Xceed.Wpf.Toolkit to patch!");
+                return;
+            }
+
+            PatchWpfToolkitEndInitMethod(endInitMethod);
+        }
+
+        private void PatchInitializeComponentMethod(TypeDefinition type)
+        {
+            var initializeMethod = type.Methods.FirstOrDefault(m =>
+                m.Name == "InitializeComponent" && m.Parameters.Count == 0);
+
+            if (initializeMethod == null || !initializeMethod.HasBody)
+                return;
+
+            _logger.VERBOSE(" - Patching type " + type.FullName);
+            PatchMethod(initializeMethod);
+        }
+
+        private void PatchWpfToolkitEndInitMethod(MethodDefinition method)
+        {
+            const string ComponentPathString = "{0};v{1};component/{2}";
+            foreach (var stringInstruction in method.Body.Instructions.Where(i => i.OpCode == OpCodes.Ldstr))
+            {
+                if (!ComponentPathString.Equals(stringInstruction.Operand as string))
                     continue;
 
-                _logger.VERBOSE(" - Patching type " + type.FullName);
-                PatchMethod(initializeMethod);
+                stringInstruction.Operand =
+                    string.Format(
+                        "/{0};component/Xceed.Wpf.Toolkit/{{2}}",
+                        _repackContext.PrimaryAssemblyDefinition.Name.Name);
             }
         }
 

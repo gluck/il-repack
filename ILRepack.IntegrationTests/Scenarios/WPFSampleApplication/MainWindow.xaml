@@ -4,6 +4,7 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:wpfSampleApplication="clr-namespace:WPFSampleApplication"
         xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         Style="{DynamicResource WindowStyle}" Height="350" Width="525" Loaded="MainWindowOnLoaded">
     <controls:MetroWindow.Resources>
         <ResourceDictionary>
@@ -20,5 +21,7 @@
     <i:Interaction.Behaviors>
         <wpfSampleApplication:CloseWindowOnAttachBehaviour />
     </i:Interaction.Behaviors>
-    <wpfSampleApplication:MyUserControl x:Name="MyUserControl" />
+    <xctk:BusyIndicator BusyContent="Pretending to be busy..." IsBusy="True">
+        <wpfSampleApplication:MyUserControl x:Name="MyUserControl" />
+    </xctk:BusyIndicator>
 </controls:MetroWindow>

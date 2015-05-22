@@ -56,9 +56,9 @@ namespace ILRepack.IntegrationTests
             Assert.NotNull(process);
 
             bool processEnded = process.WaitForExit(ScenarioProcessWaitTimeInMs);
-            Assert.That(processEnded, Is.True, "Process has not ended.");
-
             Console.WriteLine("\nScenario '{0}' STDOUT: {1}", scenarioName, process.StandardOutput.ReadToEnd());
+
+            Assert.That(processEnded, Is.True, "Process has not ended.");
             Assert.That(process.ExitCode, Is.EqualTo(0), "Process exited with error");
         }
 
