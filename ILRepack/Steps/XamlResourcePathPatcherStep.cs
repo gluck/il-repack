@@ -100,32 +100,63 @@ namespace ILRepacking.Steps
                 if (string.IsNullOrEmpty(path))
                     continue;
 
+                var type = method.DeclaringType;
+                var originalScope = _repackContext.MappingHandler.GetOrigTypeScope<ModuleDefinition>(type);
+
                 stringInstruction.Operand = PatchPath(
-                    path, _repackContext.PrimaryAssemblyDefinition, _repackContext.OtherAssemblies);
+                    path,
+                    _repackContext.PrimaryAssemblyDefinition,
+                    originalScope.Assembly,
+                    _repackContext.OtherAssemblies);
             }
         }
 
-        public static string PatchPath(string path, AssemblyDefinition mainAssembly, List<AssemblyDefinition> otherAssemblies)
+        internal static string PatchPath(
+            string path, 
+            AssemblyDefinition primaryAssembly, 
+            AssemblyDefinition sourceAssembly,
+            List<AssemblyDefinition> otherAssemblies)
         {
             if (string.IsNullOrEmpty(path) || !(path.StartsWith("/") || path.StartsWith("pack://")))
                 return path;
 
-            foreach (var assemblyToReplace in otherAssemblies)
+            string patchedPath = path;
+            if (primaryAssembly == sourceAssembly)
             {
-                string patternToReplace = string.Format("/{0};component", assemblyToReplace.Name.Name);
+                if (otherAssemblies.Any(assembly => TryPatchPath(path, primaryAssembly, assembly, out patchedPath)))
+                    return patchedPath;
 
-                if (path.Contains(patternToReplace))
-                {
-                    string newPath = string.Format(
-                        "/{0};component/{1}",
-                        mainAssembly.Name.Name,
-                        assemblyToReplace.Name.Name);
-
-                    return path.Replace(patternToReplace, newPath);
-                }
+                return path;
             }
 
-            return path;
+            if (TryPatchPath(path, primaryAssembly, sourceAssembly, out patchedPath))
+                return patchedPath;
+
+            if (!path.EndsWith(".xaml"))
+                return path;
+
+            // we've got no non-primary assembly knowledge so far,
+            // that means it's a relative path in the source assembly -> just add the assembly's name as subdirectory
+            // /themes/file.xaml -> /library/themes/file.xaml
+            return "/" + sourceAssembly.Name.Name + path;
+        }
+
+        private static bool TryPatchPath(
+            string path, AssemblyDefinition primaryAssembly, AssemblyDefinition referenceAssembly, out string patchedPath)
+        {
+            string referenceAssemblyPath = GetAssemblyPath(referenceAssembly);
+            string newPath = GetAssemblyPath(primaryAssembly) + "/" + referenceAssembly.Name.Name;
+
+            // /library;component/file.xaml -> /primary;component/library/file.xaml
+            patchedPath = path.Replace(referenceAssemblyPath, newPath);
+
+            // if they're modified, we're good!
+            return !ReferenceEquals(patchedPath, path);
+        }
+
+        private static string GetAssemblyPath(AssemblyDefinition sourceAssembly)
+        {
+            return string.Format("/{0};component", sourceAssembly.Name.Name);
         }
     }
 }
