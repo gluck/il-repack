@@ -13,11 +13,13 @@ namespace ILRepacking
         {
             internal readonly string scope;
             internal readonly string name;
+            internal readonly IMetadataScope MetadataScope;
 
-            public Pair(string scope, string name)
+            public Pair(string scope, string name, IMetadataScope metadataScope)
             {
                 this.scope = scope;
                 this.name = name;
+                MetadataScope = metadataScope;
             }
 
             public override int GetHashCode()
@@ -72,7 +74,7 @@ namespace ILRepacking
 
         private static Pair GetTypeKey(IMetadataScope scope, String fullName)
         {
-            return new Pair(GetScopeName(scope), fullName);
+            return new Pair(GetScopeName(scope), fullName, scope);
         }
 
         internal static string GetScopeName(IMetadataScope scope)
@@ -103,9 +105,9 @@ namespace ILRepacking
             return null;
         }
 
-        internal string GetOrigTypeModule(TypeDefinition nt)
+        internal T GetOrigTypeScope<T>(TypeDefinition nt) where T : class, IMetadataScope
         {
-            return mappings.Where(p => p.Value == nt).Select(p => p.Key.scope).FirstOrDefault();
+            return mappings.Where(p => p.Value == nt).Select(p => p.Key.MetadataScope).FirstOrDefault() as T;
         }
     }
 }
