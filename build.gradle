@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.4"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.5"
         classpath "com.ullink.gradle:gradle-nuget-plugin:2.5"
         classpath "com.ullink.gradle:gradle-nunit-plugin:1.1"
         classpath "com.ullink.gradle:gradle-opencover-plugin:1.1"
@@ -32,7 +32,6 @@ def removeExtension(String path) {
 
 msbuild.dependsOn nugetRestore
 msbuild {
-    version = '14.0'
     def netVersion = project.version + '.0'
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)

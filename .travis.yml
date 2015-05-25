@@ -1,0 +1,6 @@
+language: csharp
+solution: ILRepack.sln
+install:
+  - find /usr/lib/mono
+script:
+  - ./gradlew -is msbuild nunit
