@@ -59,7 +59,6 @@
     <Reference Include="Mono.Posix">
       <HintPath>..\packages\Mono.Posix.2.0.0.0\lib\net35\Mono.Posix.dll</HintPath>
     </Reference>
-    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
