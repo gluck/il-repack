@@ -9,10 +9,10 @@ namespace ILRepacking
 {
     public class RepackOptions
     {
-        public class InvalidTargetKindException : Exception 
+        public class InvalidTargetKindException : Exception
         {
-            public InvalidTargetKindException(string message) : base(message) 
-            { 
+            public InvalidTargetKindException(string message) : base(message)
+            {
             }
         }
 
@@ -53,9 +53,9 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
-        public RepackAssemblyResolver GlobalAssemblyResolver 
-        { 
-            get { return globalAssemblyResolver; } 
+        public RepackAssemblyResolver GlobalAssemblyResolver
+        {
+            get { return globalAssemblyResolver; }
         }
         public List<Regex> ExcludeInternalizeMatches
         {
@@ -69,7 +69,7 @@ namespace ILRepacking
         {
             get { return allowedDuplicateNameSpaces; }
         }
-        
+
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly ICommandLine cmd;
@@ -112,7 +112,12 @@ namespace ILRepacking
             }
         }
 
-        public RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
+        public RepackOptions(CommandLine commandLine, ILogger logger)
+            : this(commandLine, logger, new FileWrapper())
+        {
+        }
+
+        internal RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
         {
             this.cmd = commandLine;
             this.logger = logger;
@@ -207,7 +212,7 @@ namespace ILRepacking
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
             SetSearchDirectories(cmd.Options("lib"));
-            
+
             // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");

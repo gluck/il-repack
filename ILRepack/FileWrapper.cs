@@ -2,7 +2,7 @@
 
 namespace ILRepacking
 {
-    public class FileWrapper : IFile
+    internal class FileWrapper : IFile
     {
         public bool Exists(string path)
         {
