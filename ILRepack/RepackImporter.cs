@@ -146,7 +146,9 @@ namespace ILRepacking
             else
             {
                 _logger.ERROR("Duplicate type " + type);
-                throw new InvalidOperationException("Duplicate type " + type + " from " + type.Scope + ", was also present in " + _repackContext.MappingHandler.GetOrigTypeModule(nt));
+                throw new InvalidOperationException(
+                    "Duplicate type " + type + " from " + type.Scope + ", was also present in " +
+                    MappingHandler.GetScopeFullName(_repackContext.MappingHandler.GetOrigTypeScope<IMetadataScope>(nt)));
             }
             _repackContext.MappingHandler.StoreRemappedType(type, nt);
 

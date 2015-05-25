@@ -25,20 +25,21 @@ namespace ILRepacking.Steps.ResourceProcessing
     internal class BamlResourcePatcher : IResProcessor
     {
         private readonly AssemblyDefinition _mainAssembly;
-        private readonly List<AssemblyDefinition> _mergedAssemblies;
+        private readonly List<AssemblyDefinition> _otherAssemblies;
 
-        private readonly Dictionary<Type, Action<BamlRecord>> _nodeProcessors;
+        private readonly Dictionary<Type, Action<BamlRecord, AssemblyDefinition>> _nodeProcessors;
 
         public BamlResourcePatcher(IRepackContext repackContext)
         {
             _mainAssembly = repackContext.PrimaryAssemblyDefinition;
-            _mergedAssemblies = repackContext.MergedAssemblies;
+            _otherAssemblies = repackContext.OtherAssemblies;
 
-            _nodeProcessors = new Dictionary<Type, Action<BamlRecord>>
+            //TODO: use dynamic when we upgrade to .NET 4
+            _nodeProcessors = new Dictionary<Type, Action<BamlRecord, AssemblyDefinition>>
             {
-                { typeof(AssemblyInfoRecord), r => ProcessRecord((AssemblyInfoRecord)r) },
-                { typeof(PropertyWithConverterRecord), r => ProcessRecord((PropertyWithConverterRecord)r) },
-                { typeof(XmlnsPropertyRecord), r => ProcessRecord((XmlnsPropertyRecord)r) }
+                { typeof(AssemblyInfoRecord), (r, asm) => ProcessRecord((AssemblyInfoRecord)r) },
+                { typeof(PropertyWithConverterRecord), (r, asm) => ProcessRecord((PropertyWithConverterRecord)r, asm) },
+                { typeof(XmlnsPropertyRecord), (r, asm) => ProcessRecord((XmlnsPropertyRecord)r) }
             };
         }
 
@@ -48,22 +49,22 @@ namespace ILRepacking.Steps.ResourceProcessing
             if (!resource.IsBamlStream)
                 return false;
 
-            resource.data = GetProcessedResource(resource);
+            resource.data = GetProcessedResource(resource, containingAssembly);
 
             return false;
         }
 
-        private byte[] GetProcessedResource(Res resource)
+        private byte[] GetProcessedResource(Res resource, AssemblyDefinition containingAssembly)
         {
             BamlDocument bamlDocument = BamlUtils.FromResourceBytes(resource.data);
 
             foreach (BamlRecord node in bamlDocument)
             {
-                Action<BamlRecord> recordProcessor;
+                Action<BamlRecord, AssemblyDefinition> recordProcessor;
 
                 if (_nodeProcessors.TryGetValue(node.GetType(), out recordProcessor))
                 {
-                    recordProcessor(node);
+                    recordProcessor(node, containingAssembly);
                 }
             }
 
@@ -72,14 +73,18 @@ namespace ILRepacking.Steps.ResourceProcessing
             return BamlUtils.ToResourceBytes(bamlDocument);
         }
 
-        private void ProcessRecord(PropertyWithConverterRecord record)
+        private void ProcessRecord(PropertyWithConverterRecord record, AssemblyDefinition containingAssembly)
         {
-            record.Value = XamlResourcePathPatcherStep.PatchPath(record.Value, _mainAssembly, _mergedAssemblies);
+            record.Value = XamlResourcePathPatcherStep.PatchPath(
+                record.Value,
+                _mainAssembly,
+                containingAssembly,
+                _otherAssemblies);
         }
 
         private void ProcessRecord(AssemblyInfoRecord record)
         {
-            var assemblyDefinition = _mergedAssemblies.FirstOrDefault(
+            var assemblyDefinition = _otherAssemblies.FirstOrDefault(
                 asm => asm.Name.Name == record.AssemblyFullName || asm.Name.FullName == record.AssemblyFullName);
 
             if (assemblyDefinition != null)
