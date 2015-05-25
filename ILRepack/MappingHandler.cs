@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ILRepacking
 {
-    public class MappingHandler
+    internal class MappingHandler
     {
         struct Pair : IEquatable<Pair>
         {

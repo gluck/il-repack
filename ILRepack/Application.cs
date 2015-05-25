@@ -2,7 +2,7 @@
 
 namespace ILRepacking
 {
-    public class Application
+    internal class Application
     {
         [STAThread]
         static int Main(string[] args)

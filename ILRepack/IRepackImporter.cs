@@ -19,7 +19,7 @@ using Mono.Collections.Generic;
 
 namespace ILRepacking
 {
-    public interface IRepackImporter
+    internal interface IRepackImporter
     {
         TypeReference Import(TypeReference reference, IGenericParameterProvider context);
 

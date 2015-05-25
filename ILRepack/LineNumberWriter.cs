@@ -6,7 +6,7 @@ using System.Text;
 namespace ILRepacking
 {
     // copied from IKVM source
-    public sealed class LineNumberWriter
+    internal sealed class LineNumberWriter
     {
         private System.IO.MemoryStream stream;
         private int prevILOffset;

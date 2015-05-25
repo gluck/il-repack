@@ -41,18 +41,21 @@ namespace ILRepacking
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
         public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
         public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
-        public IKVMLineIndexer LineIndexer { get; private set; }
 
-        // helpers
-        public ModuleDefinition TargetAssemblyMainModule { get { return TargetAssemblyDefinition.MainModule; } }
+        public ModuleDefinition TargetAssemblyMainModule => TargetAssemblyDefinition.MainModule;
+        public ModuleDefinition PrimaryAssemblyMainModule => PrimaryAssemblyDefinition.MainModule;
 
-        public ModuleDefinition PrimaryAssemblyMainModule { get { return PrimaryAssemblyDefinition.MainModule; } }
+        private IKVMLineIndexer _lineIndexer;
+        private ReflectionHelper _reflectionHelper;
+        private PlatformFixer _platformFixer;
+        private MappingHandler _mappingHandler;
 
-        public ReflectionHelper ReflectionHelper { get;private set; }
         private static readonly Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
 
-        public PlatformFixer PlatformFixer { get; private set; }
-        public MappingHandler MappingHandler { get; private set; }
+        IKVMLineIndexer IRepackContext.LineIndexer => _lineIndexer;
+        ReflectionHelper IRepackContext.ReflectionHelper => _reflectionHelper;
+        PlatformFixer IRepackContext.PlatformFixer => _platformFixer;
+        MappingHandler IRepackContext.MappingHandler => _mappingHandler;
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
         private readonly IRepackImporter _repackImporter;
@@ -99,7 +102,7 @@ namespace ILRepacking
             Logger.INFO("Adding assembly for merge: " + assembly);
             try
             {
-                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) {AssemblyResolver = Options.GlobalAssemblyResolver};
+                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver };
                 // read PDB/MDB?
                 if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                 {
@@ -183,7 +186,7 @@ namespace ILRepacking
                     case "v4": runtime = TargetRuntime.Net_4_0; break;
                     default: throw new ArgumentException("Invalid TargetPlatformVersion: \"" + Options.TargetPlatformVersion + "\".");
                 }
-                PlatformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
+                _platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
             }
             return runtime;
         }
@@ -194,15 +197,15 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
-            ReflectionHelper = new ReflectionHelper(this);
+            _reflectionHelper = new ReflectionHelper(this);
             Options.ParseProperties();
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
             Options.GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
-            PlatformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
-            MappingHandler = new MappingHandler();
+            _platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
+            _mappingHandler = new MappingHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 
             ModuleKind kind = PrimaryAssemblyMainModule.Kind;
@@ -226,12 +229,12 @@ namespace ILRepacking
                 asmName.Name = mainModuleName;
                 TargetAssemblyDefinition = AssemblyDefinition.CreateAssembly(asmName, mainModuleName,
                     new ModuleParameters()
-                        {
-                            Kind = kind,
-                            Architecture = PrimaryAssemblyMainModule.Architecture,
-                            AssemblyResolver = Options.GlobalAssemblyResolver,
-                            Runtime = runtime
-                        });
+                    {
+                        Kind = kind,
+                        Architecture = PrimaryAssemblyMainModule.Architecture,
+                        AssemblyResolver = Options.GlobalAssemblyResolver,
+                        Runtime = runtime
+                    });
             }
             else
             {
@@ -265,7 +268,7 @@ namespace ILRepacking
                 TargetAssemblyDefinition.Name.PublicKey = null;
                 TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
-            LineIndexer = new IKVMLineIndexer(this);
+            _lineIndexer = new IKVMLineIndexer(this);
 
             List<IRepackStep> repackSteps = new List<IRepackStep>
             {
@@ -557,7 +560,7 @@ namespace ILRepacking
             foreach (CustomAttribute ca in input)
             {
                 var caType = ca.AttributeType;
-                var similarAttributes = output.Where(attr => ReflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
+                var similarAttributes = output.Where(attr => _reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
                 if (similarAttributes.Count != 0)
                 {
                     if (!allowMultiple)
@@ -565,9 +568,9 @@ namespace ILRepacking
                     if (!CustomAttributeTypeAllowsMultiple(caType))
                         continue;
                     if (similarAttributes.Any(x =>
-                            ReflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
-                            ReflectionHelper.AreSame(x.Fields, ca.Fields) &&
-                            ReflectionHelper.AreSame(x.Properties, ca.Properties)
+                            _reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
+                            _reflectionHelper.AreSame(x.Fields, ca.Fields) &&
+                            _reflectionHelper.AreSame(x.Properties, ca.Properties)
                         ))
                         continue;
                 }
@@ -609,12 +612,12 @@ namespace ILRepacking
 
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
         {
-            return MappingHandler.GetRemappedType(reference);
+            return _mappingHandler.GetRemappedType(reference);
         }
 
         public TypeReference GetExportedTypeFromTypeRef(TypeReference type)
         {
-            return MappingHandler.GetExportedRemappedType(type) ?? type;
+            return _mappingHandler.GetExportedRemappedType(type) ?? type;
         }
     }
 }

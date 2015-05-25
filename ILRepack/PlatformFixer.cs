@@ -20,7 +20,7 @@ using System.IO;
 
 namespace ILRepacking
 {
-    public class PlatformFixer
+    internal class PlatformFixer
     {
         private TargetRuntime sourceRuntime;
         private TargetRuntime targetRuntime;

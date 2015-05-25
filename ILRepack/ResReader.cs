@@ -157,7 +157,7 @@ namespace ILRepacking
         StartOfUserTypes = 64,
     }
 
-    public class Res
+    internal class Res
     {
         public readonly String name;
         public readonly String type;
@@ -185,7 +185,7 @@ namespace ILRepacking
         }
     }
 
-    public sealed class ResReader : IEnumerable<Res>, IDisposable
+    internal sealed class ResReader : IEnumerable<Res>, IDisposable
     {
         private BinaryReader _store;    // backing store we're reading from.
         private readonly long _nameSectionOffset;  // Offset to name section of file.
