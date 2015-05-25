@@ -67,11 +67,6 @@ namespace ILRepacking
             _repackImporter = new RepackImporter(logger, Options, this, this, aspOffsets);
         }
 
-        public void Merge()
-        {
-            Repack();
-        }
-
         private void ReadInputAssemblies()
         {
             MergedAssemblyFiles = Options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
