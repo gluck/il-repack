@@ -226,8 +226,6 @@ namespace ILRepacking.Steps
             {
                 foreach (var res in rr)
                 {
-                    _logger.Verbose(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
-
                     foreach (var processor in resourcePrcessors)
                     {
                         if (processor.Process(containingAssembly, res, rr, rw))
