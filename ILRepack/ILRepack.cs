@@ -140,7 +140,7 @@ namespace ILRepacking
             }
         }
 
-        public class AssemblyDefinitionContainer
+        internal class AssemblyDefinitionContainer
         {
             public bool SymbolsRead { get; set; }
             public AssemblyDefinition Definition { get; set; }

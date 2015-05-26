@@ -9,7 +9,7 @@ namespace ILRepacking
 {
     public class RepackOptions
     {
-        public class InvalidTargetKindException : Exception
+        internal class InvalidTargetKindException : Exception
         {
             public InvalidTargetKindException(string message) : base(message)
             {
