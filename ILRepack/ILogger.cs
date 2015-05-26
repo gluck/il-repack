@@ -6,14 +6,10 @@ namespace ILRepacking
         bool ShouldLogVerbose { get; set; }
 
         void Log(object str);
-
-        void ERROR(string msg);
-
-        void WARN(string msg);
-
-        void INFO(string msg);
-
-        void VERBOSE(string msg);
+        void Error(string msg);
+        void Warn(string msg);
+        void Info(string msg);
+        void Verbose(string msg);
 
         void DuplicateIgnored(string ignoredType, object ignoredObject);
     }

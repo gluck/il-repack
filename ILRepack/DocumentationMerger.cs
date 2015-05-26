@@ -33,14 +33,14 @@ namespace ILRepacking
                 foreach (string assembly in repack.MergedAssemblyFiles)
                 {
                     string assemblyDoc = Path.ChangeExtension(assembly, ".xml");
-                    if (File.Exists (assemblyDoc))
+                    if (File.Exists(assemblyDoc))
                     {
                         doc = new XmlDocument();
-                        doc.Load (assemblyDoc);
+                        doc.Load(assemblyDoc);
                         validXmlFiles.Add(doc);
                     }
                 }
-    			
+
                 if (validXmlFiles.Count == 0)
                     return;
 
@@ -64,7 +64,7 @@ namespace ILRepacking
                     while (iterator.MoveNext())
                     {
                         XPathNavigator navigator = iterator.Current;
-                        node.AppendChild(doc.ImportNode((XmlNode) navigator.UnderlyingObject, true));
+                        node.AppendChild(doc.ImportNode((XmlNode)navigator.UnderlyingObject, true));
                     }
                 }
 
@@ -76,7 +76,7 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.Logger.ERROR("Failed to merge documentation files: " + e);
+                repack.Logger.Error("Failed to merge documentation files: " + e);
             }
         }
     }

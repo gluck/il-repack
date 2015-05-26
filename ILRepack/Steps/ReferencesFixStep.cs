@@ -39,7 +39,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.INFO("Fixing references");
+            _logger.Info("Fixing references");
 
             var fixator = new ReferenceFixator(_logger, _repackContext);
             if (_repackContext.PrimaryAssemblyMainModule.EntryPoint != null)

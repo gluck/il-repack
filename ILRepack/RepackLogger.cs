@@ -35,22 +35,22 @@ namespace ILRepacking
             writer = null;
         }
 
-        public void ERROR(string msg)
+        public void Error(string msg)
         {
             Log("ERROR: " + msg);
         }
 
-        public void WARN(string msg)
+        public void Warn(string msg)
         {
             Log("WARN: " + msg);
         }
 
-        public void INFO(string msg)
+        public void Info(string msg)
         {
             Log("INFO: " + msg);
         }
 
-        public void VERBOSE(string msg)
+        public void Verbose(string msg)
         {
             if (ShouldLogVerbose)
                 Log("INFO: " + msg);

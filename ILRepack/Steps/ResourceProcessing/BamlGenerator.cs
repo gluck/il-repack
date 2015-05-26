@@ -98,7 +98,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                 if (document.FindIndex(IsResourceDictionaryElementStart) == -1)
                 {
                     //TODO: throw? (Let's hope people read the logs ^_^)
-                    _logger.ERROR(string.Format(
+                    _logger.Error(string.Format(
                         "Existing 'Themes/generic.xaml' in {0} is *not* a ResourceDictionary. " +
                         "This will prevent proper WPF application merging.", _mainAssemblyName));
                     return;
@@ -107,7 +107,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                 int attributeInfosStartIndex = document.FindLastIndex(r => r is AssemblyInfoRecord);
                 if (attributeInfosStartIndex == -1)
                 {
-                    _logger.ERROR("Invalid BAML detected. (no AssemblyInfoRecord)");
+                    _logger.Error("Invalid BAML detected. (no AssemblyInfoRecord)");
                     return;
                 }
 
@@ -118,7 +118,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                 int defferableRecordIndex = document.FindIndex(r => r is DeferableContentStartRecord);
                 if (attributeInfosStartIndex == -1)
                 {
-                    _logger.ERROR("Invalid BAML detected. (No DeferableContentStartRecord)");
+                    _logger.Error("Invalid BAML detected. (No DeferableContentStartRecord)");
                 }
 
                 document.InsertRange(defferableRecordIndex, GetDictionariesList(importedFiles));

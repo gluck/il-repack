@@ -36,7 +36,7 @@ namespace ILRepacking.Steps
         {
             var types = _repackContext.TargetAssemblyDefinition.Modules.SelectMany(m => m.Types);
 
-            _logger.VERBOSE("Processing XAML resource paths ...");
+            _logger.Verbose("Processing XAML resource paths ...");
             foreach (var type in types)
             {
                 PatchInitializeComponentMethod(type);
@@ -58,7 +58,7 @@ namespace ILRepacking.Steps
 
             if (endInitMethod == null)
             {
-                _logger.WARN("Could not find a proper 'EndInit' method for Xceed.Wpf.Toolkit to patch!");
+                _logger.Warn("Could not find a proper 'EndInit' method for Xceed.Wpf.Toolkit to patch!");
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace ILRepacking.Steps
             if (initializeMethod == null || !initializeMethod.HasBody)
                 return;
 
-            _logger.VERBOSE(" - Patching type " + type.FullName);
+            _logger.Verbose(" - Patching type " + type.FullName);
             PatchMethod(initializeMethod);
         }
 
@@ -112,8 +112,8 @@ namespace ILRepacking.Steps
         }
 
         internal static string PatchPath(
-            string path, 
-            AssemblyDefinition primaryAssembly, 
+            string path,
+            AssemblyDefinition primaryAssembly,
             AssemblyDefinition sourceAssembly,
             List<AssemblyDefinition> otherAssemblies)
         {

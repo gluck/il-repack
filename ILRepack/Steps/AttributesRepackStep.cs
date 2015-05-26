@@ -99,7 +99,7 @@ namespace ILRepacking.Steps
             {
                 if (RemoveAttributes(type, null))
                 {
-                    _logger.WARN("[" + type + "] attribute wasn't merged because of inconsistency across merged assemblies");
+                    _logger.Warn("[" + type + "] attribute wasn't merged because of inconsistency across merged assemblies");
                 }
             }
         }
@@ -109,7 +109,7 @@ namespace ILRepacking.Steps
             bool ret = false;
             foreach (var ass in _repackContext.MergedAssemblies)
             {
-                for (int i = 0; i < ass.CustomAttributes.Count; )
+                for (int i = 0; i < ass.CustomAttributes.Count;)
                 {
                     if (ass.CustomAttributes[i].AttributeType.FullName == attrTypeName && (predicate == null || predicate(ass.CustomAttributes[i])))
                     {

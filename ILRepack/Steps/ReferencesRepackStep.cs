@@ -32,7 +32,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.INFO("Processing references");
+            _logger.Info("Processing references");
 
             // Add all AssemblyReferences to merged assembly (probably not necessary)
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
@@ -47,7 +47,7 @@ namespace ILRepacking.Steps
                     // TODO: fix .NET runtime references?
                     // - to target a specific runtime version or
                     // - to target a single version if merged assemblies target different versions
-                    _logger.VERBOSE("- add reference " + z);
+                    _logger.Verbose("- add reference " + z);
                     AssemblyNameReference fixedRef = _repackContext.PlatformFixer.FixPlatformVersion(z);
                     targetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
                 }

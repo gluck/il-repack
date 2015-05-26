@@ -30,7 +30,7 @@ namespace ILRepacking
                 foreach (string assembly in repack.MergedAssemblyFiles)
                 {
                     string assemblyConfig = assembly + ".config";
-                    if (!File.Exists(assemblyConfig)) 
+                    if (!File.Exists(assemblyConfig))
                         continue;
                     var doc = new XmlDocument();
                     doc.Load(assemblyConfig);
@@ -55,7 +55,7 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                repack.Logger.ERROR("Failed to merge configuration files: " + e);
+                repack.Logger.Error("Failed to merge configuration files: " + e);
             }
         }
     }

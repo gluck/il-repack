@@ -94,7 +94,7 @@ namespace ILRepacking
 
         private AssemblyDefinitionContainer ReadInputAssembly(string assembly, bool isPrimary)
         {
-            Logger.INFO("Adding assembly for merge: " + assembly);
+            Logger.Info("Adding assembly for merge: " + assembly);
             try
             {
                 ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver };
@@ -115,7 +115,7 @@ namespace ILRepacking
                     {
                         rp.ReadSymbols = false;
                         mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                        Logger.INFO("Failed to load debug information for " + assembly);
+                        Logger.Info("Failed to load debug information for " + assembly);
                     }
                     else
                     {
@@ -135,7 +135,7 @@ namespace ILRepacking
             }
             catch
             {
-                Logger.ERROR("Failed to load assembly " + assembly);
+                Logger.Error("Failed to load assembly " + assembly);
                 throw;
             }
         }
@@ -290,17 +290,17 @@ namespace ILRepacking
             var outputDir = Path.GetDirectoryName(Options.OutputFile);
             if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
             {
-                Logger.INFO("Output directory does not exist. Creating output directory: " + outputDir);
+                Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
                 Directory.CreateDirectory(outputDir);
             }
             TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
-            Logger.INFO("Writing output assembly to disk");
+            Logger.Info("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly
             if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 Stat stat;
-                Logger.INFO("Copying permissions from " + PrimaryAssemblyFile);
+                Logger.Info("Copying permissions from " + PrimaryAssemblyFile);
                 Syscall.stat(PrimaryAssemblyFile, out stat);
                 Syscall.chmod(Options.OutputFile, stat.st_mode);
             }
@@ -320,7 +320,7 @@ namespace ILRepacking
             foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => Options.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
             {
                 // failed
-                Logger.ERROR("Merged assembly still references " + a.FullName);
+                Logger.Error("Merged assembly still references " + a.FullName);
                 failed = true;
             }
             if (failed)
@@ -364,13 +364,13 @@ namespace ILRepacking
                 }
                 else if (!isVersionInfoRes(parents, exist))
                 {
-                    Logger.WARN(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
+                    Logger.Warn(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
                 return;
             }
             if (exist.Data != null || entry.Data != null)
             {
-                Logger.WARN("Inconsistent Win32 resources, ignoring");
+                Logger.Warn("Inconsistent Win32 resources, ignoring");
                 return;
             }
             parents.Add(exist);

@@ -46,7 +46,7 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
             });
 
             Assert.That(modifiedDocument, new BamlDocumentMatcher(initialDocument));
-            logger.Verify(l => l.ERROR("Existing 'Themes/generic.xaml' in ClassLibrary is *not* a ResourceDictionary. " +
+            logger.Verify(l => l.Error("Existing 'Themes/generic.xaml' in ClassLibrary is *not* a ResourceDictionary. " +
                                        "This will prevent proper WPF application merging."));
         }
 

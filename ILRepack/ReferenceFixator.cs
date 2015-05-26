@@ -223,7 +223,7 @@ namespace ILRepacking
                                     }
                                     else
                                     {
-                                        _logger.WARN("SecurityPermission with PublicKeyBlob found but target has no strong name!");
+                                        _logger.Warn("SecurityPermission with PublicKeyBlob found but target has no strong name!");
                                     }
                                 }
                             }
@@ -447,9 +447,9 @@ namespace ILRepacking
                                      ? method.ReturnType
                                      : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
                 // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
-                _logger.WARN("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
-                _logger.WARN(" - Remove the assembly defining " + culprit + " from the merge");
-                _logger.WARN(" - Add assembly defining " + method + " to the merge");
+                _logger.Warn("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
+                _logger.Warn(" - Remove the assembly defining " + culprit + " from the merge");
+                _logger.Warn(" - Add assembly defining " + method + " to the merge");
 
                 // one case where it'll work correctly however (but doesn't seem common):
                 // A references B

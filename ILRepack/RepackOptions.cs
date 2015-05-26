@@ -215,11 +215,11 @@ namespace ILRepacking
             LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                logger.WARN("Option 'delaysign' is only valid with 'keyfile'.");
+                logger.Warn("Option 'delaysign' is only valid with 'keyfile'.");
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                logger.WARN("Option 'allowMultiple' is only valid with 'copyattrs'.");
+                logger.Warn("Option 'allowMultiple' is only valid with 'copyattrs'.");
             if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                logger.WARN("Option 'attr' can not be used with 'copyattrs'.");
+                logger.Warn("Option 'attr' can not be used with 'copyattrs'.");
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
