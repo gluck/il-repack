@@ -14,7 +14,7 @@ namespace ILRepacking
             int returnCode = -1;
             try
             {
-                if (options.ShouldShowUsage())
+                if (options.ShouldShowUsage)
                 {
                     Usage();
                     Exit(2);

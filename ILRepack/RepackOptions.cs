@@ -97,7 +97,7 @@ namespace ILRepacking
             TargetPlatformDirectory = targetPlatformDirectory;
         }
 
-        public void AllowDuplicateType(string typeName)
+        private void AllowDuplicateType(string typeName)
         {
             if (typeName.EndsWith(".*"))
             {
@@ -121,12 +121,9 @@ namespace ILRepacking
             this.file = file;
         }
 
-        public bool ShouldShowUsage()
-        {
-            return cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | cmd.HasNoOptions;
-        }
+        internal bool ShouldShowUsage => cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | cmd.HasNoOptions;
 
-        public void Parse()
+        internal void Parse()
         {
             AllowDuplicateResources = cmd.Modifier("allowduplicateresources");
             foreach (string dupType in cmd.Options("allowdup"))
@@ -245,11 +242,10 @@ namespace ILRepacking
             }
         }
 
-
         /// <summary>
         /// Parse contents of properties: central point for checking (set on assembly or through command-line).
         /// </summary>
-        public void ParseProperties()
+        internal void ParseProperties()
         {
             if (string.IsNullOrEmpty(OutputFile))
             {
@@ -274,6 +270,5 @@ namespace ILRepacking
                     excludeInternalizeMatches.Add(new Regex(line));
             }
         }
-
     }
 }

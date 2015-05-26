@@ -37,7 +37,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -46,7 +46,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -56,7 +56,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -66,13 +66,13 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(false);
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
         public void WithOptions_CallShouldShowUsage__ReturnFalse()
         {
-            Assert.IsFalse(options.ShouldShowUsage());
+            Assert.IsFalse(options.ShouldShowUsage);
         }
 
         [Test]
