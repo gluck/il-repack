@@ -28,7 +28,7 @@ namespace ILRepacking
                     options.Log = true;
                 }
 
-                ILRepack repack = new ILRepack(options, logger);
+                ILRepack repack = new ILRepack(options);
                 repack.Repack();
                 returnCode = 0;
             }

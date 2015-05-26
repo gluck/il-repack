@@ -71,7 +71,7 @@ namespace ILRepacking
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly ICommandLine cmd;
-        private readonly ILogger logger;
+        public ILogger Logger { get; private set; }
         private readonly IFile file;
         private List<Regex> excludeInternalizeMatches;
 
@@ -116,8 +116,8 @@ namespace ILRepacking
 
         internal RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
         {
-            this.cmd = commandLine;
-            this.logger = logger;
+            cmd = commandLine;
+            Logger = logger;
             this.file = file;
         }
 
@@ -215,11 +215,11 @@ namespace ILRepacking
             LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                logger.Warn("Option 'delaysign' is only valid with 'keyfile'.");
+                Logger.Warn("Option 'delaysign' is only valid with 'keyfile'.");
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                logger.Warn("Option 'allowMultiple' is only valid with 'copyattrs'.");
+                Logger.Warn("Option 'allowMultiple' is only valid with 'copyattrs'.");
             if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                logger.Warn("Option 'attr' can not be used with 'copyattrs'.");
+                Logger.Warn("Option 'attr' can not be used with 'copyattrs'.");
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;

@@ -60,11 +60,11 @@ namespace ILRepacking
 
         private readonly IRepackImporter _repackImporter;
 
-        internal ILRepack(RepackOptions options, ILogger logger)
+        public ILRepack(RepackOptions options)
         {
             Options = options;
-            Logger = logger;
-            _repackImporter = new RepackImporter(logger, Options, this, this, aspOffsets);
+            Logger = options.Logger;
+            _repackImporter = new RepackImporter(options.Logger, Options, this, this, aspOffsets);
         }
 
         private void ReadInputAssemblies()
