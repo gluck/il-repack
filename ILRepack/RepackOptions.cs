@@ -53,10 +53,8 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
-        public RepackAssemblyResolver GlobalAssemblyResolver
-        {
-            get { return globalAssemblyResolver; }
-        }
+        internal RepackAssemblyResolver GlobalAssemblyResolver { get; private set; } = new RepackAssemblyResolver();
+
         public List<Regex> ExcludeInternalizeMatches
         {
             get { return excludeInternalizeMatches; }
@@ -75,7 +73,6 @@ namespace ILRepacking
         private readonly ICommandLine cmd;
         private readonly ILogger logger;
         private readonly IFile file;
-        private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
         private List<Regex> excludeInternalizeMatches;
 
         public void SetSearchDirectories(IEnumerable<string> dirs)
@@ -90,7 +87,7 @@ namespace ILRepacking
             }
             foreach (var dir in dirs)
             {
-                globalAssemblyResolver.AddSearchDirectory(dir);
+                GlobalAssemblyResolver.AddSearchDirectory(dir);
             }
         }
 

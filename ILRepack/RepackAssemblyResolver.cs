@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using Mono.Cecil;
+using System.Collections.Generic;
 
 namespace ILRepacking
 {
-    public class RepackAssemblyResolver : DefaultAssemblyResolver
+    internal class RepackAssemblyResolver : DefaultAssemblyResolver
     {
         public void RegisterAssemblies(List<AssemblyDefinition> mergedAssemblies)
         {
