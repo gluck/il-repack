@@ -14,7 +14,6 @@
 //   limitations under the License.
 //
 using ILRepacking.Steps;
-using ILRepacking.Mixins;
 using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
