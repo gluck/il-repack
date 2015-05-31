@@ -9,7 +9,7 @@ namespace ILRepacking
 {
     public class MappingHandler
     {
-        internal class Pair
+        internal struct Pair : IEquatable<Pair>
         {
             internal readonly string scope;
             internal readonly string name;
@@ -27,13 +27,8 @@ namespace ILRepacking
                 return scope.GetHashCode() + name.GetHashCode();
             }
 
-            public override bool Equals(object obj)
+            public bool Equals(Pair p)
             {
-                if (obj == this)
-                    return true;
-                if (!(obj is Pair))
-                    return false;
-                Pair p = (Pair) obj;
                 return p.scope == scope && p.name == name;
             }
         }

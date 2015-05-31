@@ -14,6 +14,7 @@
 //   limitations under the License.
 //
 
+using ILRepacking.Mixins;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -162,7 +163,7 @@ namespace ILRepacking
             if (obj is CustomAttributeArgument)
                 return Fix((CustomAttributeArgument)obj);
             if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Select(a => Fix(a)).ToArray();
+                return ((CustomAttributeArgument[])obj).Clone(a => Fix(a));
             if (renameIkvmAttributeReference && obj is string)
                 return _repackContext.FixReferenceInIkvmAttribute((string)obj);
             return obj;

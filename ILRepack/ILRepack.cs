@@ -14,6 +14,7 @@
 //   limitations under the License.
 //
 using ILRepacking.Steps;
+using ILRepacking.Mixins;
 using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Collections.Generic;
@@ -467,7 +468,7 @@ namespace ILRepacking
             if (obj is CustomAttributeArgument)
                 return Copy((CustomAttributeArgument)obj, context);
             if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
+                return ((CustomAttributeArgument[])obj).Clone(a => Copy(a, context));
             return obj;
         }
 
