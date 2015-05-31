@@ -9,11 +9,11 @@ namespace ILRepacking
 {
     public class MappingHandler
     {
-        internal struct Pair : IEquatable<Pair>
+        struct Pair : IEquatable<Pair>
         {
-            internal readonly string scope;
-            internal readonly string name;
-            internal readonly IMetadataScope MetadataScope;
+            readonly string scope;
+            readonly string name;
+            public readonly IMetadataScope MetadataScope;
 
             public Pair(string scope, string name, IMetadataScope metadataScope)
             {
