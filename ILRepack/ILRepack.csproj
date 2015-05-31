@@ -89,7 +89,6 @@
     <Compile Include="MappingHandler.cs" />
     <Compile Include="ILRepack.cs" />
     <Compile Include="MethodMatcher.cs" />
-    <Compile Include="Mixins\ArrayMixins.cs" />
     <Compile Include="PermissionsetHelper.cs" />
     <Compile Include="PlatformFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

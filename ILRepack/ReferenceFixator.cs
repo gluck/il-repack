@@ -163,7 +163,7 @@ namespace ILRepacking
             if (obj is CustomAttributeArgument)
                 return Fix((CustomAttributeArgument)obj);
             if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Clone(a => Fix(a));
+                return Array.ConvertAll((CustomAttributeArgument[])obj, a => Fix(a));
             if (renameIkvmAttributeReference && obj is string)
                 return _repackContext.FixReferenceInIkvmAttribute((string)obj);
             return obj;
