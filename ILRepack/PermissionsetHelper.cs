@@ -28,7 +28,7 @@ namespace ILRepacking
     {
         private static TypeReference GetTypeRef(string nameSpace, string name, string assemblyName, ModuleDefinition targetModule)
         {
-            TypeReference typeRef = targetModule.Import(new TypeReference(nameSpace, name, targetModule,
+            TypeReference typeRef = targetModule.ImportReference(new TypeReference(nameSpace, name, targetModule,
                     targetModule.AssemblyReferences.First(x => x.Name == assemblyName)));
             return typeRef;
         }

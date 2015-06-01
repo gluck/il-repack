@@ -81,9 +81,9 @@ namespace ILRepacking
                 if (context == null)
                 {
                     // we come here when importing types used for assembly-level custom attributes
-                    return _repackContext.TargetAssemblyMainModule.Import(reference);
+                    return _repackContext.TargetAssemblyMainModule.ImportReference(reference);
                 }
-                return _repackContext.TargetAssemblyMainModule.Import(reference, context);
+                return _repackContext.TargetAssemblyMainModule.ImportReference(reference, context);
             }
             catch (ArgumentOutOfRangeException) // working around a bug in Cecil
             {
@@ -96,13 +96,13 @@ namespace ILRepacking
         {
             FieldReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
 
-            return _repackContext.TargetAssemblyMainModule.Import(importReference, context);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference, context);
         }
 
         public MethodReference Import(MethodReference reference)
         {
             MethodReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
-            return _repackContext.TargetAssemblyMainModule.Import(importReference);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference);
         }
 
         public MethodReference Import(MethodReference reference, IGenericParameterProvider context)
@@ -111,7 +111,7 @@ namespace ILRepacking
 
             MethodReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
 
-            return _repackContext.TargetAssemblyMainModule.Import(importReference, context);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference, context);
         }
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)

@@ -467,7 +467,7 @@ namespace ILRepacking
             if (obj is CustomAttributeArgument)
                 return Copy((CustomAttributeArgument)obj, context);
             if (obj is CustomAttributeArgument[])
-                return ((CustomAttributeArgument[])obj).Select(a => Copy(a, context)).ToArray();
+                return Array.ConvertAll((CustomAttributeArgument[])obj, a => Copy(a, context));
             return obj;
         }
 
