@@ -36,7 +36,7 @@ msbuild {
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
 
     solutionFile = 'ILRepack.sln'
-    configuration = org.gradle.internal.os.OperatingSystem.current().unix ? 'Debug_unix' : 'Debug'
+    configuration = org.gradle.internal.os.OperatingSystem.current().unix ? 'Debug_unix' : 'Release'
     projectName = 'ILRepack'
     inputs.file(project.buildFile)
 }
