@@ -1,24 +1,21 @@
-ext.ullinkGradleScripts = 'https://raw.github.com/gluck/gradle-scripts/master'
-apply from: "${ext.ullinkGradleScripts}/task-rules.gradle"
-apply from: "${ext.ullinkGradleScripts}/functions.gradle"
-
 buildscript {
     repositories {
         mavenCentral()
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.5"
-        classpath "com.ullink.gradle:gradle-nuget-plugin:2.5"
-        classpath "com.ullink.gradle:gradle-nunit-plugin:1.2"
-        classpath "com.ullink.gradle:gradle-opencover-plugin:1.1"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.6"
     }
 }
 
+plugins {
+  id "com.ullink.nuget" version "2.5"
+  id "com.ullink.nunit" version "1.2"
+  id "com.ullink.opencover" version "1.1"
+  id "com.ullink.functions" version "1.0"
+}
+
 apply plugin:'msbuild'
-apply plugin:'nuget'
-apply plugin:'nunit'
-apply plugin:'com.ullink.opencover-nunit'
 
 archivesBaseName = 'ILRepack'
 version = '2.0.0'
