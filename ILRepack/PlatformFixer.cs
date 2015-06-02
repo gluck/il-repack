@@ -151,16 +151,25 @@ namespace ILRepacking
                         else
                             throw new InvalidOperationException();
                     }
+
+                    if (reference is GenericParameter)
+                    {
+                        var genericParameter = (GenericParameter)reference;
+
+                        newTypeRef = FixPlatformVersion(genericParameter, genericParameter.Owner);
+                    }
                     else
                     {
                         newTypeRef = new TypeReference(reference.Namespace, reference.Name, reference.Module,
                             platformAsm.Name);
+
+                        if (reference.DeclaringType != null)
+                            newTypeRef.DeclaringType = FixPlatformVersion(reference.DeclaringType);
                     }
+
                     foreach (var gp in reference.GenericParameters)
                         newTypeRef.GenericParameters.Add(FixPlatformVersion(gp, newTypeRef));
                     newTypeRef.IsValueType = reference.IsValueType;
-                    if (reference.DeclaringType != null)
-                        newTypeRef.DeclaringType = FixPlatformVersion(reference.DeclaringType);
                     return newTypeRef;
                 }
             }
@@ -229,7 +238,7 @@ namespace ILRepacking
 
         private GenericParameter FixPlatformVersion(GenericParameter gp, IGenericParameterProvider gpp)
         {
-            GenericParameter ngp = new GenericParameter(gp.Name, gpp);
+            GenericParameter ngp = new GenericParameter(gp.Name, gpp, gp.Position);
             ngp.Attributes = gp.Attributes;
             foreach (TypeReference tr in gp.Constraints)
                 ngp.Constraints.Add(FixPlatformVersion(tr));
