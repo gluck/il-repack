@@ -33,13 +33,13 @@ namespace ILRepack.Tests.NuGet
 
         public static void DoRepackForCmd(IEnumerable<string> args)
         {
-            var repack = new ILRepacking.ILRepack(GetOptionsForCmd(args), TestHelpers.logger);
+            var repack = new ILRepacking.ILRepack(GetOptionsForCmd(args));
             repack.Repack();
         }
 
         public static RepackOptions GetOptionsForCmd(IEnumerable<string> args)
         {
-            ICommandLine commandLine = new CommandLine(args.Concat(new []{"/log"}).ToArray());
+            ICommandLine commandLine = new CommandLine(args.Concat(new[] { "/log" }).ToArray());
             RepackOptions options = new RepackOptions(commandLine, TestHelpers.logger, new FileWrapper());
             options.Parse();
             return options;
@@ -48,10 +48,10 @@ namespace ILRepack.Tests.NuGet
         public static void SaveAs(Stream input, string directory, string fileName)
         {
             var path = Path.Combine(directory, Path.GetFileName(fileName));
-            using (var stream = input) {
-                using (var file = new FileStream(path, FileMode.Create)) {
-                    stream.CopyTo(file);
-                }
+            using (var stream = input)
+            using (var file = new FileStream(path, FileMode.Create))
+            {
+                stream.CopyTo(file);
             }
         }
     }

@@ -29,10 +29,10 @@ namespace ILRepack.Tests
             Assert.IsTrue(logger.Open("file.out"));
             logger.Close();
             const string message = "Only written to the console. No erorr is thrown.";
-            logger.ERROR(message);
-            logger.WARN(message);
-            logger.VERBOSE(message);
-            logger.INFO(message);
+            logger.Error(message);
+            logger.Warn(message);
+            logger.Verbose(message);
+            logger.Info(message);
         }
     }
 }

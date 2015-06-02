@@ -20,7 +20,7 @@ using System.Linq;
 
 namespace ILRepacking
 {
-    public class ReflectionHelper
+    internal class ReflectionHelper
     {
         private readonly IRepackContext _repack;
 

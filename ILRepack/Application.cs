@@ -2,7 +2,7 @@
 
 namespace ILRepacking
 {
-    public class Application
+    internal class Application
     {
         [STAThread]
         static int Main(string[] args)
@@ -14,7 +14,7 @@ namespace ILRepacking
             int returnCode = -1;
             try
             {
-                if (options.ShouldShowUsage())
+                if (options.ShouldShowUsage)
                 {
                     Usage();
                     Exit(2);
@@ -28,7 +28,7 @@ namespace ILRepacking
                     options.Log = true;
                 }
 
-                ILRepack repack = new ILRepack(options, logger);
+                ILRepack repack = new ILRepack(options);
                 repack.Repack();
                 returnCode = 0;
             }

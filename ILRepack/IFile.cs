@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ILRepacking
 {
-    public interface IFile
+    internal interface IFile
     {
         bool Exists(string path);
 

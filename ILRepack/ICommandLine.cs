@@ -1,7 +1,7 @@
 ﻿
 namespace ILRepacking
 {
-    public interface ICommandLine
+    internal interface ICommandLine
     {
         string[] OtherAguments { get; }
 

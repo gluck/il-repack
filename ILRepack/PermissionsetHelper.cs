@@ -24,7 +24,7 @@ using Mono.Collections.Generic;
 
 namespace ILRepacking
 {
-    public class PermissionsetHelper
+    internal class PermissionsetHelper
     {
         private static TypeReference GetTypeRef(string nameSpace, string name, string assemblyName, ModuleDefinition targetModule)
         {

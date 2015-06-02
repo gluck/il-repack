@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using ILRepacking;
+﻿using ILRepacking;
 using Moq;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ILRepack.Tests
 {
@@ -37,7 +37,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -46,7 +46,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -56,7 +56,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
@@ -66,13 +66,13 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(false);
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(true);
-            Assert.IsTrue(options.ShouldShowUsage());
+            Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
         public void WithOptions_CallShouldShowUsage__ReturnFalse()
         {
-            Assert.IsFalse(options.ShouldShowUsage());
+            Assert.IsFalse(options.ShouldShowUsage);
         }
 
         [Test]
@@ -215,7 +215,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.Modifier("delaysign")).Returns(true);
             options.Parse();
-            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
         }
 
         [Test]
@@ -223,7 +223,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.Modifier("allowmultiple")).Returns(true);
             options.Parse();
-            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
         }
 
         [Test]
@@ -233,15 +233,15 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
             commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
             options.Parse();
-            repackLogger.Verify(logger => logger.WARN(It.IsAny<string>()));
+            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
         }
-        
+
         [Test]
         public void WithNoSetup__SetSearchDirectories__SetGlobalAssemblyResolver()
         {
             var dirs = new List<string> { "dir1", "dir2", "dir3" };
             options.SetSearchDirectories(dirs);
-            var searchDirs = dirs.Concat(new string[] { ".", "bin"});
+            var searchDirs = dirs.Concat(new string[] { ".", "bin" });
             CollectionAssert.AreEquivalent(searchDirs, options.GlobalAssemblyResolver.GetSearchDirectories());
         }
 
@@ -254,7 +254,7 @@ namespace ILRepack.Tests
             Assert.AreEqual(directory, options.TargetPlatformDirectory);
             Assert.AreEqual(version, options.TargetPlatformVersion);
         }
-        
+
         [Test]
         [ExpectedException(typeof(ArgumentException), ExpectedMessage = "No output file given.")]
         public void WithNoOutputFile__ParseProperties__ThrowException()

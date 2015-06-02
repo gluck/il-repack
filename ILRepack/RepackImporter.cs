@@ -87,7 +87,7 @@ namespace ILRepacking
             }
             catch (ArgumentOutOfRangeException) // working around a bug in Cecil
             {
-                _logger.ERROR("Problem adding reference: " + reference.FullName);
+                _logger.Error("Problem adding reference: " + reference.FullName);
                 throw;
             }
         }
@@ -115,7 +115,7 @@ namespace ILRepacking
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
-            _logger.VERBOSE("- Importing " + type);
+            _logger.Verbose("- Importing " + type);
 
             TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
@@ -126,25 +126,25 @@ namespace ILRepacking
             }
             else if (DuplicateTypeAllowed(type))
             {
-                _logger.INFO("Merging " + type);
+                _logger.Info("Merging " + type);
             }
             else if (!type.IsPublic || internalize)
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = "<" + Guid.NewGuid() + ">" + nt.Name;
-                _logger.INFO("Renaming " + nt.FullName + " into " + other);
+                _logger.Info("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
             else if (_options.UnionMerge)
             {
-                _logger.INFO("Merging " + type);
+                _logger.Info("Merging " + type);
             }
             else
             {
-                _logger.ERROR("Duplicate type " + type);
+                _logger.Error("Duplicate type " + type);
                 throw new InvalidOperationException(
                     "Duplicate type " + type + " from " + type.Scope + ", was also present in " +
                     MappingHandler.GetScopeFullName(_repackContext.MappingHandler.GetOrigTypeScope<IMetadataScope>(nt)));
@@ -534,7 +534,7 @@ namespace ILRepacking
             var ret = _repackContext.ReflectionHelper.FindMethodDefinitionInType(nt, methodDefinition);
             if (ret == null)
             {
-                _logger.WARN("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
+                _logger.Warn("Method '" + methodDefinition.FullName + "' not found in merged type '" + nt.FullName + "'");
             }
             return ret;
         }

@@ -9,10 +9,10 @@ namespace ILRepacking
 {
     public class RepackOptions
     {
-        public class InvalidTargetKindException : Exception 
+        internal class InvalidTargetKindException : Exception
         {
-            public InvalidTargetKindException(string message) : base(message) 
-            { 
+            public InvalidTargetKindException(string message) : base(message)
+            {
             }
         }
 
@@ -53,10 +53,8 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
-        public RepackAssemblyResolver GlobalAssemblyResolver 
-        { 
-            get { return globalAssemblyResolver; } 
-        }
+        internal RepackAssemblyResolver GlobalAssemblyResolver { get; private set; } = new RepackAssemblyResolver();
+
         public List<Regex> ExcludeInternalizeMatches
         {
             get { return excludeInternalizeMatches; }
@@ -69,13 +67,12 @@ namespace ILRepacking
         {
             get { return allowedDuplicateNameSpaces; }
         }
-        
+
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly ICommandLine cmd;
-        private readonly ILogger logger;
+        public ILogger Logger { get; private set; }
         private readonly IFile file;
-        private readonly RepackAssemblyResolver globalAssemblyResolver = new RepackAssemblyResolver();
         private List<Regex> excludeInternalizeMatches;
 
         public void SetSearchDirectories(IEnumerable<string> dirs)
@@ -90,7 +87,7 @@ namespace ILRepacking
             }
             foreach (var dir in dirs)
             {
-                globalAssemblyResolver.AddSearchDirectory(dir);
+                GlobalAssemblyResolver.AddSearchDirectory(dir);
             }
         }
 
@@ -100,7 +97,7 @@ namespace ILRepacking
             TargetPlatformDirectory = targetPlatformDirectory;
         }
 
-        public void AllowDuplicateType(string typeName)
+        private void AllowDuplicateType(string typeName)
         {
             if (typeName.EndsWith(".*"))
             {
@@ -112,19 +109,21 @@ namespace ILRepacking
             }
         }
 
-        public RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
+        public RepackOptions(CommandLine commandLine, ILogger logger)
+            : this(commandLine, logger, new FileWrapper())
         {
-            this.cmd = commandLine;
-            this.logger = logger;
+        }
+
+        internal RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
+        {
+            cmd = commandLine;
+            Logger = logger;
             this.file = file;
         }
 
-        public bool ShouldShowUsage()
-        {
-            return cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | cmd.HasNoOptions;
-        }
+        internal bool ShouldShowUsage => cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | cmd.HasNoOptions;
 
-        public void Parse()
+        internal void Parse()
         {
             AllowDuplicateResources = cmd.Modifier("allowduplicateresources");
             foreach (string dupType in cmd.Options("allowdup"))
@@ -207,17 +206,17 @@ namespace ILRepacking
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
             SetSearchDirectories(cmd.Options("lib"));
-            
+
             // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                logger.WARN("Option 'delaysign' is only valid with 'keyfile'.");
+                Logger.Warn("Option 'delaysign' is only valid with 'keyfile'.");
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                logger.WARN("Option 'allowMultiple' is only valid with 'copyattrs'.");
+                Logger.Warn("Option 'allowMultiple' is only valid with 'copyattrs'.");
             if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                logger.WARN("Option 'attr' can not be used with 'copyattrs'.");
+                Logger.Warn("Option 'attr' can not be used with 'copyattrs'.");
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
@@ -243,11 +242,10 @@ namespace ILRepacking
             }
         }
 
-
         /// <summary>
         /// Parse contents of properties: central point for checking (set on assembly or through command-line).
         /// </summary>
-        public void ParseProperties()
+        internal void ParseProperties()
         {
             if (string.IsNullOrEmpty(OutputFile))
             {
@@ -272,6 +270,5 @@ namespace ILRepacking
                     excludeInternalizeMatches.Add(new Regex(line));
             }
         }
-
     }
 }

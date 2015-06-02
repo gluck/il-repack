@@ -45,7 +45,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.INFO("Processing resources");
+            _logger.Info("Processing resources");
             // merge resources
             IEnumerable<string> repackList = new List<string>();
             Dictionary<string, List<int>> ikvmExportsLists = new Dictionary<string, List<int>>();
@@ -90,17 +90,17 @@ namespace ILRepacking.Steps
                         if (!_options.AllowDuplicateResources && _targetAssemblyMainModule.Resources.Any(x => x.Name == resource.Name))
                         {
                             // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                            _logger.WARN("Ignoring duplicate resource " + resource.Name);
+                            _logger.Warn("Ignoring duplicate resource " + resource.Name);
                         }
                         else
                         {
-                            _logger.VERBOSE("- Importing " + resource.Name);
+                            _logger.Verbose("- Importing " + resource.Name);
                             var newResource = resource;
                             switch (resource.ResourceType)
                             {
                                 case ResourceType.AssemblyLinked:
                                     // TODO
-                                    _logger.WARN("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + resource.Name);
+                                    _logger.Warn("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + resource.Name);
                                     break;
                                 case ResourceType.Linked:
                                     // TODO ? (or not)
@@ -226,8 +226,6 @@ namespace ILRepacking.Steps
             {
                 foreach (var res in rr)
                 {
-                    _logger.VERBOSE(string.Format("- Resource '{0}' (type: {1})", res.name, res.type));
-
                     foreach (var processor in resourcePrcessors)
                     {
                         if (processor.Process(containingAssembly, res, rr, rw))

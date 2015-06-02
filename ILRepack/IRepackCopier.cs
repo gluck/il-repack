@@ -19,7 +19,7 @@ using Mono.Collections.Generic;
 
 namespace ILRepacking
 {
-    public interface IRepackCopier
+    internal interface IRepackCopier
     {
         CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context);
 

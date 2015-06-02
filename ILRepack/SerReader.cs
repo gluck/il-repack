@@ -44,7 +44,7 @@ namespace ILRepacking
      * Home-made Serialized data parser, that only parses records to map merged type references
      * Other than that, it just streams the data from the input to the output unchanged.
      */
-    public class SerReader
+    internal class SerReader
     {
         private readonly IRepackContext _repackContext;
 
@@ -243,19 +243,19 @@ namespace ILRepacking
         }
     }
 
-    public class BinaryLibrary
+    internal class BinaryLibrary
     {
         public int LibraryID;
         public string Name;
     }
 
-    public interface SerialObject
+    internal interface SerialObject
     {
         int ObjectID { get; set; }
         long? ParentObjectID { get; set; }
     }
 
-    public interface TypeHoldingThing
+    internal interface TypeHoldingThing
     {
         SerialObject RelevantObject { get; set; }
         BinaryTypeEnumeration? BinaryType { get; set; }
@@ -269,7 +269,7 @@ namespace ILRepacking
         object ValueRefID { get; set; }
     }
 
-    public class ObjectWithId : SerialObject
+    internal class ObjectWithId : SerialObject
     {
         public int ObjectID { get; set; }
         public long? ParentObjectID { get; set; }
@@ -281,7 +281,7 @@ namespace ILRepacking
         }
     }
 
-    public class ClassInfo : ObjectWithId
+    internal class ClassInfo : ObjectWithId
     {
         internal ClassInfo() { }
 
@@ -343,7 +343,7 @@ namespace ILRepacking
         public int ReferenceCount;
     }
 
-    public class MemberInfo : TypeHoldingThing, ValueHoldingThing
+    internal class MemberInfo : TypeHoldingThing, ValueHoldingThing
     {
         public string Name;
         public SerialObject RelevantObject { get; set; }
@@ -354,13 +354,13 @@ namespace ILRepacking
         public object ValueRefID { get; set; }
     }
 
-    public class ClassTypeInfo
+    internal class ClassTypeInfo
     {
         public string TypeName;
         public int? LibraryID;
     }
 
-    public class ObjectString : ObjectWithId
+    internal class ObjectString : ObjectWithId
     {
         public string String;
 
@@ -377,7 +377,7 @@ namespace ILRepacking
         }
     }
 
-    public class BinaryArray : ObjectWithId, TypeHoldingThing
+    internal class BinaryArray : ObjectWithId, TypeHoldingThing
     {
         internal BinaryArray() { }
 
@@ -580,7 +580,7 @@ namespace ILRepacking
     }
 
 
-    public enum RecordTypeEnumeration
+    internal enum RecordTypeEnumeration
     {
         SerializedStreamHeader = 0,
         ClassWithID = 1,                    //Object,
@@ -607,7 +607,7 @@ namespace ILRepacking
         MethodReturn = 22
     }
 
-    public enum BinaryTypeEnumeration
+    internal enum BinaryTypeEnumeration
     {
         Primitive = 0,
         String = 1,
@@ -619,7 +619,7 @@ namespace ILRepacking
         PrimitiveArray = 7
     }
 
-    public enum PrimitiveTypeEnumeration
+    internal enum PrimitiveTypeEnumeration
     {
         Boolean = 1,
         Byte = 2,
@@ -641,7 +641,7 @@ namespace ILRepacking
         String = 18
     }
 
-    public enum BinaryArrayTypeEnumeration
+    internal enum BinaryArrayTypeEnumeration
     {
         Single = 0,
         Jagged = 1,
