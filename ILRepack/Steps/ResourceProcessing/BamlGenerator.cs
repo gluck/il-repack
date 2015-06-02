@@ -193,13 +193,16 @@ namespace ILRepacking.Steps.ResourceProcessing
                 r => r is PropertyListStartRecord &&
                     ((PropertyListStartRecord)r).AttributeId == mergedDictionariesRecord.AttributeId);
 
+            int insertIndex = indexStart + 1;
+            if (document[insertIndex] is LineNumberAndPositionRecord) insertIndex++;
+
             List<string> existingUris = document.Skip(indexStart)
                 .TakeWhile(r => !(r is PropertyListEndRecord))
                 .OfType<PropertyWithConverterRecord>()
                 .Select(GetFileNameFromPropertyRecord)
                 .ToList();
 
-            document.InsertRange(indexStart + 2, GetImportRecords(importedFiles.Except(existingUris)));
+            document.InsertRange(insertIndex, GetImportRecords(importedFiles.Except(existingUris)));
         }
 
         private static string GetFileNameFromPropertyRecord(PropertyWithConverterRecord record)
