@@ -75,7 +75,7 @@ namespace ILRepacking
             if (type != null)
                 return type;
 
-            reference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
+            _repackContext.PlatformFixer.FixPlatformVersion(reference);
             try
             {
                 if (context == null)
@@ -94,24 +94,23 @@ namespace ILRepacking
 
         public FieldReference Import(FieldReference reference, IGenericParameterProvider context)
         {
-            FieldReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
+            _repackContext.PlatformFixer.FixPlatformVersion(reference);
 
-            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference, context);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(reference, context);
         }
 
         public MethodReference Import(MethodReference reference)
         {
-            MethodReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
-            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference);
+            _repackContext.PlatformFixer.FixPlatformVersion(reference);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(reference);
         }
 
         public MethodReference Import(MethodReference reference, IGenericParameterProvider context)
         {
             // If this is a Method/TypeDefinition, it will be corrected to a definition again later
 
-            MethodReference importReference = _repackContext.PlatformFixer.FixPlatformVersion(reference);
-
-            return _repackContext.TargetAssemblyMainModule.ImportReference(importReference, context);
+            _repackContext.PlatformFixer.FixPlatformVersion(reference);
+            return _repackContext.TargetAssemblyMainModule.ImportReference(reference, context);
         }
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
