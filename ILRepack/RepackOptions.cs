@@ -86,7 +86,7 @@ namespace ILRepacking
                 var platformDirectories = Directory.Exists(monoFacadesDirectory) ?
                     new[] { TargetPlatformDirectory, monoFacadesDirectory } :
                     new[] { TargetPlatformDirectory };
-                dirs = platformDirectories.Concat(dirs);
+                dirs = dirs.Concat(platformDirectories);
             }
             foreach (var dir in dirs)
             {
