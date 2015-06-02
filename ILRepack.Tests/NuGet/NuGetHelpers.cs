@@ -42,7 +42,7 @@ namespace ILRepack.Tests.NuGet
                     result.OnError(ex);
                 });
                 return new CompositeDisposable(inner, result.Subscribe(o));
-            });
+            }).Retry(5);
         }
 
         private static bool IsDll(Tuple<string, Func<Stream>> tuple)
