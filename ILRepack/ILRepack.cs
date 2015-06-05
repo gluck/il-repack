@@ -108,20 +108,27 @@ namespace ILRepacking
                 {
                     mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
                 }
-                catch
+                catch (BadImageFormatException e) when (!rp.ReadSymbols)
                 {
-                    // cope with invalid symbol file
-                    if (rp.ReadSymbols)
-                    {
-                        rp.ReadSymbols = false;
-                        mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
-                        Logger.Info("Failed to load debug information for " + assembly);
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw new InvalidOperationException(
+                        "ILRepack does not support merging non-.NET libraries (e.g.: native libraries)", e);
                 }
+                // cope with invalid symbol file
+                catch (Exception) when (rp.ReadSymbols)
+                {
+                    rp.ReadSymbols = false;
+                    try
+                    {
+                        mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
+                    }
+                    catch (BadImageFormatException e)
+                    {
+                        throw new InvalidOperationException(
+                            "ILRepack does not support merging non-.NET libraries (e.g.: native libraries)", e);
+                    }
+                    Logger.Info("Failed to load debug information for " + assembly);
+                }
+
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                     throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
 
