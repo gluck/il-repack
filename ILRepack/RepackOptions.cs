@@ -186,10 +186,6 @@ namespace ILRepacking
                     TargetPlatformVersion = targetPlatform;
                 }
             }
-            if (cmd.Modifier("v1"))
-                TargetPlatformVersion = "v1";
-            if (cmd.Modifier("v1.1"))
-                TargetPlatformVersion = "v1.1";
             if (cmd.Modifier("v2"))
                 TargetPlatformVersion = "v2";
             if (cmd.Modifier("v4"))
@@ -224,22 +220,17 @@ namespace ILRepacking
 
         private void ResolveTargetPlatformDirectory()
         {
-            // TODO: obviously, this only works for Windows, not for Mono!
-            string platformBasePath = Path.GetFullPath(Path.Combine(Environment.SystemDirectory, "..\\Microsoft.NET\\Framework\\"));
+            var platformBasePath = Path.GetDirectoryName(Path.GetDirectoryName(typeof(string).Assembly.Location));
             List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
-            switch (TargetPlatformVersion)
-            {
-                case "v1":
-                case "v2":
-                case "v4":
-                    TargetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith(TargetPlatformVersion + ".0."));
-                    break;
-                case "v1.1":
-                    TargetPlatformDirectory = platformDirectories.First(x => Path.GetFileName(x).StartsWith(TargetPlatformVersion + "."));
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+            var platformDir = TargetPlatformVersion;
+            // mono platform dir is '2.0' while windows is 'v2.0.50727'
+            if (platformDir.StartsWith("v")) platformDir = platformDir.Substring(1);
+            if (platformDir.Length == 1) platformDir += ".0";
+            TargetPlatformDirectory = platformDirectories
+                .FirstOrDefault(x => Path.GetFileName(x).StartsWith(platformDir) || Path.GetFileName(x).StartsWith($"v{platformDir}"));
+            if (TargetPlatformDirectory == null)
+                throw new ArgumentException($"Failed to find target platform '{TargetPlatformVersion}' in '{platformBasePath}'");
+            Logger.Info($"Target platform directory resolved to {TargetPlatformDirectory}");
         }
 
         /// <summary>

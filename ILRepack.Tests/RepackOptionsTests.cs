@@ -173,7 +173,7 @@ namespace ILRepack.Tests
         public void WithOptionTargetPlatform__Parse__DirectoryAndVersionAreSet()
         {
             const string directory = "dir";
-            const string version = "v1";
+            const string version = "v2";
             var targetPlatform = string.Join(",", version, directory);
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(targetPlatform);
             options.Parse();
@@ -184,14 +184,12 @@ namespace ILRepack.Tests
         [Test]
         public void WithOptionTargetPlatform__Parse__VersionIsSet()
         {
-            const string version = "v1";
+            const string version = "v2";
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(version);
             options.Parse();
             Assert.AreEqual(version, options.TargetPlatformVersion);
         }
 
-        [TestCase("v1")]
-        [TestCase("v1.1")]
         [TestCase("v2")]
         [TestCase("v4")]
         public void WithModifierTargetVersion__Parse__TargetPlatformVersionIsSet(string version)

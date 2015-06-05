@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.7"
+        classpath "com.ullink.gradle:gradle-msbuild-plugin:2.8"
     }
 }
 

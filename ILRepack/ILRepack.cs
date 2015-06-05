@@ -182,11 +182,9 @@ namespace ILRepacking
             {
                 switch (Options.TargetPlatformVersion)
                 {
-                    case "v1": runtime = TargetRuntime.Net_1_0; break;
-                    case "v1.1": runtime = TargetRuntime.Net_1_1; break;
                     case "v2": runtime = TargetRuntime.Net_2_0; break;
                     case "v4": runtime = TargetRuntime.Net_4_0; break;
-                    default: throw new ArgumentException("Invalid TargetPlatformVersion: \"" + Options.TargetPlatformVersion + "\".");
+                    default: throw new ArgumentException($"Invalid TargetPlatformVersion: '{Options.TargetPlatformVersion}'");
                 }
                 _platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
             }
