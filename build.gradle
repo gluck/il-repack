@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 buildscript {
     repositories {
         mavenCentral()
@@ -33,14 +35,15 @@ msbuild {
     replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
 
     solutionFile = 'ILRepack.sln'
-    configuration = org.gradle.internal.os.OperatingSystem.current().unix ? 'Debug_unix' : 'Release'
+    configuration = OperatingSystem.current().unix ? 'Debug_unix' : 'Release'
     projectName = 'ILRepack'
     inputs.file(project.buildFile)
 }
 
 nunit {
     exclude 'LongRunning'
-    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
+    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ] + (OperatingSystem.current().unix ?
+                     [] : [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ])
 }
 nunit.dependsOn msbuild
 
