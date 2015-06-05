@@ -33,14 +33,14 @@ namespace ILRepack.Tests.NuGet
 
         public static void DoRepackForCmd(IEnumerable<string> args)
         {
-            var repack = new ILRepacking.ILRepack(GetOptionsForCmd(args));
+            var repack = new ILRepacking.ILRepack(GetOptionsForCmd(args), logger);
             repack.Repack();
         }
 
         public static RepackOptions GetOptionsForCmd(IEnumerable<string> args)
         {
             ICommandLine commandLine = new CommandLine(args.Concat(new[] { "/log" }).ToArray());
-            RepackOptions options = new RepackOptions(commandLine, TestHelpers.logger, new FileWrapper());
+            RepackOptions options = new RepackOptions(commandLine, new FileWrapper());
             options.Parse();
             return options;
         }
