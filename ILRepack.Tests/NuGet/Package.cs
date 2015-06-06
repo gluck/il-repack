@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
 
 namespace ILRepack.Tests.NuGet
@@ -13,7 +13,7 @@ namespace ILRepack.Tests.NuGet
 
         public Package WithFwk(string fwk)
         {
-            var pattern = string.Format(@"lib\{0}\{1}.dll", fwk, this.Name);
+            var pattern = $"lib{Path.DirectorySeparatorChar}{fwk}{Path.DirectorySeparatorChar}{this.Name}.dll";
             return WithMatcher(file => String.Equals(file, pattern, StringComparison.InvariantCultureIgnoreCase) );
         }
 
@@ -34,8 +34,7 @@ namespace ILRepack.Tests.NuGet
 
         public override string ToString()
         {
-            return string.Format("{0}:{1}", Name, Version);
+            return $"{Name}:{Version}";
         }
-
     }
 }

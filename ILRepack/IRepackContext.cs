@@ -20,6 +20,7 @@ namespace ILRepacking
 {
     internal interface IRepackContext
     {
+        RepackAssemblyResolver GlobalAssemblyResolver { get; }
         List<AssemblyDefinition> MergedAssemblies { get; }
         ModuleDefinition TargetAssemblyMainModule { get; }
         PlatformFixer PlatformFixer { get; }

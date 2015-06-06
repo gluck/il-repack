@@ -41,6 +41,7 @@ namespace ILRepacking
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
         public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
         public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
+        public RepackAssemblyResolver GlobalAssemblyResolver { get; } = new RepackAssemblyResolver();
 
         public ModuleDefinition TargetAssemblyMainModule => TargetAssemblyDefinition.MainModule;
         public ModuleDefinition PrimaryAssemblyMainModule => PrimaryAssemblyDefinition.MainModule;
@@ -97,7 +98,7 @@ namespace ILRepacking
             Logger.Info("Adding assembly for merge: " + assembly);
             try
             {
-                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver };
+                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver };
                 // read PDB/MDB?
                 if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                 {
@@ -188,7 +189,35 @@ namespace ILRepacking
                 }
                 _platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
             }
+            var TargetPlatformDirectory = Options.TargetPlatformDirectory ?? ResolveTargetPlatformDirectory(runtime);
+            var dirs = Options.SearchDirectories;
+            if (TargetPlatformDirectory != null)
+            {
+                var monoFacadesDirectory = Path.Combine(TargetPlatformDirectory, "Facades");
+                var platformDirectories = Directory.Exists(monoFacadesDirectory) ?
+                    new[] { TargetPlatformDirectory, monoFacadesDirectory } :
+                    new[] { TargetPlatformDirectory };
+                dirs = dirs.Concat(platformDirectories);
+            }
+            foreach (var dir in dirs)
+            {
+                GlobalAssemblyResolver.AddSearchDirectory(dir);
+            }
             return runtime;
+        }
+
+        private string ResolveTargetPlatformDirectory(TargetRuntime runtime)
+        {
+            var platformBasePath = Path.GetDirectoryName(Path.GetDirectoryName(typeof(string).Assembly.Location));
+            List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
+            var platformDir = runtime.ToString().Substring(4).Replace('_', '.');
+            // mono platform dir is '2.0' while windows is 'v2.0.50727'
+            var targetPlatformDirectory = platformDirectories
+                .FirstOrDefault(x => Path.GetFileName(x).StartsWith(platformDir) || Path.GetFileName(x).StartsWith($"v{platformDir}"));
+            if (targetPlatformDirectory == null)
+                throw new ArgumentException($"Failed to find target platform '{Options.TargetPlatformVersion}' in '{platformBasePath}'");
+            Logger.Info($"Target platform directory resolved to {targetPlatformDirectory}");
+            return targetPlatformDirectory;
         }
 
         /// <summary>
@@ -202,7 +231,7 @@ namespace ILRepacking
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
-            Options.GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
+            GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             _platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
@@ -232,7 +261,7 @@ namespace ILRepacking
                     {
                         Kind = kind,
                         Architecture = PrimaryAssemblyMainModule.Architecture,
-                        AssemblyResolver = Options.GlobalAssemblyResolver,
+                        AssemblyResolver = GlobalAssemblyResolver,
                         Runtime = runtime
                     });
             }
@@ -319,7 +348,7 @@ namespace ILRepacking
 
             // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
             // 'verify' generated assembly
-            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(Options.OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = Options.GlobalAssemblyResolver });
+            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(Options.OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver });
             // lazy match on the name (not full) to catch requirements about merging different versions
             bool failed = false;
             foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => Options.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))

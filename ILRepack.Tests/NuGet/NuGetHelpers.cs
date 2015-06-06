@@ -57,7 +57,7 @@ namespace ILRepack.Tests.NuGet
  
         public static IObservable<Tuple<string, Func<Stream>>> GetNupkgContentAsync(Package package)
         {
-            var o = CreateDownloadObservable(new Uri(string.Format("http://nuget.org/api/v2/package/{0}/{1}", package.Name, package.Version)));
+            var o = CreateDownloadObservable(new Uri($"http://nuget.org/api/v2/package/{package.Name}/{package.Version}"));
             return o.SelectMany(input => {
                 return Observable.Create<Tuple<ZipFile, ZipEntry>>(observer => {
                     var z = new ZipFile(new MemoryStream(input)) { IsStreamOwner = true };
@@ -65,7 +65,7 @@ namespace ILRepack.Tests.NuGet
                     return new CompositeDisposable() { z, sub };
                 });
             })
-            .Select(t => Tuple.Create<string, Func<Stream>>(t.Item2.Name.Replace('/', Path.DirectorySeparatorChar), () => t.Item1.GetInputStream(t.Item2)));
+            .Select(t => Tuple.Create<string, Func<Stream>>(t.Item2.Name.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar), () => t.Item1.GetInputStream(t.Item2)));
         }
     }
 }

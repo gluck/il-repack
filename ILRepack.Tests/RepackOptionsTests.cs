@@ -235,25 +235,6 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithNoSetup__SetSearchDirectories__SetGlobalAssemblyResolver()
-        {
-            var dirs = new List<string> { "dir1", "dir2", "dir3" };
-            options.SetSearchDirectories(dirs);
-            var searchDirs = dirs.Concat(new string[] { ".", "bin" });
-            CollectionAssert.AreEquivalent(searchDirs, options.GlobalAssemblyResolver.GetSearchDirectories());
-        }
-
-        [Test]
-        public void WithNoSetup__SetTargetPlatform__TargetPlatformIsSet()
-        {
-            const string directory = "dir";
-            const string version = "v1";
-            options.SetTargetPlatform(version, directory);
-            Assert.AreEqual(directory, options.TargetPlatformDirectory);
-            Assert.AreEqual(version, options.TargetPlatformVersion);
-        }
-
-        [Test]
         [ExpectedException(typeof(ArgumentException), ExpectedMessage = "No output file given.")]
         public void WithNoOutputFile__ParseProperties__ThrowException()
         {

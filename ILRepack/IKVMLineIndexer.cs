@@ -155,7 +155,7 @@ namespace ILRepacking
             ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
             if (ikvmRuntimeReference == null && repack.Options.LineIndexation)
             {
-                ikvmRuntimeReference = repack.Options.GlobalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
+                ikvmRuntimeReference = repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
             }
             if (ikvmRuntimeReference != null)
             {

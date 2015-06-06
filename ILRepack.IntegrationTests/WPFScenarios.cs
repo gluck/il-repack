@@ -6,6 +6,7 @@ using System.IO;
 namespace ILRepack.IntegrationTests
 {
     [TestFixture]
+    [Platform(Include = "windows")]
     public class WPFScenarios
     {
         private const int ScenarioProcessWaitTimeInMs = 10000;

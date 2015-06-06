@@ -43,6 +43,7 @@ namespace ILRepacking
         public ILRepack.Kind? TargetKind { get; set; }
         public string TargetPlatformDirectory { get; set; }
         public string TargetPlatformVersion { get; set; }
+        public IEnumerable<string> SearchDirectories { get; set; }
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
         public bool XmlDocumentation { get; set; }
@@ -53,7 +54,6 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
-        internal RepackAssemblyResolver GlobalAssemblyResolver { get; private set; } = new RepackAssemblyResolver();
 
         public List<Regex> ExcludeInternalizeMatches
         {
@@ -74,28 +74,6 @@ namespace ILRepacking
         public ILogger Logger { get; private set; }
         private readonly IFile file;
         private List<Regex> excludeInternalizeMatches;
-
-        public void SetSearchDirectories(IEnumerable<string> dirs)
-        {
-            if (TargetPlatformDirectory != null)
-            {
-                var monoFacadesDirectory = Path.Combine(TargetPlatformDirectory, "Facades");
-                var platformDirectories = Directory.Exists(monoFacadesDirectory) ?
-                    new[] { TargetPlatformDirectory, monoFacadesDirectory } :
-                    new[] { TargetPlatformDirectory };
-                dirs = dirs.Concat(platformDirectories);
-            }
-            foreach (var dir in dirs)
-            {
-                GlobalAssemblyResolver.AddSearchDirectory(dir);
-            }
-        }
-
-        public void SetTargetPlatform(string targetPlatformVersion, string targetPlatformDirectory)
-        {
-            TargetPlatformVersion = targetPlatformVersion;
-            TargetPlatformDirectory = targetPlatformDirectory;
-        }
 
         private void AllowDuplicateType(string typeName)
         {
@@ -190,8 +168,6 @@ namespace ILRepacking
                 TargetPlatformVersion = "v2";
             if (cmd.Modifier("v4"))
                 TargetPlatformVersion = "v4";
-            if (TargetPlatformVersion != null && TargetPlatformDirectory == null)
-                ResolveTargetPlatformDirectory();
 
             UnionMerge = cmd.Modifier("union");
             var version = cmd.Option("ver");
@@ -201,7 +177,7 @@ namespace ILRepacking
             NoRepackRes = cmd.Modifier("norepackres");
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
-            SetSearchDirectories(cmd.Options("lib"));
+            SearchDirectories = cmd.Options("lib");
 
             // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
@@ -216,21 +192,6 @@ namespace ILRepacking
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
-        }
-
-        private void ResolveTargetPlatformDirectory()
-        {
-            var platformBasePath = Path.GetDirectoryName(Path.GetDirectoryName(typeof(string).Assembly.Location));
-            List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
-            var platformDir = TargetPlatformVersion;
-            // mono platform dir is '2.0' while windows is 'v2.0.50727'
-            if (platformDir.StartsWith("v")) platformDir = platformDir.Substring(1);
-            if (platformDir.Length == 1) platformDir += ".0";
-            TargetPlatformDirectory = platformDirectories
-                .FirstOrDefault(x => Path.GetFileName(x).StartsWith(platformDir) || Path.GetFileName(x).StartsWith($"v{platformDir}"));
-            if (TargetPlatformDirectory == null)
-                throw new ArgumentException($"Failed to find target platform '{TargetPlatformVersion}' in '{platformBasePath}'");
-            Logger.Info($"Target platform directory resolved to {TargetPlatformDirectory}");
         }
 
         /// <summary>

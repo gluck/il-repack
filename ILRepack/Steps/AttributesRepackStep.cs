@@ -79,7 +79,7 @@ namespace ILRepacking.Steps
             }
             else if (_options.AttributeFile != null)
             {
-                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(_options.AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = _options.GlobalAssemblyResolver });
+                AssemblyDefinition attributeAsm = AssemblyDefinition.ReadAssembly(_options.AttributeFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = _repackContext.GlobalAssemblyResolver });
                 _repackCopier.CopyCustomAttributes(attributeAsm.CustomAttributes, targetAssemblyDefinition.CustomAttributes, null);
                 _repackCopier.CopyCustomAttributes(attributeAsm.CustomAttributes, targetAssemblyMainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
