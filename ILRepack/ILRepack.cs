@@ -189,28 +189,17 @@ namespace ILRepacking
                 }
                 _platformFixer.ParseTargetPlatformDirectory(runtime, Options.TargetPlatformDirectory);
             }
-            var TargetPlatformDirectory = Options.TargetPlatformDirectory ?? ResolveTargetPlatformDirectory(runtime);
-            var dirs = Options.SearchDirectories;
-            if (TargetPlatformDirectory != null)
-            {
-                var monoFacadesDirectory = Path.Combine(TargetPlatformDirectory, "Facades");
-                var platformDirectories = Directory.Exists(monoFacadesDirectory) ?
-                    new[] { TargetPlatformDirectory, monoFacadesDirectory } :
-                    new[] { TargetPlatformDirectory };
-                dirs = dirs.Concat(platformDirectories);
-            }
-            foreach (var dir in dirs)
-            {
-                GlobalAssemblyResolver.AddSearchDirectory(dir);
-            }
             return runtime;
         }
 
-        private string ResolveTargetPlatformDirectory(TargetRuntime runtime)
+        private string ResolveTargetPlatformDirectory(string version)
         {
+            if (version == null)
+                return null;
             var platformBasePath = Path.GetDirectoryName(Path.GetDirectoryName(typeof(string).Assembly.Location));
             List<string> platformDirectories = new List<string>(Directory.GetDirectories(platformBasePath));
-            var platformDir = runtime.ToString().Substring(4).Replace('_', '.');
+            var platformDir = version.Substring(1);
+            if (platformDir.Length == 1) platformDir = platformDir + ".0";
             // mono platform dir is '2.0' while windows is 'v2.0.50727'
             var targetPlatformDirectory = platformDirectories
                 .FirstOrDefault(x => Path.GetFileName(x).StartsWith(platformDir) || Path.GetFileName(x).StartsWith($"v{platformDir}"));
@@ -228,6 +217,7 @@ namespace ILRepacking
         {
             _reflectionHelper = new ReflectionHelper(this);
             Options.ParseProperties();
+            ResolveSearchDirectories();
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
@@ -359,6 +349,20 @@ namespace ILRepacking
             }
             if (failed)
                 throw new Exception("Merging failed, see above errors");
+        }
+
+        private void ResolveSearchDirectories()
+        {
+            foreach (var dir in Options.SearchDirectories)
+                GlobalAssemblyResolver.AddSearchDirectory(dir);
+            var targetPlatformDirectory = Options.TargetPlatformDirectory ?? ResolveTargetPlatformDirectory(Options.TargetPlatformVersion);
+            if (targetPlatformDirectory != null)
+            {
+                GlobalAssemblyResolver.AddSearchDirectory(targetPlatformDirectory);
+                var facadesDirectory = Path.Combine(targetPlatformDirectory, "Facades");
+                if (Directory.Exists(facadesDirectory))
+                    GlobalAssemblyResolver.AddSearchDirectory(facadesDirectory);
+            }
         }
 
         private ResourceDirectory MergeWin32Resources(ResourceDirectory primary, IEnumerable<ResourceDirectory> resources)
