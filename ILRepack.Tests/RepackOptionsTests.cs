@@ -231,8 +231,6 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
             commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
 
-            options.Parse();
-
             Assert.Throws<InvalidOperationException>(() => options.Parse());
         }
 
