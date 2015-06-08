@@ -1,5 +1,5 @@
 [![Build status](https://img.shields.io/appveyor/ci/gluck/il-repack.svg?label=build windows)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://img.shields.io/travis/gluck/il-repack.svg?label=build linux)](https://travis-ci.org/gluck/il-repack) [![NuGet](https://img.shields.io/nuget/dt/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![NuGet](https://img.shields.io/nuget/v/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![GitHub license](https://img.shields.io/github/license/gluck/il-repack.svg)](http://www.apache.org/licenses/LICENSE-2.0)   
-[![Join the chat at https://gitter.im/gluck/il-repack](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gluck/il-repack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter chat](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/gluck/il-repack)
 
 Introduction
 ============
