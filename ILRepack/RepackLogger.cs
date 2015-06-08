@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ILRepacking
 {
-    class RepackLogger : ILogger
+    public class RepackLogger : ILogger
     {
         private string outputFile;
         private StreamWriter writer;
