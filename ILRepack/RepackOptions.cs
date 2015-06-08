@@ -71,7 +71,6 @@ namespace ILRepacking
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly ICommandLine cmd;
-        public ILogger Logger { get; private set; }
         private readonly IFile file;
         private List<Regex> excludeInternalizeMatches;
 
@@ -87,15 +86,19 @@ namespace ILRepacking
             }
         }
 
-        public RepackOptions(CommandLine commandLine, ILogger logger)
-            : this(commandLine, logger, new FileWrapper())
+        public RepackOptions(IEnumerable<string> ilRepackArguments)
+            : this(new CommandLine(ilRepackArguments))
         {
         }
 
-        internal RepackOptions(ICommandLine commandLine, ILogger logger, IFile file)
+        public RepackOptions(CommandLine commandLine)
+            : this(commandLine, new FileWrapper())
+        {
+        }
+
+        internal RepackOptions(ICommandLine commandLine, IFile file)
         {
             cmd = commandLine;
-            Logger = logger;
             this.file = file;
         }
 
@@ -184,11 +187,13 @@ namespace ILRepacking
             LineIndexation = cmd.Modifier("index");
 
             if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                Logger.Warn("Option 'delaysign' is only valid with 'keyfile'.");
+                throw new InvalidOperationException("Option 'delaysign' is only valid with 'keyfile'.");
+
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                Logger.Warn("Option 'allowMultiple' is only valid with 'copyattrs'.");
+                throw new InvalidOperationException("Option 'allowMultiple' is only valid with 'copyattrs'.");
+
             if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                Logger.Warn("Option 'attr' can not be used with 'copyattrs'.");
+                throw new InvalidOperationException("Option 'attr' can not be used with 'copyattrs'.");
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;

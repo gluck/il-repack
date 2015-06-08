@@ -21,7 +21,7 @@ namespace ILRepack.Tests
             repackLogger = new Mock<ILogger>();
             commandLine = new Mock<ICommandLine>();
             file = new Mock<IFile>();
-            options = new RepackOptions(commandLine.Object, repackLogger.Object, file.Object);
+            options = new RepackOptions(commandLine.Object, file.Object);
         }
 
         [Test]
@@ -209,29 +209,31 @@ namespace ILRepack.Tests
         }
 
         [Test]
-        public void WithOptionKeyFileNotSet_WithDelaySign__Parse__Warn()
+        public void WithOptionKeyFileNotSet_WithDelaySign__Parse__ThrowsInvalidOperationException()
         {
             commandLine.Setup(cmd => cmd.Modifier("delaysign")).Returns(true);
-            options.Parse();
-            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
+
+            Assert.Throws<InvalidOperationException>(() => options.Parse());
         }
 
         [Test]
-        public void WithAllowMultipleAssign_WithNoCopyAttributes__Parse__Warn()
+        public void WithAllowMultipleAssign_WithNoCopyAttributes__Parse__ThrowsInvalidOperationException()
         {
             commandLine.Setup(cmd => cmd.Modifier("allowmultiple")).Returns(true);
-            options.Parse();
-            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
+
+            Assert.Throws<InvalidOperationException>(() => options.Parse());
         }
 
         [Test]
-        public void WithAttributeFile_WithCopyAttributes__Parse__Warn()
+        public void WithAttributeFile_WithCopyAttributes__Parse__ThrowsInvalidOperationException()
         {
             const string attributeFile = "filename";
             commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
             commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
+
             options.Parse();
-            repackLogger.Verify(logger => logger.Warn(It.IsAny<string>()));
+
+            Assert.Throws<InvalidOperationException>(() => options.Parse());
         }
 
         [Test]
@@ -284,6 +286,5 @@ namespace ILRepack.Tests
             var pattern = options.ExcludeInternalizeMatches.First();
             Assert.IsTrue(pattern.IsMatch(keyFileLines.First()));
         }
-
     }
 }

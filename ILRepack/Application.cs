@@ -7,10 +7,8 @@ namespace ILRepacking
         [STAThread]
         static int Main(string[] args)
         {
-            ICommandLine commandLine = new CommandLine(args);
             RepackLogger logger = new RepackLogger();
-            IFile file = new FileWrapper();
-            RepackOptions options = new RepackOptions(commandLine, logger, file);
+            RepackOptions options = new RepackOptions(args);
             int returnCode = -1;
             try
             {
@@ -28,7 +26,7 @@ namespace ILRepacking
                     options.Log = true;
                 }
 
-                ILRepack repack = new ILRepack(options);
+                ILRepack repack = new ILRepack(options, logger);
                 repack.Repack();
                 returnCode = 0;
             }
