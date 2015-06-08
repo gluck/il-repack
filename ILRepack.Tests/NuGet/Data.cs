@@ -28,11 +28,13 @@ namespace ILRepack.Tests.NuGet
             Package.From("Newtonsoft.Json", "6.0.8"),
             Package.From("NHibernate", "4.0.3.4000"),
             Package.From("Ninject", "3.2.2"),
+            Package.From("Paket.Core", "1.11.6"),
             Package.From("RestSharp", "105.0.1"),
             Package.From("Rx-Core", "2.2.5"),
             Package.From("Rx_Experimental-Main", "1.1.11111"),
             Package.From("SharpZipLib", "0.86.0"),
             Package.From("System.Spatial", "5.6.4"),
+            Package.From("UnionArgParser", "0.8.7"),
         }
         .Concat(Type.GetType("Mono.Runtime") == null ? Packages_Win : Packages_Mono)
         .Select(p => p.WithMatcher(file => supportedFwks.Select(d => d.Replace('/', Path.DirectorySeparatorChar)).Contains(Path.GetDirectoryName(file).ToLower())));
