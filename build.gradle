@@ -106,7 +106,7 @@ task nugetPackLib(type: com.ullink.NuGetPack) {
             summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
         }
         delegate.files() {
-            delegate.file(src: repack.ext.repackedLib, target: 'lib/net35')
+            delegate.file(src: repack.ext.repackedLib, target: 'lib/net40')
         }
     }
 }
