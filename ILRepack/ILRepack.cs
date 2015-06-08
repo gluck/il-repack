@@ -61,6 +61,11 @@ namespace ILRepacking
 
         private readonly IRepackImporter _repackImporter;
 
+        public ILRepack(RepackOptions options)
+            : this(options, new RepackLogger())
+        {
+        }
+
         public ILRepack(RepackOptions options, ILogger logger)
         {
             Options = options;
