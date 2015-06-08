@@ -1,18 +1,12 @@
-﻿using ICSharpCode.SharpZipLib.Zip;
-using ILRepacking;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Text;
 using System.Text.RegularExpressions;
 
-namespace ILRepack.Tests.NuGet
+namespace ILRepack.IntegrationTests.NuGet
 {
     public class RepackNuGetTests
     {

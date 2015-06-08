@@ -17,8 +17,6 @@ namespace ILRepacking
                     Usage();
                     Exit(2);
                 }
-                options.Parse();
-
                 logger.ShouldLogVerbose = options.LogVerbose;
                 //TODO: Open the Logger before the parse
                 if (logger.Open(options.LogFile))

@@ -1,15 +1,13 @@
 ﻿using ICSharpCode.SharpZipLib.Zip;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
 
-namespace ILRepack.Tests.NuGet
+namespace ILRepack.IntegrationTests.NuGet
 {
     static class NuGetHelpers
     {

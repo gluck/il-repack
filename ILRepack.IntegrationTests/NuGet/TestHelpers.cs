@@ -1,17 +1,12 @@
 ﻿using ILRepacking;
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
-namespace ILRepack.Tests.NuGet
+namespace ILRepack.IntegrationTests.NuGet
 {
     public static class TestHelpers
     {
-        public static readonly ILogger logger = new RepackLogger();
-
         public static string GenerateTempFolder()
         {
             var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -33,16 +28,8 @@ namespace ILRepack.Tests.NuGet
 
         public static void DoRepackForCmd(IEnumerable<string> args)
         {
-            var repack = new ILRepacking.ILRepack(GetOptionsForCmd(args), logger);
+            var repack = new ILRepacking.ILRepack(new RepackOptions(args.Concat(new[] { "/log" })));
             repack.Repack();
-        }
-
-        public static RepackOptions GetOptionsForCmd(IEnumerable<string> args)
-        {
-            ICommandLine commandLine = new CommandLine(args.Concat(new[] { "/log" }).ToArray());
-            RepackOptions options = new RepackOptions(commandLine, new FileWrapper());
-            options.Parse();
-            return options;
         }
 
         public static void SaveAs(Stream input, string directory, string fileName)
