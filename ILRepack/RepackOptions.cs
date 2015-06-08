@@ -100,11 +100,13 @@ namespace ILRepacking
         {
             cmd = commandLine;
             this.file = file;
+            if (!ShouldShowUsage)
+                Parse();
         }
 
-        internal bool ShouldShowUsage => cmd.Modifier("?") | cmd.Modifier("help") | cmd.Modifier("h") | cmd.HasNoOptions;
+        internal bool ShouldShowUsage => cmd.Modifier("?") || cmd.Modifier("help") || cmd.Modifier("h") || cmd.HasNoOptions;
 
-        internal void Parse()
+        void Parse()
         {
             AllowDuplicateResources = cmd.Modifier("allowduplicateresources");
             foreach (string dupType in cmd.Options("allowdup"))
@@ -186,38 +188,8 @@ namespace ILRepacking
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
-            if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                throw new InvalidOperationException("Option 'delaysign' is only valid with 'keyfile'.");
-
-            if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
-                throw new InvalidOperationException("Option 'allowMultiple' is only valid with 'copyattrs'.");
-
-            if (!string.IsNullOrEmpty(AttributeFile) && (CopyAttributes))
-                throw new InvalidOperationException("Option 'attr' can not be used with 'copyattrs'.");
-
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
-        }
-
-        /// <summary>
-        /// Parse contents of properties: central point for checking (set on assembly or through command-line).
-        /// </summary>
-        internal void ParseProperties()
-        {
-            if (string.IsNullOrEmpty(OutputFile))
-            {
-                throw new ArgumentException("No output file given.");
-            }
-
-            if ((InputAssemblies == null) || (InputAssemblies.Length == 0))
-            {
-                throw new ArgumentException("No input files given.");
-            }
-
-            if ((KeyFile != null) && !file.Exists(KeyFile))
-            {
-                throw new ArgumentException("KeyFile does not exist: \"" + KeyFile + "\".");
-            }
 
             if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
             {
@@ -226,6 +198,30 @@ namespace ILRepacking
                 foreach (string line in lines)
                     excludeInternalizeMatches.Add(new Regex(line));
             }
+        }
+
+        /// <summary>
+        /// Validates the options for repack execution, throws upon invalid argument set
+        /// </summary>
+        internal void Validate()
+        {
+            if (string.IsNullOrEmpty(KeyFile) && DelaySign)
+                throw new InvalidOperationException("Option 'delaysign' is only valid with 'keyfile'.");
+
+            if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
+                throw new InvalidOperationException("Option 'allowMultiple' is only valid with 'copyattrs'.");
+
+            if (!string.IsNullOrEmpty(AttributeFile) && CopyAttributes)
+                throw new InvalidOperationException("Option 'attr' can not be used with 'copyattrs'.");
+
+            if (string.IsNullOrEmpty(OutputFile))
+                throw new ArgumentException("No output file given.");
+
+            if (InputAssemblies == null || InputAssemblies.Length == 0)
+                throw new ArgumentException("No input files given.");
+
+            if ((KeyFile != null) && !file.Exists(KeyFile))
+                throw new ArgumentException($"KeyFile does not exist: '{KeyFile}'.");
         }
     }
 }

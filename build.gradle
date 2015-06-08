@@ -31,14 +31,13 @@ msbuild {
 
 nunit {
     exclude 'LongRunning'
-    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ] + (OperatingSystem.current().unix ?
-                     [] : [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ])
+    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunit.dependsOn msbuild
 
 task nunitLongRunning(type: nunit.class) {
     include 'LongRunning'
-    testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath ]
+    testAssemblies = [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunitLongRunning.dependsOn msbuild
 

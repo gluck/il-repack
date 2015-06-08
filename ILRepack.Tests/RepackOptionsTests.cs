@@ -21,6 +21,10 @@ namespace ILRepack.Tests
             repackLogger = new Mock<ILogger>();
             commandLine = new Mock<ICommandLine>();
             file = new Mock<IFile>();
+        }
+
+        void Parse()
+        {
             options = new RepackOptions(commandLine.Object, file.Object);
         }
 
@@ -28,7 +32,7 @@ namespace ILRepack.Tests
         public void WithAllowDuplicateResources__GetModifier__ReturnModifier()
         {
             commandLine.Setup(cmd => cmd.Modifier("allowduplicateresources")).Returns(true);
-            options.Parse();
+            Parse();
             Assert.AreEqual(true, options.AllowDuplicateResources);
         }
 
@@ -37,6 +41,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(true);
+            Parse();
             Assert.IsTrue(options.ShouldShowUsage);
         }
 
@@ -46,6 +51,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
+            Parse();
             Assert.IsTrue(options.ShouldShowUsage);
         }
 
@@ -56,6 +62,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("?")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(true);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(true);
+            Parse();
             Assert.IsTrue(options.ShouldShowUsage);
         }
 
@@ -66,12 +73,14 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Modifier("help")).Returns(false);
             commandLine.Setup(cmd => cmd.Modifier("h")).Returns(false);
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(true);
+            Parse();
             Assert.IsTrue(options.ShouldShowUsage);
         }
 
         [Test]
         public void WithOptions_CallShouldShowUsage__ReturnFalse()
         {
+            Parse();
             Assert.IsFalse(options.ShouldShowUsage);
         }
 
@@ -80,7 +89,7 @@ namespace ILRepack.Tests
         {
             string[] types = { "PlatformFixer", "ReflectionHelper" };
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(types);
-            options.Parse();
+            Parse();
             CollectionAssert.AreEquivalent(types, options.AllowedDuplicateTypes.Values);
         }
 
@@ -90,7 +99,7 @@ namespace ILRepack.Tests
             string[] namespaces = { "PlatformFixer.*", "ReflectionHelper.*" };
             var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(namespaces);
-            options.Parse();
+            Parse();
             CollectionAssert.AreEquivalent(namespaceTypes, options.AllowedDuplicateNameSpaces);
         }
 
@@ -101,7 +110,7 @@ namespace ILRepack.Tests
             string[] namespaces = { "PlatformFixer.*", "ReflectionHelper.*" };
             string[] duplicateTypes = types.Concat(namespaces).ToArray();
             commandLine.Setup(cmd => cmd.Options("allowdup")).Returns(duplicateTypes);
-            options.Parse();
+            Parse();
             var namespaceTypes = namespaces.Select(name => name.TrimEnd('.', '*'));
             CollectionAssert.AreEquivalent(types, options.AllowedDuplicateTypes.Values);
             CollectionAssert.AreEquivalent(namespaceTypes, options.AllowedDuplicateNameSpaces);
@@ -110,10 +119,10 @@ namespace ILRepack.Tests
         [Test]
         public void WithModifierNDebug__Parse__DebugInfoFalseIsSet()
         {
-            options.Parse();
+            Parse();
             Assert.IsTrue(options.DebugInfo);
             commandLine.Setup(cmd => cmd.Modifier("ndebug")).Returns(true);
-            options.Parse();
+            Parse();
             Assert.IsFalse(options.DebugInfo);
         }
 
@@ -123,7 +132,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
             const string excludeFileName = "ILogger";
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(excludeFileName);
-            options.Parse();
+            Parse();
             Assert.AreEqual(excludeFileName, options.ExcludeFile);
         }
 
@@ -133,7 +142,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.HasOption("log")).Returns(true);
             const string logFileName = "31012015.log";
             commandLine.Setup(cmd => cmd.Option("log")).Returns(logFileName);
-            options.Parse();
+            Parse();
             Assert.AreEqual(logFileName, options.LogFile);
         }
 
@@ -141,7 +150,7 @@ namespace ILRepack.Tests
         public void WithOptionTargetKindLibrary__Parse__TargetKindIsSet()
         {
             commandLine.Setup(cmd => cmd.Option("target")).Returns("library");
-            options.Parse();
+            Parse();
             Assert.AreEqual(ILRepacking.ILRepack.Kind.Dll, options.TargetKind);
         }
 
@@ -149,7 +158,7 @@ namespace ILRepack.Tests
         public void WithOptionTargetKindEXE__Parse__TargetKindIsSet()
         {
             commandLine.Setup(cmd => cmd.Option("target")).Returns("exe");
-            options.Parse();
+            Parse();
             Assert.AreEqual(ILRepacking.ILRepack.Kind.Exe, options.TargetKind);
         }
 
@@ -157,7 +166,7 @@ namespace ILRepack.Tests
         public void WithOptionTargetKindWinEXE__Parse__TargetKindIsSet()
         {
             commandLine.Setup(cmd => cmd.Option("target")).Returns("winexe");
-            options.Parse();
+            Parse();
             Assert.AreEqual(ILRepacking.ILRepack.Kind.WinExe, options.TargetKind);
         }
 
@@ -166,7 +175,7 @@ namespace ILRepack.Tests
         public void WithOptionTargetKindInvalid__Parse__TargetKindIsSet()
         {
             commandLine.Setup(cmd => cmd.Option("target")).Returns("notsupportedtype");
-            options.Parse();
+            Parse();
         }
 
         [Test]
@@ -176,7 +185,7 @@ namespace ILRepack.Tests
             const string version = "v2";
             var targetPlatform = string.Join(",", version, directory);
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(targetPlatform);
-            options.Parse();
+            Parse();
             Assert.AreEqual(directory, options.TargetPlatformDirectory);
             Assert.AreEqual(version, options.TargetPlatformVersion);
         }
@@ -186,7 +195,7 @@ namespace ILRepack.Tests
         {
             const string version = "v2";
             commandLine.Setup(cmd => cmd.Option("targetplatform")).Returns(version);
-            options.Parse();
+            Parse();
             Assert.AreEqual(version, options.TargetPlatformVersion);
         }
 
@@ -195,7 +204,7 @@ namespace ILRepack.Tests
         public void WithModifierTargetVersion__Parse__TargetPlatformVersionIsSet(string version)
         {
             commandLine.Setup(cmd => cmd.Modifier(version)).Returns(true);
-            options.Parse();
+            Parse();
             Assert.AreEqual(version, options.TargetPlatformVersion);
         }
 
@@ -204,7 +213,7 @@ namespace ILRepack.Tests
         {
             var version = new Version("1.1");
             commandLine.Setup(cmd => cmd.Option("ver")).Returns(version.ToString());
-            options.Parse();
+            Parse();
             Assert.AreEqual(version, options.Version);
         }
 
@@ -212,16 +221,16 @@ namespace ILRepack.Tests
         public void WithOptionKeyFileNotSet_WithDelaySign__Parse__ThrowsInvalidOperationException()
         {
             commandLine.Setup(cmd => cmd.Modifier("delaysign")).Returns(true);
-
-            Assert.Throws<InvalidOperationException>(() => options.Parse());
+            Parse();
+            Assert.Throws<InvalidOperationException>(() => options.Validate());
         }
 
         [Test]
         public void WithAllowMultipleAssign_WithNoCopyAttributes__Parse__ThrowsInvalidOperationException()
         {
             commandLine.Setup(cmd => cmd.Modifier("allowmultiple")).Returns(true);
-
-            Assert.Throws<InvalidOperationException>(() => options.Parse());
+            Parse();
+            Assert.Throws<InvalidOperationException>(() => options.Validate());
         }
 
         [Test]
@@ -230,15 +239,8 @@ namespace ILRepack.Tests
             const string attributeFile = "filename";
             commandLine.Setup(cmd => cmd.Option("attr")).Returns(attributeFile);
             commandLine.Setup(cmd => cmd.Modifier("copyattrs")).Returns(true);
-
-            Assert.Throws<InvalidOperationException>(() => options.Parse());
-        }
-
-        [Test]
-        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "No output file given.")]
-        public void WithNoOutputFile__ParseProperties__ThrowException()
-        {
-            options.ParseProperties();
+            Parse();
+            Assert.Throws<InvalidOperationException>(() => options.Validate());
         }
 
         [Test]
@@ -246,9 +248,8 @@ namespace ILRepack.Tests
         public void WithNoInputAssemblies__ParseProperties__ThrowException()
         {
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-            options.Parse();
-            Assert.IsNotNullOrEmpty(options.OutputFile);
-            options.ParseProperties();
+            Parse();
+            options.Validate();
         }
 
         [Test]
@@ -259,10 +260,8 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
             commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
             commandLine.Setup(cmd => cmd.Option("keyfile")).Returns("filename");
-            options.Parse();
-            Assert.IsNotNull(options.InputAssemblies);
-            Assert.IsNotEmpty(options.InputAssemblies);
-            options.ParseProperties();
+            Parse();
+            options.Validate();
         }
 
         [Test]
@@ -277,10 +276,9 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(keyFile);
             file.Setup(_ => _.Exists(keyFile)).Returns(true);
             file.Setup(_ => _.ReadAllLines(keyFile)).Returns(keyFileLines.ToArray());
-            options.Parse();
+            Parse();
             Assert.IsNotNull(options.InputAssemblies);
             Assert.IsNotEmpty(options.InputAssemblies);
-            options.ParseProperties();
             var pattern = options.ExcludeInternalizeMatches.First();
             Assert.IsTrue(pattern.IsMatch(keyFileLines.First()));
         }

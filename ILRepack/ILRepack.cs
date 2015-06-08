@@ -220,8 +220,8 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
+            Options.Validate();
             _reflectionHelper = new ReflectionHelper(this);
-            Options.ParseProperties();
             ResolveSearchDirectories();
 
             // Read input assemblies only after all properties are set.

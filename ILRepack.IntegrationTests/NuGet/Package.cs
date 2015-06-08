@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
-namespace ILRepack.Tests.NuGet
+namespace ILRepack.IntegrationTests.NuGet
 {
     public class Package
     {
