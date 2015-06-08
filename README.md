@@ -1,4 +1,5 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/hq1jqalcxe6d18rm?svg=true)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://travis-ci.org/gluck/il-repack.svg?branch=master)](https://travis-ci.org/gluck/il-repack) [![Join the chat at https://gitter.im/gluck/il-repack](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gluck/il-repack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build status](https://img.shields.io/appveyor/ci/gluck/il-repack.svg)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://img.shields.io/travis/gluck/il-repack.svg)](https://travis-ci.org/gluck/il-repack) [![NuGet](https://img.shields.io/nuget/dt/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![NuGet](https://img.shields.io/nuget/v/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/)  
+[![Join the chat at https://gitter.im/gluck/il-repack](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gluck/il-repack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Introduction
 ============
