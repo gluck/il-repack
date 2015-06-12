@@ -91,7 +91,7 @@ namespace ILRepacking
                     OtherAssemblies.Add(result.Definition);
 
                 // prevent writing PDB if we haven't read any
-                Options.DebugInfo &= result.SymbolsRead;
+                Options.DebugInfo |= result.SymbolsRead;
             }
 
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
