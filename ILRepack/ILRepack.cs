@@ -13,18 +13,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-using ILRepacking.Steps;
-using Mono.Cecil;
-using Mono.Cecil.PE;
-using Mono.Collections.Generic;
-using Mono.Unix.Native;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
+using ILRepacking.Steps;
+using Mono.Cecil;
+using Mono.Cecil.PE;
+using Mono.Unix.Native;
 
 namespace ILRepacking
 {
@@ -51,13 +49,13 @@ namespace ILRepacking
         private PlatformFixer _platformFixer;
         private MappingHandler _mappingHandler;
 
-        private static readonly Regex TYPE_RE = new Regex("^(.*?), ([^>,]+), .*$");
+        private static readonly Regex TypeRegex = new Regex("^(.*?), ([^>,]+), .*$");
 
         IKVMLineIndexer IRepackContext.LineIndexer => _lineIndexer;
         ReflectionHelper IRepackContext.ReflectionHelper => _reflectionHelper;
         PlatformFixer IRepackContext.PlatformFixer => _platformFixer;
         MappingHandler IRepackContext.MappingHandler => _mappingHandler;
-        private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
+        private readonly Dictionary<AssemblyDefinition, int> _aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
         private readonly RepackImporter _repackImporter;
 
@@ -70,7 +68,7 @@ namespace ILRepacking
         {
             Options = options;
             Logger = logger;
-            _repackImporter = new RepackImporter(Logger, Options, this, aspOffsets);
+            _repackImporter = new RepackImporter(Logger, Options, this, _aspOffsets);
         }
 
         private void ReadInputAssemblies()
@@ -271,7 +269,7 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory, OtherAssemblies.Select(x => x.MainModule).Select(x => x.Win32ResourceDirectory));
+            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -370,7 +368,7 @@ namespace ILRepacking
             }
         }
 
-        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary, IEnumerable<ResourceDirectory> resources)
+        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary)
         {
             if (primary == null)
                 return null;
@@ -397,15 +395,15 @@ namespace ILRepacking
         {
             if (exist.Data != null && entry.Data != null)
             {
-                if (isAspRes(parents, exist))
+                if (IsAspResourceEntry(parents, exist))
                 {
-                    aspOffsets[ass] = exist.Data.Length;
+                    _aspOffsets[ass] = exist.Data.Length;
                     byte[] newData = new byte[exist.Data.Length + entry.Data.Length];
                     Array.Copy(exist.Data, 0, newData, 0, exist.Data.Length);
                     Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
                     exist.Data = newData;
                 }
-                else if (!isVersionInfoRes(parents, exist))
+                else if (!IsVersionInfoResource(parents, exist))
                 {
                     Logger.Warn(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
                 }
@@ -421,22 +419,22 @@ namespace ILRepacking
             parents.RemoveAt(parents.Count - 1);
         }
 
-        private static bool isAspRes(List<ResourceEntry> parents, ResourceEntry exist)
+        private static bool IsAspResourceEntry(List<ResourceEntry> parents, ResourceEntry exist)
         {
             return exist.Id == 101 && parents.Count == 1 && parents[0].Id == 3771;
         }
 
-        private static bool isVersionInfoRes(List<ResourceEntry> parents, ResourceEntry exist)
+        private static bool IsVersionInfoResource(List<ResourceEntry> parents, ResourceEntry exist)
         {
             return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
-        public string FixStr(string content)
+        string IRepackContext.FixStr(string content)
         {
             return FixStr(content, false);
         }
 
-        public string FixReferenceInIkvmAttribute(string content)
+        string IRepackContext.FixReferenceInIkvmAttribute(string content)
         {
             return FixStr(content, true);
         }
@@ -447,7 +445,7 @@ namespace ILRepacking
                 return content;
             // TODO fix "TYPE, ASSEMBLYNAME, CULTURE" pattern
             // TODO fix "TYPE, ASSEMBLYNAME, VERSION, CULTURE, TOKEN" pattern
-            var match = TYPE_RE.Match(content);
+            var match = TypeRegex.Match(content);
             if (match.Success)
             {
                 string type = match.Groups[1].Value;
@@ -463,13 +461,13 @@ namespace ILRepacking
             return content;
         }
 
-        public string FixTypeName(string assemblyName, string typeName)
+        string IRepackContext.FixTypeName(string assemblyName, string typeName)
         {
             // TODO handle renames
             return typeName;
         }
 
-        public string FixAssemblyName(string assemblyName)
+        string IRepackContext.FixAssemblyName(string assemblyName)
         {
             if (MergedAssemblies.Any(x => x.FullName == assemblyName))
             {
@@ -491,12 +489,12 @@ namespace ILRepacking
             return asmName;
         }
 
-        public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
+        TypeDefinition IRepackContext.GetMergedTypeFromTypeRef(TypeReference reference)
         {
             return _mappingHandler.GetRemappedType(reference);
         }
 
-        public TypeReference GetExportedTypeFromTypeRef(TypeReference type)
+        TypeReference IRepackContext.GetExportedTypeFromTypeRef(TypeReference type)
         {
             return _mappingHandler.GetExportedRemappedType(type) ?? type;
         }
