@@ -39,7 +39,7 @@ namespace ILRepacking.Steps
             _logger.Verbose("Processing XAML resource paths ...");
             foreach (var type in types)
             {
-                PatchInitializeComponentMethod(type);
+                PatchIComponentConnector(type);
                 PatchWpfToolkitVersionResourceDictionary(type);
             }
         }
@@ -65,8 +65,11 @@ namespace ILRepacking.Steps
             PatchWpfToolkitEndInitMethod(endInitMethod);
         }
 
-        private void PatchInitializeComponentMethod(TypeDefinition type)
+        private void PatchIComponentConnector(TypeDefinition type)
         {
+            if (!type.Interfaces.Any(t => t.FullName == "System.Windows.Markup.IComponentConnector"))
+                return;
+
             var initializeMethod = type.Methods.FirstOrDefault(m =>
                 m.Name == "InitializeComponent" && m.Parameters.Count == 0);
 
