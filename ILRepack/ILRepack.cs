@@ -28,7 +28,7 @@ using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
 
 namespace ILRepacking
 {
-    public class ILRepack : IRepackContext, IRepackCopier
+    public class ILRepack : IRepackContext
     {
         internal RepackOptions Options;
         internal ILogger Logger;
@@ -59,7 +59,7 @@ namespace ILRepacking
         MappingHandler IRepackContext.MappingHandler => _mappingHandler;
         private readonly Dictionary<AssemblyDefinition, int> aspOffsets = new Dictionary<AssemblyDefinition, int>();
 
-        private readonly IRepackImporter _repackImporter;
+        private readonly RepackImporter _repackImporter;
 
         public ILRepack(RepackOptions options)
             : this(options, new RepackLogger())
@@ -70,7 +70,7 @@ namespace ILRepacking
         {
             Options = options;
             Logger = logger;
-            _repackImporter = new RepackImporter(Logger, Options, this, this, aspOffsets);
+            _repackImporter = new RepackImporter(Logger, Options, this, aspOffsets);
         }
 
         private void ReadInputAssemblies()
@@ -181,7 +181,7 @@ namespace ILRepacking
         }
 
 
-        protected TargetRuntime ParseTargetPlatform()
+        private TargetRuntime ParseTargetPlatform()
         {
             TargetRuntime runtime = PrimaryAssemblyMainModule.Runtime;
             if (Options.TargetPlatformVersion != null)
@@ -299,7 +299,7 @@ namespace ILRepacking
                 new ReferencesRepackStep(Logger, this),
                 new TypesRepackStep(Logger, this, _repackImporter, Options),
                 new ResourcesRepackStep(Logger, this, Options),
-                new AttributesRepackStep(Logger, this, this, Options),
+                new AttributesRepackStep(Logger, this, _repackImporter, Options),
                 new ReferencesFixStep(Logger, this, _repackImporter, Options),
                 new XamlResourcePathPatcherStep(Logger, this)
             };
@@ -489,163 +489,6 @@ namespace ILRepacking
             asmName.PublicKey = assemblyName.PublicKey;
             asmName.PublicKeyToken = assemblyName.PublicKeyToken;
             return asmName;
-        }
-
-        public CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
-        {
-            return new CustomAttributeArgument(_repackImporter.Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
-        }
-
-        public CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
-        {
-            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
-        }
-
-        private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
-        {
-            if (obj is TypeReference)
-                return _repackImporter.Import((TypeReference)obj, context);
-            if (obj is CustomAttributeArgument)
-                return Copy((CustomAttributeArgument)obj, context);
-            if (obj is CustomAttributeArgument[])
-                return Array.ConvertAll((CustomAttributeArgument[])obj, a => Copy(a, context));
-            return obj;
-        }
-
-        /// <summary>
-        /// Clones a collection of SecurityDeclarations
-        /// </summary>
-        public void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
-        {
-            foreach (SecurityDeclaration sec in input)
-            {
-                SecurityDeclaration newSec = null;
-                if (PermissionsetHelper.IsXmlPermissionSet(sec))
-                {
-                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, TargetAssemblyMainModule);
-                }
-                if (newSec == null)
-                {
-                    newSec = new SecurityDeclaration(sec.Action);
-                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
-                    {
-                        SecurityAttribute newSa = new SecurityAttribute(_repackImporter.Import(sa.AttributeType, context));
-                        if (sa.HasFields)
-                        {
-                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
-                            {
-                                newSa.Fields.Add(Copy(cana, context));
-                            }
-                        }
-                        if (sa.HasProperties)
-                        {
-                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
-                            {
-                                newSa.Properties.Add(Copy(cana, context));
-                            }
-                        }
-                        newSec.SecurityAttributes.Add(newSa);
-                    }
-                }
-                output.Add(newSec);
-            }
-        }
-
-        // helper
-        private static void Copy<T>(Collection<T> input, Collection<T> output, Action<T, T> action)
-        {
-            if (input.Count != output.Count)
-                throw new InvalidOperationException();
-            for (int i = 0; i < input.Count; i++)
-            {
-                action.Invoke(input[i], output[i]);
-            }
-        }
-
-        public void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
-        {
-            foreach (GenericParameter gp in input)
-            {
-                GenericParameter ngp = new GenericParameter(gp.Name, nt);
-
-                ngp.Attributes = gp.Attributes;
-                output.Add(ngp);
-            }
-            // delay copy to ensure all generics parameters are already present
-            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
-            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
-        }
-
-        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
-        {
-            CopyCustomAttributes(input, output, true, context);
-        }
-
-        public CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
-        {
-            CustomAttribute newCa = new CustomAttribute(_repackImporter.Import(ca.Constructor));
-            foreach (var arg in ca.ConstructorArguments)
-                newCa.ConstructorArguments.Add(Copy(arg, context));
-            foreach (var arg in ca.Fields)
-                newCa.Fields.Add(Copy(arg, context));
-            foreach (var arg in ca.Properties)
-                newCa.Properties.Add(Copy(arg, context));
-            return newCa;
-        }
-
-        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
-        {
-            foreach (CustomAttribute ca in input)
-            {
-                var caType = ca.AttributeType;
-                var similarAttributes = output.Where(attr => _reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
-                if (similarAttributes.Count != 0)
-                {
-                    if (!allowMultiple)
-                        continue;
-                    if (!CustomAttributeTypeAllowsMultiple(caType))
-                        continue;
-                    if (similarAttributes.Any(x =>
-                            _reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
-                            _reflectionHelper.AreSame(x.Fields, ca.Fields) &&
-                            _reflectionHelper.AreSame(x.Properties, ca.Properties)
-                        ))
-                        continue;
-                }
-                output.Add(Copy(ca, context));
-            }
-        }
-
-        private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
-        {
-            if (type.FullName == "IKVM.Attributes.JavaModuleAttribute" || type.FullName == "IKVM.Attributes.PackageListAttribute")
-            {
-                // IKVM module attributes, although they don't allow multiple, IKVM supports the attribute being specified multiple times
-                return true;
-            }
-            TypeDefinition typeDef = type.Resolve();
-            if (typeDef != null)
-            {
-                var ca = typeDef.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.AttributeUsageAttribute");
-                if (ca != null)
-                {
-                    var prop = ca.Properties.FirstOrDefault(y => y.Name == "AllowMultiple");
-                    if (prop.Argument.Value is bool)
-                    {
-                        return (bool)prop.Argument.Value;
-                    }
-                }
-            }
-            // default is false
-            return false;
-        }
-
-        public void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
-        {
-            foreach (TypeReference ta in input)
-            {
-                output.Add(_repackImporter.Import(ta, context));
-            }
         }
 
         public TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference)
