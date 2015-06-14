@@ -23,21 +23,21 @@ using System.Linq;
 
 namespace ILRepacking
 {
-    internal class RepackImporter : IRepackImporter
+    internal class RepackImporter : IRepackImporter, IRepackCopier
     {
         private readonly ILogger _logger;
         private readonly IRepackContext _repackContext;
         private readonly RepackOptions _options;
-        private readonly IRepackCopier _repackCopier;
         private readonly Dictionary<AssemblyDefinition, int> _aspOffsets;
 
-        public RepackImporter(ILogger logger, RepackOptions options,
-            IRepackCopier repackCopier, IRepackContext repackContext,
+        public RepackImporter(
+            ILogger logger,
+            RepackOptions options,
+            IRepackContext repackContext,
             Dictionary<AssemblyDefinition, int> aspOffsets)
         {
             _logger = logger;
             _options = options;
-            _repackCopier = repackCopier;
             _repackContext = repackContext;
             _aspOffsets = aspOffsets;
         }
@@ -198,7 +198,7 @@ namespace ILRepacking
             if (field.HasLayoutInfo)
                 nf.Offset = field.Offset;
 
-            _repackCopier.CopyCustomAttributes(field.CustomAttributes, nf.CustomAttributes, nt);
+            CopyCustomAttributes(field.CustomAttributes, nf.CustomAttributes, nt);
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace ILRepacking
             if (param.HasMarshalInfo)
                 pd.MarshalInfo = param.MarshalInfo;
             if (param.HasCustomAttributes)
-                _repackCopier.CopyCustomAttributes(param.CustomAttributes, pd.CustomAttributes, context);
+                CopyCustomAttributes(param.CustomAttributes, pd.CustomAttributes, context);
             col.Add(pd);
         }
 
@@ -243,7 +243,7 @@ namespace ILRepacking
                 }
             }
 
-            _repackCopier.CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
+            CopyCustomAttributes(evt.CustomAttributes, ed.CustomAttributes, nt);
         }
 
         private void CloneTo(PropertyDefinition prop, TypeDefinition nt, Collection<PropertyDefinition> col)
@@ -293,7 +293,7 @@ namespace ILRepacking
                 }
             }
 
-            _repackCopier.CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
+            CopyCustomAttributes(prop.CustomAttributes, pd.CustomAttributes, nt);
         }
 
         private void CloneTo(MethodDefinition meth, TypeDefinition type, bool typeJustCreated)
@@ -315,7 +315,7 @@ namespace ILRepacking
 
             type.Methods.Add(nm);
 
-            _repackCopier.CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
+            CopyGenericParameters(meth.GenericParameters, nm.GenericParameters, nm);
 
             if (meth.HasPInvokeInfo)
             {
@@ -336,8 +336,8 @@ namespace ILRepacking
             foreach (MethodReference ov in meth.Overrides)
                 nm.Overrides.Add(Import(ov, nm));
 
-            _repackCopier.CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
-            _repackCopier.CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
+            CopySecurityDeclarations(meth.SecurityDeclarations, nm.SecurityDeclarations, nm);
+            CopyCustomAttributes(meth.CustomAttributes, nm.CustomAttributes, nm);
 
             nm.ReturnType = Import(meth.ReturnType, nm);
             nm.MethodReturnType.Attributes = meth.MethodReturnType.Attributes;
@@ -346,7 +346,7 @@ namespace ILRepacking
             if (meth.MethodReturnType.HasMarshalInfo)
                 nm.MethodReturnType.MarshalInfo = meth.MethodReturnType.MarshalInfo;
             if (meth.MethodReturnType.HasCustomAttributes)
-                _repackCopier.CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
+                CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
 
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
@@ -512,7 +512,7 @@ namespace ILRepacking
             if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
                 nt.IsPublic = false;
 
-            _repackCopier.CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
+            CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
             if (type.BaseType != null)
                 nt.BaseType = Import(type.BaseType, nt);
 
@@ -523,9 +523,9 @@ namespace ILRepacking
             }
             // don't copy these twice if UnionMerge==true
             // TODO: we can move this down if we chek for duplicates when adding
-            _repackCopier.CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            _repackCopier.CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
-            _repackCopier.CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
+            CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
+            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             return nt;
         }
 
@@ -612,6 +612,164 @@ namespace ILRepacking
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Clones a collection of SecurityDeclarations
+        /// </summary>
+        public void CopySecurityDeclarations(Collection<SecurityDeclaration> input, Collection<SecurityDeclaration> output, IGenericParameterProvider context)
+        {
+            foreach (SecurityDeclaration sec in input)
+            {
+                SecurityDeclaration newSec = null;
+                if (PermissionsetHelper.IsXmlPermissionSet(sec))
+                {
+                    newSec = PermissionsetHelper.Xml2PermissionSet(sec, _repackContext.TargetAssemblyMainModule);
+                }
+                if (newSec == null)
+                {
+                    newSec = new SecurityDeclaration(sec.Action);
+                    foreach (SecurityAttribute sa in sec.SecurityAttributes)
+                    {
+                        SecurityAttribute newSa = new SecurityAttribute(Import(sa.AttributeType, context));
+                        if (sa.HasFields)
+                        {
+                            foreach (CustomAttributeNamedArgument cana in sa.Fields)
+                            {
+                                newSa.Fields.Add(Copy(cana, context));
+                            }
+                        }
+                        if (sa.HasProperties)
+                        {
+                            foreach (CustomAttributeNamedArgument cana in sa.Properties)
+                            {
+                                newSa.Properties.Add(Copy(cana, context));
+                            }
+                        }
+                        newSec.SecurityAttributes.Add(newSa);
+                    }
+                }
+                output.Add(newSec);
+            }
+        }
+
+        // helper
+        private static void Copy<T>(Collection<T> input, Collection<T> output, Action<T, T> action)
+        {
+            if (input.Count != output.Count)
+                throw new InvalidOperationException();
+            for (int i = 0; i < input.Count; i++)
+            {
+                action.Invoke(input[i], output[i]);
+            }
+        }
+
+        public void CopyGenericParameters(Collection<GenericParameter> input, Collection<GenericParameter> output, IGenericParameterProvider nt)
+        {
+            foreach (GenericParameter gp in input)
+            {
+                GenericParameter ngp = new GenericParameter(gp.Name, nt);
+
+                ngp.Attributes = gp.Attributes;
+                output.Add(ngp);
+            }
+            // delay copy to ensure all generics parameters are already present
+            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
+            Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
+        }
+
+        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, IGenericParameterProvider context)
+        {
+            CopyCustomAttributes(input, output, true, context);
+        }
+
+        public CustomAttribute Copy(CustomAttribute ca, IGenericParameterProvider context)
+        {
+            CustomAttribute newCa = new CustomAttribute(Import(ca.Constructor));
+            foreach (var arg in ca.ConstructorArguments)
+                newCa.ConstructorArguments.Add(Copy(arg, context));
+            foreach (var arg in ca.Fields)
+                newCa.Fields.Add(Copy(arg, context));
+            foreach (var arg in ca.Properties)
+                newCa.Properties.Add(Copy(arg, context));
+            return newCa;
+        }
+
+        public void CopyCustomAttributes(Collection<CustomAttribute> input, Collection<CustomAttribute> output, bool allowMultiple, IGenericParameterProvider context)
+        {
+            var reflectionHelper = _repackContext.ReflectionHelper;
+            foreach (CustomAttribute ca in input)
+            {
+                var caType = ca.AttributeType;
+                var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
+                if (similarAttributes.Count != 0)
+                {
+                    if (!allowMultiple)
+                        continue;
+                    if (!CustomAttributeTypeAllowsMultiple(caType))
+                        continue;
+                    if (similarAttributes.Any(x =>
+                            reflectionHelper.AreSame(x.ConstructorArguments, ca.ConstructorArguments) &&
+                            reflectionHelper.AreSame(x.Fields, ca.Fields) &&
+                            reflectionHelper.AreSame(x.Properties, ca.Properties)
+                        ))
+                        continue;
+                }
+                output.Add(Copy(ca, context));
+            }
+        }
+
+        private bool CustomAttributeTypeAllowsMultiple(TypeReference type)
+        {
+            if (type.FullName == "IKVM.Attributes.JavaModuleAttribute" || type.FullName == "IKVM.Attributes.PackageListAttribute")
+            {
+                // IKVM module attributes, although they don't allow multiple, IKVM supports the attribute being specified multiple times
+                return true;
+            }
+            TypeDefinition typeDef = type.Resolve();
+            if (typeDef != null)
+            {
+                var ca = typeDef.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.AttributeUsageAttribute");
+                if (ca != null)
+                {
+                    var prop = ca.Properties.FirstOrDefault(y => y.Name == "AllowMultiple");
+                    if (prop.Argument.Value is bool)
+                    {
+                        return (bool)prop.Argument.Value;
+                    }
+                }
+            }
+            // default is false
+            return false;
+        }
+
+        public void CopyTypeReferences(Collection<TypeReference> input, Collection<TypeReference> output, IGenericParameterProvider context)
+        {
+            foreach (TypeReference ta in input)
+            {
+                output.Add(Import(ta, context));
+            }
+        }
+
+        public CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
+        }
+
+        public CustomAttributeNamedArgument Copy(CustomAttributeNamedArgument namedArg, IGenericParameterProvider context)
+        {
+            return new CustomAttributeNamedArgument(namedArg.Name, Copy(namedArg.Argument, context));
+        }
+
+        private object ImportCustomAttributeValue(object obj, IGenericParameterProvider context)
+        {
+            if (obj is TypeReference)
+                return Import((TypeReference)obj, context);
+            if (obj is CustomAttributeArgument)
+                return Copy((CustomAttributeArgument)obj, context);
+            if (obj is CustomAttributeArgument[])
+                return Array.ConvertAll((CustomAttributeArgument[])obj, a => Copy(a, context));
+            return obj;
         }
     }
 }

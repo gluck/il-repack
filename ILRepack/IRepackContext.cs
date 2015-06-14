@@ -32,13 +32,12 @@ namespace ILRepacking
         AssemblyDefinition PrimaryAssemblyDefinition { get; }
         ModuleDefinition PrimaryAssemblyMainModule { get; }
 
-        TypeDefinition GetMergedTypeFromTypeRef(TypeReference reference);
+        TypeDefinition GetMergedTypeFromTypeRef(TypeReference type);
+        TypeReference GetExportedTypeFromTypeRef(TypeReference type);
 
         string FixTypeName(string assemblyName, string typeName);
         string FixAssemblyName(string assemblyName);
         string FixStr(string content);
-
-        TypeReference GetExportedTypeFromTypeRef(TypeReference type);
 
         /// <summary>
         /// Fix assembly reference in attribute

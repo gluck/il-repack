@@ -22,6 +22,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration Tests Scenarios", "Integration Tests Scenarios", "{04819B25-ABEA-46F7-90D5-149C8304F67F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibrary", "ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj", "{801489B7-46CB-42D0-8581-0120F3566A8F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A253A60-D998-4CA2-B9D5-46567A2FBF80} = {4A253A60-D998-4CA2-B9D5-46567A2FBF80}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryClassUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryClassUsageInXAML\LibraryClassUsageInXAML.csproj", "{CE27F333-D875-43D0-9D3C-4F8F102FC92D}"
 EndProject

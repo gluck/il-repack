@@ -70,6 +70,7 @@
     <ProjectReference Include="..\..\..\ILRepack\ILRepack.csproj">
       <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
       <Name>ILRepack</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\ClassLibrary\ClassLibrary.csproj">
       <Project>{801489b7-46cb-42d0-8581-0120f3566a8f}</Project>
@@ -79,7 +80,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir $(TargetDir)\merged
-$(TargetDir)ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibrary.dll
+$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibrary.dll
 set SAVED_ERROR_LEVEL=%25ERRORLEVEL%25
 REM Ensure re-build is done every time to use latest built ILRepack version
 del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*

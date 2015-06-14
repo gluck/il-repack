@@ -109,8 +109,13 @@ namespace ILRepacking.Steps
                                     var er = (EmbeddedResource)resource;
                                     if (er.Name.EndsWith(".resources"))
                                     {
+                                        // we don't want to write the bamls to other embedded resource files
+                                        bool shouldWriteCollectedBamlStreams =
+                                            isPrimaryAssembly &&
+                                            $"{assembly.Name.Name}.g.resources".Equals(er.Name);
+
                                         newResource = FixResxResource(assembly, er, assemblyProcessors,
-                                            isPrimaryAssembly ? bamlStreamCollector : null);
+                                            shouldWriteCollectedBamlStreams ? bamlStreamCollector : null);
                                     }
                                     break;
                             }
@@ -235,10 +240,7 @@ namespace ILRepacking.Steps
             }
 
             // do a final processing, if any, on the embeddedResource itself
-            if (embeddedResourceProcessor != null)
-            {
-                embeddedResourceProcessor.Process(er, rw);
-            }
+            embeddedResourceProcessor?.Process(er, rw);
 
             rw.Generate();
             output.Position = 0;
