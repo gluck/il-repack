@@ -101,6 +101,11 @@ namespace ILRepacking.Steps.ResourceProcessing
             if (assemblyStart == -1)
                 return;
 
+            // Make sure it is one of the merged assemblies
+            string xmlAssembly = xmlNamespace.Substring(assemblyStart + AssemblyDef.Length);
+            if (_mainAssembly.Name.Name != xmlAssembly && _otherAssemblies.All(x => x.Name.Name != xmlAssembly))
+                return;
+
             string xmlNsWithoutAssembly = xmlNamespace.Substring(0, assemblyStart);
             record.XmlNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
         }
