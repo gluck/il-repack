@@ -77,6 +77,7 @@ namespace ILRepacking
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             var primary = MergedAssemblyFiles.FirstOrDefault();
+            var debugSymbolsRead = false;
             foreach (string assembly in MergedAssemblyFiles)
             {
                 var result = ReadInputAssembly(assembly, primary == assembly);
@@ -88,9 +89,10 @@ namespace ILRepacking
                 else
                     OtherAssemblies.Add(result.Definition);
 
-                // prevent writing PDB if we haven't read any
-                Options.DebugInfo |= result.SymbolsRead;
+                debugSymbolsRead |= result.SymbolsRead;
             }
+            // prevent writing PDB if we haven't read any
+            Options.DebugInfo = debugSymbolsRead;
 
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
             MergedAssemblies.Add(PrimaryAssemblyDefinition);
