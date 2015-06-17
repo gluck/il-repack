@@ -74,8 +74,11 @@ namespace ILRepack.IntegrationTests.NuGet
             if (XPlat.IsMono) return;
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToEnumerable();
             if (errors.Any())
-                Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
-               
+            {
+                var origErrors = PeverifyHelper.Peverify(tempDirectory, "foo.dll").ToEnumerable();
+                if (errors.Count() != origErrors.Count())
+                    Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
+            }
         }
 
         void RepackFoo(string assemblyName)
