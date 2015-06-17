@@ -7,8 +7,10 @@ using System.Reactive.Subjects;
 using System.Reflection;
 using System.Text;
 
-namespace GitHub.Helpers
+namespace ILRepack.IntegrationTests.Helpers
 {
+    // Shameless copy from the ultimate Rx fu master:
+    // https://github.com/paulcbetts/peasant/blob/master/Peasant/Helpers/ObservableProcess.cs
     public class ObservableProcess : IObservable<int>
     {
         readonly AsyncSubject<int> exit = new AsyncSubject<int>();

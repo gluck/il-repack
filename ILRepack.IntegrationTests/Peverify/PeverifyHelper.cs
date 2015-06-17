@@ -1,5 +1,4 @@
-﻿using GitHub.Helpers;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +9,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
+using ILRepack.IntegrationTests.Helpers;
 
 namespace ILRepack.IntegrationTests.Peverify
 {
