@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ILRepack.IntegrationTests.Helpers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace ILRepack.IntegrationTests.NuGet
             Package.From("SharpZipLib", "0.86.0"),
             Package.From("System.Spatial", "5.6.4"),
         }
-        .Concat(Type.GetType("Mono.Runtime") == null ? Packages_Win : Packages_Mono)
+        .Concat(XPlat.IsWindows ? Packages_Win : Packages_Mono)
         .Select(p => p.WithMatcher(file => supportedFwks.Select(d => d.Replace('/', Path.DirectorySeparatorChar)).Contains(Path.GetDirectoryName(file).ToLower())));
 
         public static readonly Package Ikvm = Package.From("IKVM", "8.0.5449.1")
