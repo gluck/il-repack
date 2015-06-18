@@ -20,6 +20,7 @@ namespace ILRepack.IntegrationTests.Peverify
         public static IObservable<string> Peverify(string workingDirectory, params string[] args)
         {
             // TODO better path finding ?
+            // TODO use pedump --verify code,metadata on Mono ?
             var verifierPath = @"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\peverify.exe";
             var arg = $"\"{verifierPath}\" /NOLOGO {String.Join(" ", args)}";
             var info = new ProcessStartInfo
