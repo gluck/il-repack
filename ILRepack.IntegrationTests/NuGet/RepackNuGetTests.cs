@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using ILRepack.IntegrationTests.Helpers;
+using ILRepack.IntegrationTests.Peverify;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,6 +32,7 @@ namespace ILRepack.IntegrationTests.NuGet
             var count = NuGetHelpers.GetNupkgAssembliesAsync(p)
             .Do(t => TestHelpers.SaveAs(t.Item2(), tempDirectory, "foo.dll"))
             .Do(file => RepackFoo(file.Item1))
+            .Do(file => VerifyTest(file.Item1))
             .ToEnumerable().Count();
             Assert.IsTrue(count > 0);
         }
@@ -64,6 +67,18 @@ namespace ILRepack.IntegrationTests.NuGet
             if (string.IsNullOrEmpty(dirName) || !dirName.StartsWith(@"portable-")) return Enumerable.Empty<string>();
             dirName = dirName.Substring(9);
             return new Regex(@"\+|%2[bB]").Split(dirName);
+        }
+
+        void VerifyTest(string assemblyName)
+        {
+            if (XPlat.IsMono) return;
+            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToEnumerable();
+            if (errors.Any())
+            {
+                var origErrors = PeverifyHelper.Peverify(tempDirectory, "foo.dll").ToEnumerable();
+                if (errors.Count() != origErrors.Count())
+                    Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
+            }
         }
 
         void RepackFoo(string assemblyName)
