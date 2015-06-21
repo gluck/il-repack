@@ -1,11 +1,10 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id "com.ullink.msbuild" version "2.8"
+  id "com.ullink.msbuild" version "2.9"
   id "com.ullink.nuget" version "2.7"
   id "com.ullink.nunit" version "1.2"
   id "com.ullink.opencover" version "1.1"
-  id "com.ullink.functions" version "1.0"
 }
 
 archivesBaseName = 'ILRepack'
@@ -17,12 +16,13 @@ def removeExtension(String path) {
     path.replaceFirst(~/(?<=.)\.[^\.]+$/, '')
 }
 
+assemblyInfoPatcher {
+    version = project.version + '.0'
+    enabled = true
+}
+
 msbuild.dependsOn nugetRestore
 msbuild {
-    def netVersion = project.version + '.0'
-    replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyVersion', netVersion)
-    replaceAssemblyAttribute('ILRepack/Properties/AssemblyInfo.cs', 'AssemblyFileVersion', netVersion)
-
     solutionFile = 'ILRepack.sln'
     configuration = OperatingSystem.current().unix ? 'Debug_unix' : 'Release'
     projectName = 'ILRepack'
