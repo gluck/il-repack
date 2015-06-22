@@ -53,6 +53,7 @@ namespace ILRepacking.Steps
             // this step travels through all TypeRefs & replaces them by matching TypeDefs
             foreach (var r in targetAssemblyMainModule.Types)
             {
+                _logger.Verbose($"- Fixing references for type {r}");
                 fixator.FixReferences(r);
             }
             foreach (var r in targetAssemblyMainModule.Types)

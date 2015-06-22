@@ -1,6 +1,10 @@
 IL Repack changelog
 ====================
 
+2.0.3
+-------
+* Types fixed during the 'Fixing references' phase are printed in verbose mode.
+
 2.0.0
 -------
 

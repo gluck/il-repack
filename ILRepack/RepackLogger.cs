@@ -3,10 +3,10 @@ using System.IO;
 
 namespace ILRepacking
 {
-    class RepackLogger : ILogger
+    internal class RepackLogger : ILogger
     {
-        private string outputFile;
-        private StreamWriter writer;
+        private string _outputFile;
+        private StreamWriter _writer;
 
         public bool ShouldLogVerbose { get; set; }
 
@@ -14,46 +14,45 @@ namespace ILRepacking
         {
             string logStr = str.ToString();
             Console.WriteLine(logStr);
-            if (writer != null)
-                writer.WriteLine(logStr);
+            _writer?.WriteLine(logStr);
         }
 
         public bool Open(string file)
         {
             if (string.IsNullOrEmpty(file))
                 return false;
-            outputFile = file;
-            writer = new StreamWriter(outputFile);
+            _outputFile = file;
+            _writer = new StreamWriter(_outputFile);
             return true;
         }
 
         public void Close()
         {
-            if (writer == null)
+            if (_writer == null)
                 return;
-            writer.Close();
-            writer = null;
+            _writer.Close();
+            _writer = null;
         }
 
         public void Error(string msg)
         {
-            Log("ERROR: " + msg);
+            Log($"ERROR: {msg}");
         }
 
         public void Warn(string msg)
         {
-            Log("WARN: " + msg);
+            Log($"WARN: {msg}");
         }
 
         public void Info(string msg)
         {
-            Log("INFO: " + msg);
+            Log($"INFO: {msg}");
         }
 
         public void Verbose(string msg)
         {
             if (ShouldLogVerbose)
-                Log("INFO: " + msg);
+                Log($"VERBOSE: {msg}");
         }
 
         public void DuplicateIgnored(string ignoredType, object ignoredObject)
