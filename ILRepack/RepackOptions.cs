@@ -86,6 +86,11 @@ namespace ILRepacking
             }
         }
 
+        public RepackOptions()
+            : this(new CommandLine(Enumerable.Empty<String>()))
+        {
+        }
+
         public RepackOptions(IEnumerable<string> ilRepackArguments)
             : this(new CommandLine(ilRepackArguments))
         {
