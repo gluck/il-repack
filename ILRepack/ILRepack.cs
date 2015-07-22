@@ -275,27 +275,13 @@ namespace ILRepacking
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
-            // TODO: Win32 version/icon properties seem not to be copied... limitation in cecil 0.9x?
-            StrongNameKeyPair snkp = null;
-            if (Options.KeyFile != null && File.Exists(Options.KeyFile))
-            {
-                using (var stream = new FileStream(Options.KeyFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    snkp = new StrongNameKeyPair(stream);
-                }
-                TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
-                TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
-                TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
-            }
-            else
-            {
-                TargetAssemblyDefinition.Name.PublicKey = null;
-                TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
-            }
+
             _lineIndexer = new IKVMLineIndexer(this);
+            var signingStep = new SigningStep(this, Options);
 
             List<IRepackStep> repackSteps = new List<IRepackStep>
             {
+                signingStep,
                 new ReferencesRepackStep(Logger, this),
                 new TypesRepackStep(Logger, this, _repackImporter, Options),
                 new ResourcesRepackStep(Logger, this, Options),
@@ -309,12 +295,11 @@ namespace ILRepacking
                 step.Perform();
             }
 
-            var parameters = new WriterParameters();
-            if ((snkp != null) && !Options.DelaySign)
-                parameters.StrongNameKeyPair = snkp;
-            // write PDB/MDB?
-            if (Options.DebugInfo)
-                parameters.WriteSymbols = true;
+            var parameters = new WriterParameters
+            {
+                StrongNameKeyPair = signingStep.KeyPair,
+                WriteSymbols = Options.DebugInfo
+            };
             // create output directory if it does not exist
             var outputDir = Path.GetDirectoryName(Options.OutputFile);
             if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))

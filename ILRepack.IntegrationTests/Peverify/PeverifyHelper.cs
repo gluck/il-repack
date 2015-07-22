@@ -15,6 +15,9 @@ namespace ILRepack.IntegrationTests.Peverify
 {
     public static class PeverifyHelper
     {
+        // https://msdn.microsoft.com/fr-fr/library/dn535792.aspx
+        public const string META_E_CA_FRIENDS_SN_REQUIRED = "801311e6";
+
         static Regex Success = new Regex(@"All Classes and Methods in .* Verified");
         static Regex Failure = new Regex(@"\d+ Error\(s\) Verifying .*");
         public static IObservable<string> Peverify(string workingDirectory, params string[] args)
@@ -33,6 +36,20 @@ namespace ILRepack.IntegrationTests.Peverify
                 Arguments = arg
             };
             return new ObservableProcess(info).Output.Where(s => !Success.IsMatch(s) && !Failure.IsMatch(s));
+        }
+
+        public static IObservable<string> ToErrorCodes(this IObservable<string> output)
+        {
+            return output.SelectMany(e =>
+            {
+                var i = e.IndexOf("[HRESULT 0x");
+                if (i > 0)
+                {
+                    return Observable.Return(e.Substring(i + 11, 8));
+                }
+                return Observable.Empty<string>();
+            }
+            ).Distinct();
         }
 
         private static string FindRegistryValueUnderKey(string registryBaseKeyName, string registryKeyName, RegistryView registryView)

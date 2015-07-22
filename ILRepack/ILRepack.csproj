@@ -114,6 +114,7 @@
     <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
+    <Compile Include="Steps\SigningStep.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>

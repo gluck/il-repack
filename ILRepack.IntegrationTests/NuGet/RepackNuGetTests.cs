@@ -46,13 +46,36 @@ namespace ILRepack.IntegrationTests.NuGet
             .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
             .Select(lib => Path.GetFileName(lib.Item1))
             .ToList()
-            .Do(list =>
-            {
-                Assert.IsTrue(list.Count >= platform.Packages.Count());
-                Console.WriteLine("Merging {0}", string.Join(",",list));
-                TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp)));
-                Assert.IsTrue(File.Exists(Tmp("test.dll")));
-            }).First();
+            .Do(list => RepackPlatform(platform, list))
+            .First();
+        }
+
+        [Test]
+        public void foo()
+        {
+            var platform = Platform.From(
+                Package.From("reactiveui-core", "6.5.0")
+                    .WithArtifact(@"lib\net45\ReactiveUI.dll"),
+                Package.From("Splat", "1.6.2")
+                    .WithArtifact(@"lib\net45\Splat.dll"))
+                .WithExtraArgs("/keyfile:../../../ILRepack/ILRepack.snk");
+            Observable.ToObservable(platform.Packages)
+            .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
+            .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+            .Select(lib => Path.GetFileName(lib.Item1))
+            .ToList()
+            .Do(list => RepackPlatform(platform, list))
+            .First();
+            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
+            Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
+        }
+
+        void RepackPlatform(Platform platform, IList<string> list)
+        {
+            Assert.IsTrue(list.Count >= platform.Packages.Count());
+            Console.WriteLine("Merging {0}", string.Join(",",list));
+            TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
+            Assert.IsTrue(File.Exists(Tmp("test.dll")));
         }
 
         string Tmp(string file)

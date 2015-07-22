@@ -11,8 +11,12 @@ namespace ILRepack.IntegrationTests.NuGet
 
         public Package WithFwk(string fwk)
         {
-            var pattern = $"lib{Path.DirectorySeparatorChar}{fwk}{Path.DirectorySeparatorChar}{this.Name}.dll";
-            return WithMatcher(file => String.Equals(file, pattern, StringComparison.InvariantCultureIgnoreCase) );
+            return WithArtifact($"lib{Path.DirectorySeparatorChar}{fwk}{Path.DirectorySeparatorChar}{this.Name}.dll");
+        }
+
+        public Package WithArtifact(string artifact)
+        {
+            return WithMatcher(file => String.Equals(file, artifact.Replace('/', Path.DirectorySeparatorChar), StringComparison.InvariantCultureIgnoreCase));
         }
 
         public Package WithMatcher(Func<string, bool> matcher)
