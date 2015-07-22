@@ -50,24 +50,6 @@ namespace ILRepacking.Steps
 
             if (_options.CopyAttributes)
             {
-                CleanupAttributes(typeof(CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
-                CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, null);
-                CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-                CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
-                RemoveAttributes(typeof(InternalsVisibleToAttribute).FullName, ca =>
-                {
-                    String name = (string)ca.ConstructorArguments[0].Value;
-                    int idx;
-                    if ((idx = name.IndexOf(", PublicKey=", StringComparison.Ordinal)) != -1)
-                    {
-                        name = name.Substring(0, idx);
-                    }
-                    return _repackContext.MergedAssemblies.Any(x => x.Name.Name == name);
-                });
-                RemoveAttributes(typeof(AssemblyDelaySignAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyFileAttribute).FullName, null);
-                RemoveAttributes(typeof(AssemblyKeyNameAttribute).FullName, null);
                 foreach (var ass in _repackContext.MergedAssemblies)
                 {
                     _repackCopier.CopyCustomAttributes(ass.CustomAttributes, targetAssemblyDefinition.CustomAttributes, _options.AllowMultipleAssemblyLevelAttributes, null);
@@ -76,6 +58,7 @@ namespace ILRepacking.Steps
                 {
                     _repackCopier.CopyCustomAttributes(mod.CustomAttributes, targetAssemblyMainModule.CustomAttributes, _options.AllowMultipleAssemblyLevelAttributes, null);
                 }
+                CleanupAttributes();
             }
             else if (_options.AttributeFile != null)
             {
@@ -89,36 +72,72 @@ namespace ILRepacking.Steps
                 _repackCopier.CopyCustomAttributes(_repackContext.PrimaryAssemblyDefinition.CustomAttributes, targetAssemblyDefinition.CustomAttributes, null);
                 _repackCopier.CopyCustomAttributes(_repackContext.PrimaryAssemblyMainModule.CustomAttributes, targetAssemblyMainModule.CustomAttributes, null);
                 // TODO: should copy Win32 resources, too
+                CleanupAttributes();
             }
             _repackCopier.CopySecurityDeclarations(_repackContext.PrimaryAssemblyDefinition.SecurityDeclarations, targetAssemblyDefinition.SecurityDeclarations, null);
         }
 
+        void CleanupAttributes()
+        {
+            CleanupAttributes(typeof(CompilationRelaxationsAttribute).FullName, x => x.ConstructorArguments.Count == 1 /* TODO && x.ConstructorArguments[0].Value.Equals(1) */);
+            CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, _ => true);
+            CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+            CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
+            CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
+            RemoveAttributes<InternalsVisibleToAttribute>(ca =>
+            {
+                String name = (string)ca.ConstructorArguments[0].Value;
+                int idx;
+                if ((idx = name.IndexOf(", PublicKey=", StringComparison.Ordinal)) != -1)
+                {
+                    name = name.Substring(0, idx);
+                }
+                return _repackContext.MergedAssemblies.Any(x => x.Name.Name == name);
+            });
+            RemoveAttributes<InternalsVisibleToAttribute>(ca =>
+            {
+                var targetIsSigned = (_repackContext.TargetAssemblyMainModule.Attributes & ModuleAttributes.StrongNameSigned) == ModuleAttributes.StrongNameSigned;
+                if (!targetIsSigned)
+                    return false;
+                String name = (string)ca.ConstructorArguments[0].Value;
+                bool isSigned = name.IndexOf(", PublicKey=", StringComparison.Ordinal) != -1 && name.IndexOf(", PublicKey=null", StringComparison.Ordinal) == -1;
+                // remove non-signed refs from signed merged assembly
+                return !isSigned;
+            });
+            RemoveAttributes<AssemblyDelaySignAttribute>(_ => true);
+            RemoveAttributes<AssemblyKeyFileAttribute>(_ => true);
+            RemoveAttributes<AssemblyKeyNameAttribute>(_ => true);
+        }
+
         private void CleanupAttributes(string type, Func<CustomAttribute, bool> extra)
         {
-            if (!_repackContext.MergedAssemblies.All(ass => ass.CustomAttributes.Any(attr => attr.AttributeType.FullName == type && (extra == null || extra(attr)))))
+            if (!_repackContext.MergedAssemblies.All(ass => ass.CustomAttributes.Any(attr => attr.AttributeType.FullName == type && extra(attr))))
             {
-                if (RemoveAttributes(type, null))
+                if (RemoveAttributes(type, _ => true))
                 {
                     _logger.Warn("[" + type + "] attribute wasn't merged because of inconsistency across merged assemblies");
                 }
             }
         }
 
+        private bool RemoveAttributes<T>(Func<CustomAttribute, bool> predicate)
+        {
+            return RemoveAttributes(typeof(T).FullName, predicate);
+        }
+
         private bool RemoveAttributes(string attrTypeName, Func<CustomAttribute, bool> predicate)
         {
+            var cas = _repackContext.TargetAssemblyDefinition.CustomAttributes;
             bool ret = false;
-            foreach (var ass in _repackContext.MergedAssemblies)
+            for (int i = 0; i < cas.Count;)
             {
-                for (int i = 0; i < ass.CustomAttributes.Count;)
+                if (cas[i].AttributeType.FullName == attrTypeName && predicate(cas[i]))
                 {
-                    if (ass.CustomAttributes[i].AttributeType.FullName == attrTypeName && (predicate == null || predicate(ass.CustomAttributes[i])))
-                    {
-                        ass.CustomAttributes.RemoveAt(i);
-                        ret = true;
-                        continue;
-                    }
-                    i++;
+                    cas.RemoveAt(i);
+                    ret = true;
+                    continue;
                 }
+                i++;
             }
             return ret;
         }

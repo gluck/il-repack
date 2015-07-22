@@ -51,7 +51,7 @@ namespace ILRepack.IntegrationTests.NuGet
         }
 
         [Test]
-        public void foo()
+        public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
         {
             var platform = Platform.From(
                 Package.From("reactiveui-core", "6.5.0")

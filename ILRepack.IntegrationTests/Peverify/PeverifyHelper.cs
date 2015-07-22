@@ -45,7 +45,7 @@ namespace ILRepack.IntegrationTests.Peverify
                 var i = e.IndexOf("[HRESULT 0x");
                 if (i > 0)
                 {
-                    return Observable.Return(e.Substring(i + 11, 8));
+                    return Observable.Return(e.Substring(i + 11, 8).ToLowerInvariant());
                 }
                 return Observable.Empty<string>();
             }
