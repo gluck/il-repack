@@ -4,6 +4,7 @@ IL Repack changelog
 2.0.3
 -------
 * Types fixed during the 'Fixing references' phase are printed in verbose mode.
+* InternalsVisibleTo attributes gets cleaned up to allow signed repacked assemblies to be loaded fine.
 
 2.0.0
 -------
