@@ -1,6 +1,11 @@
 IL Repack changelog
 ====================
 
+2.0.4
+-------
+* When used with copyattrs flag, primary (first) assembly attributes are prefered
+  (when the custom attribute doesn't allow multiple)
+
 2.0.3
 -------
 * Types fixed during the 'Fixing references' phase are printed in verbose mode.
