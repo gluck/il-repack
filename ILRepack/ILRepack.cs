@@ -35,7 +35,7 @@ namespace ILRepacking
         internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
         public List<AssemblyDefinition> OtherAssemblies { get; private set; }
-        // contains all assemblies, primary and 'other'
+        // contains all assemblies, primary (first one) and 'other'
         public List<AssemblyDefinition> MergedAssemblies { get; private set; }
         public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
         public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
@@ -95,7 +95,7 @@ namespace ILRepacking
             Options.DebugInfo = debugSymbolsRead;
 
             MergedAssemblies = new List<AssemblyDefinition>(OtherAssemblies);
-            MergedAssemblies.Add(PrimaryAssemblyDefinition);
+            MergedAssemblies.Insert(0, PrimaryAssemblyDefinition);
         }
 
         private AssemblyDefinitionContainer ReadInputAssembly(string assembly, bool isPrimary)
