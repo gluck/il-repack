@@ -52,6 +52,30 @@ namespace ILRepack.IntegrationTests.NuGet
 
         [Test]
         [Platform(Include = "win")]
+        public void VerifiesMergesBclFine()
+        {
+            var platform = Platform.From(
+                Package.From("Microsoft.Bcl", "1.1.10")
+                    .WithArtifact(@"lib\net40\System.Runtime.dll"),
+                Package.From("Microsoft.Bcl", "1.1.10")
+                    .WithArtifact(@"lib\net40\System.Threading.Tasks.dll"),
+                Package.From("Microsoft.Bcl.Async", "1.0.168")
+                    .WithArtifact(@"lib\net40\Microsoft.Threading.Tasks.dll"))
+                .WithExtraArgs(@"/targetplatform:v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0");
+            Observable.ToObservable(platform.Packages)
+            .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
+            .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+            .Select(lib => Path.GetFileName(lib.Item1))
+            .ToList()
+            .Do(list => RepackPlatform(platform, list))
+            .First();
+            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
+            Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TOKEN_RESOLVE));
+            Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TYPELOAD));
+        }
+
+        [Test]
+        [Platform(Include = "win")]
         public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
         {
             var platform = Platform.From(

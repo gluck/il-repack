@@ -95,6 +95,9 @@ namespace ILRepacking
             TypeReference other;
             if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
             {
+                // when reading forwarded types, we don't know if they are value types, fix that later on
+                if (type.IsValueType && !other.IsValueType)
+                    other.IsValueType = true;
                 return other;
             }
             return null;
