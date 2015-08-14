@@ -15,6 +15,7 @@
 // limitations under the License.
 //
 using Mono.Cecil;
+using System;
 using System.Linq;
 
 namespace ILRepacking.Steps
@@ -40,16 +41,14 @@ namespace ILRepacking.Steps
             foreach (var z in _repackContext.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
             {
                 string name = z.Name;
-                if (!_repackContext.MergedAssemblies.Any(y => y.Name.Name == name) &&
-                    _repackContext.TargetAssemblyDefinition.Name.Name != name &&
-                    !targetAssemblyMainModule.AssemblyReferences.Any(y => y.Name == name && z.Version == y.Version))
+                if (!_repackContext.MergedAssemblies.Any(y => y.Name.Name == name) && _repackContext.TargetAssemblyDefinition.Name.Name != name)
                 {
-                    // TODO: fix .NET runtime references?
-                    // - to target a specific runtime version or
-                    // - to target a single version if merged assemblies target different versions
-                    _logger.Verbose("- add reference " + z);
                     AssemblyNameReference fixedRef = _repackContext.PlatformFixer.FixPlatformVersion(z);
-                    targetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
+                    if (!targetAssemblyMainModule.AssemblyReferences.Any(y => Equals(y, fixedRef)))
+                    {
+                        _logger.Verbose("- add reference " + z);
+                        targetAssemblyMainModule.AssemblyReferences.Add(fixedRef);
+                    }
                 }
             }
             _repackContext.LineIndexer.PostRepackReferences();
@@ -64,5 +63,47 @@ namespace ILRepacking.Steps
                 }
             }
         }
+
+        private static bool Equals (byte [] a, byte [] b)
+        {
+            if (ReferenceEquals (a, b))
+                return true;
+            if (a == null)
+                return false;
+            if (a.Length != b.Length)
+                return false;
+            for (int i = 0; i < a.Length; i++)
+                if (a [i] != b [i])
+                    return false;
+            return true;
+        }
+
+        private static bool Equals<T> (T a, T b) where T : class, IEquatable<T>
+        {
+            if (ReferenceEquals (a, b))
+                return true;
+            if (a == null)
+                return false;
+            return a.Equals (b);
+        }
+
+        private static bool Equals (AssemblyNameReference a, AssemblyNameReference b)
+        {
+            if (ReferenceEquals (a, b))
+                return true;
+            if (a.Name != b.Name)
+                return false;
+            if (!Equals (a.Version, b.Version))
+                return false;
+            if (a.Culture != b.Culture)
+                return false;
+            if (!Equals (a.PublicKeyToken, b.PublicKeyToken))
+                return false;
+            // unsure about this one, but there's #41 and duplicate asm references can't really hurt
+            if (a.IsRetargetable != b.IsRetargetable)
+                return false;
+            return true;
+        }
+
     }
 }
