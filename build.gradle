@@ -1,8 +1,8 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id "com.ullink.msbuild" version "2.9"
-  id "com.ullink.nuget" version "2.7"
+  id "com.ullink.msbuild" version "2.10"
+  id "com.ullink.nuget" version "2.8"
   id "com.ullink.nunit" version "1.2"
   id "com.ullink.opencover" version "1.1"
 }
@@ -11,13 +11,8 @@ archivesBaseName = 'ILRepack'
 
 defaultTasks('nugetPack')
 
-def removeExtension(String path) {
-    path.replaceFirst(~/(?<=.)\.[^\.]+$/, '')
-}
-
 assemblyInfoPatcher {
     version = project.version + '.0'
-    enabled = true
 }
 
 msbuild.dependsOn nugetRestore
@@ -50,7 +45,7 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
     }
     ext.repacked = new File(temporaryDir, 'ILRepack.exe')
     ext.repackedLib = new File(temporaryDir, 'ILRepack.dll')
-    outputs.files([ext.repacked, ext.repackedLib, removeExtension(ext.repacked.path)+'.pdb'])
+    outputs.files([ext.repacked, ext.repackedLib, ext.repacked.path.replace('.exe','.pdb')])
 }
 
 repack << {
