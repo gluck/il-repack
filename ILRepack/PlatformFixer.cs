@@ -13,6 +13,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+using ILRepacking.Mixins;
 using Mono.Cecil;
 using System;
 using System.Collections;
@@ -22,14 +23,16 @@ namespace ILRepacking
 {
     internal class PlatformFixer
     {
+        readonly IRepackContext repack;
         private TargetRuntime sourceRuntime;
         private TargetRuntime targetRuntime;
         private string targetPlatformDirectory;
         /// <summary>Loaded assemblies are stored here to prevent them loading more than once.</summary>
         private Hashtable platformAssemblies = new Hashtable();
 
-        public PlatformFixer(TargetRuntime runtime)
+        public PlatformFixer(IRepackContext repack, TargetRuntime runtime)
         {
+            this.repack = repack;
             sourceRuntime = runtime;
         }
 
@@ -71,14 +74,19 @@ namespace ILRepacking
 
         public AssemblyNameReference FixPlatformVersion(AssemblyNameReference assyName)
         {
+            return GetFixedPlatformVersion(assyName) ?? repack.TargetAssemblyMainModule.AssemblyReferences.AddUniquely(assyName);
+        }
+
+        AssemblyNameReference GetFixedPlatformVersion(AssemblyNameReference assyName)
+        {
             if (targetPlatformDirectory == null)
-                return assyName;
+                return null;
 
             AssemblyDefinition fixedDef = TryGetPlatformAssembly(assyName);
-            if (fixedDef != null)
-                return fixedDef.Name;
-
-            return assyName;
+            if (fixedDef == null)
+                return null;
+            var ret = repack.TargetAssemblyMainModule.AssemblyReferences.AddUniquely(fixedDef.Name);
+            return ret;
         }
 
         public void FixPlatformVersion(TypeReference reference)
@@ -90,7 +98,7 @@ namespace ILRepacking
             if (scopeAsm == null)
                 return;
 
-            AssemblyDefinition platformAsm = TryGetPlatformAssembly(scopeAsm);
+            var platformAsm = GetFixedPlatformVersion(scopeAsm);
             if (platformAsm == null)
                 return;
 
@@ -120,7 +128,7 @@ namespace ILRepacking
             }
             else if (!(reference is GenericParameter))
             {
-                reference.Scope = platformAsm.Name;
+                reference.Scope = platformAsm;
             }
             if (reference.HasGenericParameters)
                 foreach (var gp in reference.GenericParameters)

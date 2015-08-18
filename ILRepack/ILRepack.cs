@@ -217,7 +217,7 @@ namespace ILRepacking
             ReadInputAssemblies();
             GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
-            _platformFixer = new PlatformFixer(PrimaryAssemblyMainModule.Runtime);
+            _platformFixer = new PlatformFixer(this, PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
             bool hadStrongName = PrimaryAssemblyDefinition.Name.HasPublicKey;
 

@@ -44,13 +44,7 @@ namespace ILRepacking
 
         public void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
         {
-            var nt = new ExportedType(type.Namespace, type.Name, module, type.Scope)
-            {
-                Attributes = type.Attributes,
-                Identifier = type.Identifier, // TODO: CHECK THIS when merging multiple assemblies when exported types ?
-                DeclaringType = type.DeclaringType
-            };
-
+            var scope = default(IMetadataScope);
             // try to skip redirects to merged assemblies
             if (type.Scope is AssemblyNameReference)
             {
@@ -58,6 +52,7 @@ namespace ILRepacking
                 {
                     return;
                 }
+                scope = _repackContext.PlatformFixer.FixPlatformVersion(((AssemblyNameReference)type.Scope));
             }
             else if (type.Scope is ModuleReference)
             {
@@ -65,7 +60,16 @@ namespace ILRepacking
                 {
                     return;
                 }
+                // TODO fix scope (should probably be added to target ModuleReferences, otherwise metadatatoken will be wrong)
+                // I've never seen an exported type redirected to a module, doing so would be blind guessing
+                scope = type.Scope;
             }
+            var nt = new ExportedType(type.Namespace, type.Name, module, scope)
+            {
+                Attributes = type.Attributes,
+                Identifier = type.Identifier, // TODO: CHECK THIS when merging multiple assemblies when exported types ?
+                DeclaringType = type.DeclaringType
+            };
             col.Add(nt);
         }
 
