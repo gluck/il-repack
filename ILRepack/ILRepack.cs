@@ -154,9 +154,12 @@ namespace ILRepacking
             }
         }
 
-        AssemblyNameReference IRepackContext.MergeAssemblyReference(AssemblyNameReference name)
+        IMetadataScope IRepackContext.MergeScope(IMetadataScope scope)
         {
-            return TargetAssemblyMainModule.AssemblyReferences.AddUniquely(name);
+            if (scope is AssemblyNameReference)
+                return TargetAssemblyMainModule.AssemblyReferences.AddUniquely((Mono.Cecil.AssemblyNameReference)scope);
+            Logger.Warn("Merging a module scope, probably not supported");
+            return scope;
         }
 
         internal class AssemblyDefinitionContainer

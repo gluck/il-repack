@@ -152,10 +152,10 @@ namespace ILRepacking
             if (!enabled)
                 return;
 
-            var ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
+            IMetadataScope ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
             if (ikvmRuntimeReference == null)
             {
-                ikvmRuntimeReference = repack.MergeAssemblyReference(repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").Name);
+                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").Name);
             }
             if (ikvmRuntimeReference == null)
             {

@@ -72,12 +72,12 @@ namespace ILRepacking
             }
         }
 
-        public AssemblyNameReference FixPlatformVersion(AssemblyNameReference assyName)
+        public IMetadataScope FixPlatformVersion(AssemblyNameReference assyName)
         {
-            return GetFixedPlatformVersion(assyName) ?? repack.MergeAssemblyReference(assyName);
+            return GetFixedPlatformVersion(assyName) ?? repack.MergeScope(assyName);
         }
 
-        AssemblyNameReference GetFixedPlatformVersion(AssemblyNameReference assyName)
+        IMetadataScope GetFixedPlatformVersion(AssemblyNameReference assyName)
         {
             if (targetPlatformDirectory == null)
                 return null;
@@ -85,7 +85,7 @@ namespace ILRepacking
             AssemblyDefinition fixedDef = TryGetPlatformAssembly(assyName);
             if (fixedDef == null)
                 return null;
-            var ret = repack.MergeAssemblyReference(fixedDef.Name);
+            var ret = repack.MergeScope(fixedDef.Name);
             return ret;
         }
 
