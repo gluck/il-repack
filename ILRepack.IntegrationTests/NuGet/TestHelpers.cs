@@ -42,7 +42,7 @@ namespace ILRepack.IntegrationTests.NuGet
             var mergedFiles = repackOptions.ResolveFiles().Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred)));
             foreach (var a in outputFile.MainModule.AssemblyReferences.Where(x => mergedFiles.Any(y => repackOptions.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
             {
-                Assert.Fail("");
+                Assert.Fail($"Merged assembly retains a reference to one (or more) of the merged files: ${a.FullName}");
             }
         }
 
