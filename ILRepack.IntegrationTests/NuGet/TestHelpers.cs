@@ -1,4 +1,6 @@
 ﻿using ILRepacking;
+using Mono.Cecil;
+using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,8 +30,20 @@ namespace ILRepack.IntegrationTests.NuGet
 
         public static void DoRepackForCmd(IEnumerable<string> args)
         {
-            var repack = new ILRepacking.ILRepack(new RepackOptions(args.Concat(new[] { "/log" })));
+            var repackOptions = new RepackOptions(args.Concat(new[] { "/log" }));
+            var repack = new ILRepacking.ILRepack(repackOptions);
             repack.Repack();
+            ReloadAndCheckReferences(repackOptions);
+        }
+
+        private static void ReloadAndCheckReferences(RepackOptions repackOptions)
+        {
+            var outputFile = AssemblyDefinition.ReadAssembly(repackOptions.OutputFile, new ReaderParameters(ReadingMode.Immediate));
+            var mergedFiles = repackOptions.ResolveFiles().Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred)));
+            foreach (var a in outputFile.MainModule.AssemblyReferences.Where(x => mergedFiles.Any(y => repackOptions.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
+            {
+                Assert.Fail("");
+            }
         }
 
         public static void SaveAs(Stream input, string directory, string fileName)

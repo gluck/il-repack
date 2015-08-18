@@ -5,7 +5,7 @@ namespace ILRepacking
 {
     public class RepackAssemblyResolver : DefaultAssemblyResolver
     {
-        public void RegisterAssemblies(List<AssemblyDefinition> mergedAssemblies)
+        public void RegisterAssemblies(IList<AssemblyDefinition> mergedAssemblies)
         {
             foreach (var assemblyDefinition in mergedAssemblies)
             {

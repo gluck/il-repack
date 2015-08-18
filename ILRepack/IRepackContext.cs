@@ -21,14 +21,14 @@ namespace ILRepacking
     internal interface IRepackContext
     {
         RepackAssemblyResolver GlobalAssemblyResolver { get; }
-        List<AssemblyDefinition> MergedAssemblies { get; }
+        IList<AssemblyDefinition> MergedAssemblies { get; }
         ModuleDefinition TargetAssemblyMainModule { get; }
         PlatformFixer PlatformFixer { get; }
         ReflectionHelper ReflectionHelper { get; }
         MappingHandler MappingHandler { get; }
         IKVMLineIndexer LineIndexer { get; }
         AssemblyDefinition TargetAssemblyDefinition { get; }
-        List<AssemblyDefinition> OtherAssemblies { get; }
+        IList<AssemblyDefinition> OtherAssemblies { get; }
         AssemblyDefinition PrimaryAssemblyDefinition { get; }
         ModuleDefinition PrimaryAssemblyMainModule { get; }
 

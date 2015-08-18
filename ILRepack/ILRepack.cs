@@ -31,12 +31,12 @@ namespace ILRepacking
         internal RepackOptions Options;
         internal ILogger Logger;
 
-        internal List<string> MergedAssemblyFiles { get; set; }
+        internal IList<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
         // contains all 'other' assemblies, but not the primary assembly
-        public List<AssemblyDefinition> OtherAssemblies { get; private set; }
+        public IList<AssemblyDefinition> OtherAssemblies { get; private set; }
         // contains all assemblies, primary (first one) and 'other'
-        public List<AssemblyDefinition> MergedAssemblies { get; private set; }
+        public IList<AssemblyDefinition> MergedAssemblies { get; private set; }
         public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
         public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
         public RepackAssemblyResolver GlobalAssemblyResolver { get; } = new RepackAssemblyResolver();
@@ -73,7 +73,7 @@ namespace ILRepacking
 
         private void ReadInputAssemblies()
         {
-            MergedAssemblyFiles = Options.InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
+            MergedAssemblyFiles = Options.ResolveFiles();
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             var primary = MergedAssemblyFiles.FirstOrDefault();
@@ -159,17 +159,6 @@ namespace ILRepacking
             public AssemblyDefinition Definition { get; set; }
             public string Assembly { get; set; }
             public bool IsPrimary { get; set; }
-        }
-
-        private IEnumerable<string> ResolveFile(string s)
-        {
-            if (!Options.AllowWildCards || s.IndexOfAny(new[] { '*', '?' }) == -1)
-                return new[] { s };
-            if (Path.GetDirectoryName(s).IndexOfAny(new[] { '*', '?' }) != -1)
-                throw new Exception("Invalid path: " + s);
-            string dir = Path.GetDirectoryName(s);
-            if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
-            return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
         }
 
         public enum Kind
@@ -325,20 +314,6 @@ namespace ILRepacking
             ConfigMerger.Process(this);
             if (Options.XmlDocumentation)
                 DocumentationMerger.Process(this);
-
-            // TODO: we're done here, the code below is only test code which can be removed once it's all running fine
-            // 'verify' generated assembly
-            AssemblyDefinition asm2 = AssemblyDefinition.ReadAssembly(Options.OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver });
-            // lazy match on the name (not full) to catch requirements about merging different versions
-            bool failed = false;
-            foreach (var a in asm2.MainModule.AssemblyReferences.Where(x => MergedAssemblies.Any(y => Options.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
-            {
-                // failed
-                Logger.Error("Merged assembly still references " + a.FullName);
-                failed = true;
-            }
-            if (failed)
-                throw new Exception("Merging failed, see above errors");
         }
 
         private void ResolveSearchDirectories()

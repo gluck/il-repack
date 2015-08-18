@@ -118,7 +118,7 @@ namespace ILRepacking.Steps
             string path,
             AssemblyDefinition primaryAssembly,
             AssemblyDefinition sourceAssembly,
-            List<AssemblyDefinition> otherAssemblies)
+            IList<AssemblyDefinition> otherAssemblies)
         {
             if (string.IsNullOrEmpty(path) || !(path.StartsWith("/") || path.StartsWith("pack://")))
                 return path;

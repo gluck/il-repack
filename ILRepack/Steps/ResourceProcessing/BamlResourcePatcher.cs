@@ -25,7 +25,7 @@ namespace ILRepacking.Steps.ResourceProcessing
     internal class BamlResourcePatcher : IResProcessor
     {
         private readonly AssemblyDefinition _mainAssembly;
-        private readonly List<AssemblyDefinition> _otherAssemblies;
+        private readonly IList<AssemblyDefinition> _otherAssemblies;
 
         private readonly Dictionary<Type, Action<BamlRecord, AssemblyDefinition>> _nodeProcessors;
 

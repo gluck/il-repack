@@ -228,5 +228,21 @@ namespace ILRepacking
             if ((KeyFile != null) && !file.Exists(KeyFile))
                 throw new ArgumentException($"KeyFile does not exist: '{KeyFile}'.");
         }
+
+        public IList<string> ResolveFiles()
+        {
+            return InputAssemblies.SelectMany(ResolveFile).Distinct().ToList();
+        }
+
+        IEnumerable<string> ResolveFile(string s)
+        {
+            if (!AllowWildCards || s.IndexOfAny(new[] { '*', '?' }) == -1)
+                return new[] { s };
+            if (Path.GetDirectoryName(s).IndexOfAny(new[] { '*', '?' }) != -1)
+                throw new Exception("Invalid path: " + s);
+            string dir = Path.GetDirectoryName(s);
+            if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
+            return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
+        }
     }
 }

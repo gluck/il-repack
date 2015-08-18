@@ -86,6 +86,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
+      <Project>{d68133bd-1e63-496e-9ede-4fbdbf77b486}</Project>
+      <Name>Mono.Cecil</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ILRepack\ILRepack.csproj">
       <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
       <Name>ILRepack</Name>
