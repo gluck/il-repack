@@ -34,6 +34,7 @@ namespace ILRepacking
 
         TypeDefinition GetMergedTypeFromTypeRef(TypeReference type);
         TypeReference GetExportedTypeFromTypeRef(TypeReference type);
+        AssemblyNameReference MergeAssemblyReference(AssemblyNameReference name);
 
         string FixTypeName(string assemblyName, string typeName);
         string FixAssemblyName(string assemblyName);

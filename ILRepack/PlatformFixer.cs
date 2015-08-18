@@ -74,7 +74,7 @@ namespace ILRepacking
 
         public AssemblyNameReference FixPlatformVersion(AssemblyNameReference assyName)
         {
-            return GetFixedPlatformVersion(assyName) ?? repack.TargetAssemblyMainModule.AssemblyReferences.AddUniquely(assyName);
+            return GetFixedPlatformVersion(assyName) ?? repack.MergeAssemblyReference(assyName);
         }
 
         AssemblyNameReference GetFixedPlatformVersion(AssemblyNameReference assyName)
@@ -85,7 +85,7 @@ namespace ILRepacking
             AssemblyDefinition fixedDef = TryGetPlatformAssembly(assyName);
             if (fixedDef == null)
                 return null;
-            var ret = repack.TargetAssemblyMainModule.AssemblyReferences.AddUniquely(fixedDef.Name);
+            var ret = repack.MergeAssemblyReference(fixedDef.Name);
             return ret;
         }
 

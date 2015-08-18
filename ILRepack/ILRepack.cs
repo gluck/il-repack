@@ -23,6 +23,7 @@ using ILRepacking.Steps;
 using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Unix.Native;
+using ILRepacking.Mixins;
 
 namespace ILRepacking
 {
@@ -153,6 +154,11 @@ namespace ILRepacking
             }
         }
 
+        AssemblyNameReference IRepackContext.MergeAssemblyReference(AssemblyNameReference name)
+        {
+            return TargetAssemblyMainModule.AssemblyReferences.AddUniquely(name);
+        }
+
         internal class AssemblyDefinitionContainer
         {
             public bool SymbolsRead { get; set; }
@@ -265,7 +271,7 @@ namespace ILRepacking
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
 
-            _lineIndexer = new IKVMLineIndexer(this);
+            _lineIndexer = new IKVMLineIndexer(this, Options.LineIndexation);
             var signingStep = new SigningStep(this, Options);
 
             List<IRepackStep> repackSteps = new List<IRepackStep>
