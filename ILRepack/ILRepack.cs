@@ -24,6 +24,7 @@ using Mono.Cecil;
 using Mono.Cecil.PE;
 using Mono.Unix.Native;
 using ILRepacking.Mixins;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace ILRepacking
 {
@@ -212,6 +213,35 @@ namespace ILRepacking
             return targetPlatformDirectory;
         }
 
+        static IEnumerable<AssemblyName> GetRepackAssemblyNames()
+        {
+            try
+            {
+                using (Stream stream = typeof(ILRepack).Assembly.GetManifestResourceStream(ResourcesRepackStep.ILRepackListResourceName))
+                if (stream != null)
+                {
+                    string[] list = (string[])new BinaryFormatter().Deserialize(stream);
+                    return list.Select(x => new AssemblyName(x));
+                }
+            }
+            catch (Exception)
+            {
+            }
+            return Enumerable.Empty<AssemblyName>();
+        }
+
+        void PrintRepackVersion()
+        {
+            var assemblies = GetRepackAssemblyNames();
+            var ilRepack = assemblies?.FirstOrDefault(name => name.Name == "ILRepack") ?? new AssemblyName(typeof(ILRepack).Assembly.FullName);
+            Logger.Info($"IL Repack - Version {ilRepack.Version.ToString(3)}");
+            Logger.Verbose($"Runtime: ${typeof(ILRepack).Assembly.FullName}");
+            foreach (var asb in assemblies)
+            {
+                Logger.Verbose($" - {asb.FullName}");
+            }
+        }
+
         /// <summary>
         /// The actual repacking process, called by main after parsing arguments.
         /// When referencing this assembly, call this after setting the merge properties.
@@ -219,6 +249,7 @@ namespace ILRepacking
         public void Repack()
         {
             Options.Validate();
+            PrintRepackVersion();
             _reflectionHelper = new ReflectionHelper(this);
             ResolveSearchDirectories();
 
