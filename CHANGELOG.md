@@ -1,6 +1,13 @@
 IL Repack changelog
 ====================
 
+2.0.5
+-------
+* Bcl+BclAsync now repacks correctly
+ * Due to caching, some TypeRefs where incorrectly flagged class instead of valuetype
+ * Some original AssemblyReferences were kept in the merged assembly as ExportedType scope or TypeRef scope, this caused issue unless (by luck) the repacked token was the same as original one
+* Added ILRepack version in repack log
+
 2.0.4
 -------
 * When used with copyattrs flag, primary (first) assembly attributes are prefered
