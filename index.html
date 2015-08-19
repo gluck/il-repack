@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Il-repack by gluck</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Il-repack</h1>
+        <h2>Open-source alternative to ILMerge</h2>
+        <a href="https://github.com/gluck/il-repack" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <p><a href="https://ci.appveyor.com/project/gluck/il-repack"><img src="https://img.shields.io/appveyor/ci/gluck/il-repack.svg?label=build%20windows" alt="Build status"></a> <a href="https://travis-ci.org/gluck/il-repack"><img src="https://img.shields.io/travis/gluck/il-repack.svg?label=build%20linux" alt="Build Status"></a> <a href="https://www.nuget.org/packages/ILRepack/"><img src="https://img.shields.io/nuget/dt/ILRepack.svg" alt="NuGet"></a> <a href="https://www.nuget.org/packages/ILRepack/"><img src="https://img.shields.io/nuget/v/ILRepack.svg" alt="NuGet"></a> <a href="http://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/github/license/gluck/il-repack.svg" alt="GitHub license"></a><br>
+<a href="https://gitter.im/gluck/il-repack"><img src="https://img.shields.io/badge/gitter-join%20chat-green.svg" alt="Gitter chat"></a></p>
+
+<h1>
+<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h1>
+
+<p>ILRepack is meant at replacing <a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=22914587-B4AD-4EAE-87CF-B14AE6A939B0&amp;displaylang=en">ILMerge</a> / <a href="http://evain.net/blog/articles/2006/11/06/an-introduction-to-mono-merge">Mono.Merge</a>.</p>
+
+<p>The former being closed-source, impossible to customize, slow, resource consuming and many more.
+The later being deprecated, unsupported, and based on an old version of Mono.Cecil.</p>
+
+<p>Here we're using latest (slightly modified) Cecil sources (0.9), you can find the fork <a href="https://github.com/gluck/cecil">here</a>.
+Mono.Posix is also required (build only, it gets merged afterwards) for executable bit set on target file.</p>
+
+<h2>
+<a id="downloads" class="anchor" href="#downloads" aria-hidden="true"><span class="octicon octicon-link"></span></a>Downloads</h2>
+
+<p>You can grab it using <a href="http://nuget.org/packages/ILRepack/">NuGet</a>.</p>
+
+<p>Or if you're old-school (and want to stay like that), this <a href="http://nuget.org/api/v2/package/ILRepack">direct link</a> will give you the latest nupkg file, which you can open as a zip file.</p>
+
+<h2>
+<a id="syntax" class="anchor" href="#syntax" aria-hidden="true"><span class="octicon octicon-link"></span></a>Syntax</h2>
+
+<p>A console application has been released (can be used as DLL as well), using same syntax as ILMerge:</p>
+
+<pre><code>Syntax: ILRepack.exe [options] /out:&lt;path&gt; &lt;path_to_primary&gt; [&lt;other_assemblies&gt; ...]
+
+  - /help              displays this usage
+ - /keyfile:&lt;path&gt;    specifies a keyfile to sign the output assembly
+ - /log:&lt;logfile&gt;     enable logging (to a file, if given) (default is disabled)
+ - /ver:M.X.Y.Z       target assembly version
+ - /union             merges types with identical names into one
+ - /ndebug            disables symbol file generation
+ - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)
+ - /attr:&lt;path&gt;       take assembly attributes from the given assembly file
+ - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)
+ - /target:kind       specify target assembly kind (library, exe, winexe supported, default is same as first assembly)
+ - /targetplatform:P  specify target platform (v1, v1.1, v2, v4 supported)
+ - /xmldocs           merges XML documentation as well
+ - /lib:&lt;path&gt;        adds the path to the search directories for referenced assemblies (can be specified multiple times)
+ - /internalize       sets all types but the ones from the first assembly 'internal'
+ - /delaysign         sets the key, but don't sign the assembly
+ - /usefullpublickeyforreferences - NOT IMPLEMENTED
+ - /align             - NOT IMPLEMENTED
+ - /closed            - NOT IMPLEMENTED
+ - /allowdup:Type     allows the specified type for being duplicated in input assemblies
+ - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)
+ - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)
+ - /wildcards         allows (and resolves) file wildcards (e.g. `*`.dll) in input assemblies
+ - /parallel          use as many CPUs as possible to merge the assemblies
+ - /pause             pause execution once completed (good for debugging)
+ - /verbose           shows more logs
+ - /out:&lt;path&gt;        target assembly path, symbol/config/doc files will be written here as well
+ - &lt;path_to_primary&gt;  primary assembly, gives the name, version to the merged one
+ - &lt;other_assemblies&gt; ...
+
+Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.
+</code></pre>
+
+<h2>
+<a id="how-to-build" class="anchor" href="#how-to-build" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to build</h2>
+
+<p>Builds directly from within VS, or using gradle:</p>
+
+<pre><code>git clone --recursive https://github.com/gluck/il-repack.git
+cd il-repack
+gradlew.bat msbuild
+</code></pre>
+
+<p>(Mono.Posix 3.5-compatible dependency was grabbed from a non-standard nuget repo, it has been commited to git to avoid the dependency on this repo)</p>
+
+<h2>
+<a id="todo" class="anchor" href="#todo" aria-hidden="true"><span class="octicon octicon-link"></span></a>TODO</h2>
+
+<ul>
+<li>Crash-testing</li>
+<li>Add remaining features from ILMerge (closed / align)</li>
+<li>Un-fork Cecil</li>
+<li>Merge import process &amp; reference fixing</li>
+</ul>
+
+<h2>
+<a id="done" class="anchor" href="#done" aria-hidden="true"><span class="octicon octicon-link"></span></a>DONE</h2>
+
+<ul>
+<li>PDBs &amp; MDBs should be merged (Thanks Simon)</li>
+<li>Fixed internal method overriding public one which isn't allowed in the same assembly (Simon)</li>
+<li>Attribute merge (/copyattrs)</li>
+<li>XML documentation merge</li>
+<li>Clean command line parameter parsing</li>
+<li>Add usage / version</li>
+<li>App.config merge</li>
+<li>Internalizing types (Simon)</li>
+<li>Delay signing (Simon)</li>
+<li>Target platform selection (Simon)</li>
+<li>Automatic internal type renaming</li>
+</ul>
+
+<h2>
+<a id="sponsoring--donations" class="anchor" href="#sponsoring--donations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sponsoring / Donations</h2>
+
+<p>If you like this tool and want to express your thanks, you can contribute either time to the project (issue triage or pull-requests) or donate money to the Free Software Foundation.</p>
+
+<p><a href="https://my.fsf.org/donate/"><img src="https://www.gnu.org/graphics/logo-fsf.org-tiny.png" alt="Donate"></a></p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/gluck/il-repack/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/gluck/il-repack/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/gluck/il-repack"></a> is maintained by <a href="https://github.com/gluck">gluck</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
