@@ -83,7 +83,7 @@ namespace ILRepacking.Steps
             CleanupAttributes(typeof(SecurityTransparentAttribute).FullName, _ => true);
             CleanupAttributes(typeof(SecurityCriticalAttribute).FullName, x => x.ConstructorArguments.Count == 0);
             CleanupAttributes(typeof(AllowPartiallyTrustedCallersAttribute).FullName, x => x.ConstructorArguments.Count == 0);
-            CleanupAttributes("System.Security.SecurityRulesAttribute", x => x.ConstructorArguments.Count == 0);
+            CleanupAttributes(typeof(SecurityRulesAttribute).FullName, x => x.ConstructorArguments.Count == 0);
             RemoveAttributes<InternalsVisibleToAttribute>(ca =>
             {
                 String name = (string)ca.ConstructorArguments[0].Value;
