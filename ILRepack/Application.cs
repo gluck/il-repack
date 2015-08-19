@@ -54,7 +54,7 @@ namespace ILRepacking
 
         static void Usage()
         {
-            Console.WriteLine(@"IL Repack - assembly merging using Mono.Cecil - Version " + typeof(ILRepack).Assembly.GetName().Version.ToString(3));
+            Console.WriteLine($"IL Repack - assembly merging using Mono.Cecil - Version {typeof(ILRepack).Assembly.GetName().Version.ToString(3)}");
             Console.WriteLine(@"Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");

@@ -235,7 +235,7 @@ namespace ILRepacking
             var assemblies = GetRepackAssemblyNames();
             var ilRepack = assemblies?.FirstOrDefault(name => name.Name == "ILRepack") ?? new AssemblyName(typeof(ILRepack).Assembly.FullName);
             Logger.Info($"IL Repack - Version {ilRepack.Version.ToString(3)}");
-            Logger.Verbose($"Runtime: ${typeof(ILRepack).Assembly.FullName}");
+            Logger.Verbose($"Runtime: {typeof(ILRepack).Assembly.FullName}");
             foreach (var asb in assemblies)
             {
                 Logger.Verbose($" - {asb.FullName}");
