@@ -1,6 +1,10 @@
 IL Repack changelog
 ====================
 
+2.0.6
+-------
+* Put public the method retrieving repacked assembly names.
+
 2.0.5
 -------
 * Bcl+BclAsync now repacks correctly

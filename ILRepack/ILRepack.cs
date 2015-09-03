@@ -213,11 +213,11 @@ namespace ILRepacking
             return targetPlatformDirectory;
         }
 
-        static IEnumerable<AssemblyName> GetRepackAssemblyNames()
+        public static IEnumerable<AssemblyName> GetRepackAssemblyNames(Type typeInRepackedAssembly)
         {
             try
             {
-                using (Stream stream = typeof(ILRepack).Assembly.GetManifestResourceStream(ResourcesRepackStep.ILRepackListResourceName))
+                using (Stream stream = typeInRepackedAssembly.Assembly.GetManifestResourceStream(ResourcesRepackStep.ILRepackListResourceName))
                 if (stream != null)
                 {
                     string[] list = (string[])new BinaryFormatter().Deserialize(stream);
@@ -230,10 +230,15 @@ namespace ILRepacking
             return Enumerable.Empty<AssemblyName>();
         }
 
+        public static AssemblyName GetRepackAssemblyName(IEnumerable<AssemblyName> repackAssemblyNames, string repackedAssemblyName, Type fallbackType)
+        {
+            return repackAssemblyNames?.FirstOrDefault(name => name.Name == repackedAssemblyName) ?? fallbackType.Assembly.GetName();
+        }
+
         void PrintRepackVersion()
         {
-            var assemblies = GetRepackAssemblyNames();
-            var ilRepack = assemblies?.FirstOrDefault(name => name.Name == "ILRepack") ?? new AssemblyName(typeof(ILRepack).Assembly.FullName);
+            var assemblies = GetRepackAssemblyNames(typeof(ILRepack));
+            var ilRepack = GetRepackAssemblyName(assemblies, "ILRepack", typeof(ILRepack));
             Logger.Info($"IL Repack - Version {ilRepack.Version.ToString(3)}");
             Logger.Verbose($"Runtime: {typeof(ILRepack).Assembly.FullName}");
             foreach (var asb in assemblies)
