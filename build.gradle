@@ -11,6 +11,12 @@ archivesBaseName = 'ILRepack'
 
 defaultTasks('nugetPack')
 
+nuget {
+    // use legacy v2 because of random download issues:
+    // https://github.com/NuGet/Home/issues/1448
+    version = '2.8.6'
+}
+
 assemblyInfoPatcher {
     version = project.version + '.0'
 }
