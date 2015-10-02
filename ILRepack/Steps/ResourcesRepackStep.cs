@@ -63,7 +63,10 @@ namespace ILRepacking.Steps
             var otherAssemblyProcessors =
                 new List<IResProcessor> { bamlResourcePatcher, bamlStreamCollector }.Union(GetCommonResourceProcessors()).ToList();
 
-            foreach (var assembly in _repackContext.MergedAssemblies)
+            // Primary Assembly *must* be the last one in order to properly gather the resources
+            // from dependencies
+            var assembliesList = _repackContext.OtherAssemblies.Concat(new[] { _repackContext.PrimaryAssemblyDefinition });
+            foreach (var assembly in assembliesList)
             {
                 bool isPrimaryAssembly = (assembly == _repackContext.PrimaryAssemblyDefinition);
                 var assemblyProcessors = isPrimaryAssembly ? primaryAssemblyProcessors : otherAssemblyProcessors;

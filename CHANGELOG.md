@@ -4,6 +4,8 @@ IL Repack changelog
 2.0.6
 -------
 * Put public the method retrieving repacked assembly names.
+* Fixed regression since 2.0.4 that prevented proper merging of resources in dependent assemblies.
+ * Because of this, no BAML resources were added from dependencies into the merged result.
 
 2.0.5
 -------
