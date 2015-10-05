@@ -65,51 +65,52 @@ repack << {
     }
 }
 
-def commonNuspecMetadata(def meta) {
-    meta.version version
-    meta.title 'ILRepack - Open-source alternative to ILMerge'
-    meta.authors 'Francois Valdy'
-    meta.owners 'Francois Valdy'
-    meta.projectUrl('https://github.com/gluck/il-repack')
-    meta.copyright 'Copyright © Francois Valdy 2011-2015'
-}
+def commonNuspecMetadata = [
+    version: version,
+    title: 'ILRepack - Open-source alternative to ILMerge',
+    authors: 'Francois Valdy',
+    owners: 'Francois Valdy',
+    projectUrl: 'https://github.com/gluck/il-repack',
+    copyright: 'Copyright © Francois Valdy 2011-2015',
+    requireLicenseAcceptance: false,
+    dependencies: []
+]
 
 // nuget package for upload to nuget
-nugetPack {
-    nuspec {
-        metadata() {
-            commonNuspecMetadata(delegate)
-            id archivesBaseName
-            delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
-            The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.'''
-            requireLicenseAcceptance false
-            summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly'
-        }
-        delegate.files() {
-            delegate.file(src: repack.ext.repacked, target: 'tools')
-        }
-    }
+nugetSpec {
+    nuspec = [
+        metadata: commonNuspecMetadata + [
+            id: archivesBaseName,
+            description: '''ILRepack is meant at replacing ILMerge / Mono.Merge.
+            The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.''',
+            summary: 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly'
+        ],
+        files: [
+            { file(src: repack.ext.repacked, target: 'tools') }
+        ]
+    ]
 }
 
-task nugetPackLib(type: com.ullink.NuGetPack) {
-    nuspec {
-        metadata() {
-            commonNuspecMetadata(delegate)
-            id archivesBaseName+'.Lib'
-            delegate.description '''ILRepack is meant at replacing ILMerge / Mono.Merge.
+task nugetSpecLib(type: com.ullink.NuGetSpec) {
+    nuspec = [
+        metadata: commonNuspecMetadata + [
+            id: archivesBaseName+'.Lib',
+            description: '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
 
             This package provides a library, for use within tools/build projects.
-            If you need the tool as an executable, this is not the package you're looking for, this one is: http://www.nuget.org/packages/ILRepack/.'''
-            requireLicenseAcceptance false
-            summary 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
-        }
-        delegate.files() {
-            delegate.file(src: repack.ext.repackedLib, target: 'lib/net40')
-        }
-    }
+            If you need the tool as an executable, this is not the package you're looking for, this one is: http://www.nuget.org/packages/ILRepack/.''',
+            summary: 'ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly (Packaged as library)'
+        ],
+        files: [
+            { file(src: repack.ext.repackedLib, target: 'lib/net40') }
+        ]
+    ]
 }
 
+task nugetPackLib(type: com.ullink.NuGetPack) {
+    dependsOn nugetSpecLib
+}
 nugetPack.dependsOn([repack, nugetPackLib])
 nugetPackLib.dependsOn repack
 
