@@ -1,6 +1,10 @@
 IL Repack changelog
 ====================
 
+2.0.9
+-------
+* Add set Log level verbose in IlRepack constructor.
+
 2.0.6
 -------
 * Put public the method retrieving repacked assembly names.
