@@ -70,6 +70,9 @@ namespace ILRepacking
         {
             Options = options;
             Logger = logger;
+
+            logger.ShouldLogVerbose = options.LogVerbose;
+
             _repackImporter = new RepackImporter(Logger, Options, this, _aspOffsets);
         }
 
