@@ -12,9 +12,7 @@ archivesBaseName = 'ILRepack'
 defaultTasks('nugetPack')
 
 nuget {
-    // use legacy v2 because of random download issues:
-    // https://github.com/NuGet/Home/issues/1448
-    version = '2.8.6'
+    version = '3.3.0'
 }
 
 assemblyInfoPatcher {
@@ -71,7 +69,7 @@ def commonNuspecMetadata = [
     authors: 'Francois Valdy',
     owners: 'Francois Valdy',
     projectUrl: 'https://github.com/gluck/il-repack',
-    copyright: 'Copyright © Francois Valdy 2011-2015',
+    copyright: 'Copyright Francois Valdy 2011-2015',
     requireLicenseAcceptance: false,
     dependencies: []
 ]
