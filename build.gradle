@@ -12,7 +12,8 @@ archivesBaseName = 'ILRepack'
 defaultTasks('nugetPack')
 
 nuget {
-    version = '3.3.0'
+    // oh boy, version 3.3.0 seems to freeze during restore on linux ... rollbacking.... again
+    version = '2.8.6'
 }
 
 assemblyInfoPatcher {
