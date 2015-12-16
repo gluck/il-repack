@@ -84,8 +84,10 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private void ProcessRecord(AssemblyInfoRecord record)
         {
+            var assemblyName = new System.Reflection.AssemblyName(record.AssemblyFullName);
+
             var assemblyDefinition = _otherAssemblies.FirstOrDefault(
-                asm => asm.Name.Name == record.AssemblyFullName || asm.Name.FullName == record.AssemblyFullName);
+                asm => asm.Name.Name == assemblyName.Name || asm.Name.FullName == record.AssemblyFullName);
 
             if (assemblyDefinition != null)
             {
