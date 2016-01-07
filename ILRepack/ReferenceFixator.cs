@@ -20,6 +20,7 @@ using Mono.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mono.Cecil.Pdb;
 
 namespace ILRepacking
 {
@@ -274,6 +275,35 @@ namespace ILRepacking
                     case ExceptionHandlerType.Catch:
                         eh.CatchType = Fix(eh.CatchType);
                         break;
+                }
+            }
+
+            // If we have PDB symbols, let's fix method references
+            var pdbSymbols = body.Symbols as PdbMethodSymbols;
+            if (pdbSymbols != null)
+            {
+                if (pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod != null)
+                    pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod = Fix(pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod);
+
+                if (pdbSymbols.IteratorScopes != null)
+                {
+                    foreach (var scope in pdbSymbols.IteratorScopes)
+                    {
+                        FixReferences(scope.Start);
+                        FixReferences(scope.End);
+                    }
+                }
+
+                if (pdbSymbols.SynchronizationInformation != null)
+                {
+                    if (pdbSymbols.SynchronizationInformation.KickoffMethod != null)
+                        pdbSymbols.SynchronizationInformation.KickoffMethod = Fix(pdbSymbols.SynchronizationInformation.KickoffMethod);
+
+                    foreach (var syncPoint in pdbSymbols.SynchronizationInformation.SynchronizationPoints)
+                    {
+                        if (syncPoint.ContinuationMethod != null)
+                            syncPoint.ContinuationMethod = Fix(syncPoint.ContinuationMethod);
+                    }
                 }
             }
         }
