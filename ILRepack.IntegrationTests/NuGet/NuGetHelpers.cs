@@ -43,14 +43,14 @@ namespace ILRepack.IntegrationTests.NuGet
             }).Retry(5);
         }
 
-        private static bool IsDll(Tuple<string, Func<Stream>> tuple)
+        private static bool IsDllOrExe(Tuple<string, Func<Stream>> tuple)
         {
-            return Path.GetExtension(tuple.Item1) == ".dll";
+            return Path.GetExtension(tuple.Item1) == ".dll" || Path.GetExtension(tuple.Item1) == ".exe";
         }
  
         public static IObservable<Tuple<string, Func<Stream>>> GetNupkgAssembliesAsync(Package package)
         {
-            return GetNupkgContentAsync(package).Where(IsDll).Where(package.Matches);
+            return GetNupkgContentAsync(package).Where(IsDllOrExe).Where(package.Matches);
         }
  
         public static IObservable<Tuple<string, Func<Stream>>> GetNupkgContentAsync(Package package)

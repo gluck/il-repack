@@ -32,7 +32,7 @@ namespace ILRepack.IntegrationTests.NuGet
             var count = NuGetHelpers.GetNupkgAssembliesAsync(p)
             .Do(t => TestHelpers.SaveAs(t.Item2(), tempDirectory, "foo.dll"))
             .Do(file => RepackFoo(file.Item1))
-            .Do(file => VerifyTest(file.Item1))
+            .Do(_ => VerifyTest(new[] { "foo.dll" }))
             .ToEnumerable().Count();
             Assert.IsTrue(count > 0);
         }
@@ -41,13 +41,15 @@ namespace ILRepack.IntegrationTests.NuGet
         [TestCaseSource(typeof(Data), "Platforms", Category = "ComplexTests")]
         public void NupkgPlatform(Platform platform)
         {
-            Observable.ToObservable(platform.Packages)
+            var files = Observable.ToObservable(platform.Packages)
             .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
             .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
             .Select(lib => Path.GetFileName(lib.Item1))
             .ToList()
             .Do(list => RepackPlatform(platform, list))
             .First();
+            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
+            Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_STACK_OVERFLOW));
         }
 
         [Test]
@@ -117,13 +119,13 @@ namespace ILRepack.IntegrationTests.NuGet
             return new Regex(@"\+|%2[bB]").Split(dirName);
         }
 
-        void VerifyTest(string assemblyName)
+        void VerifyTest(IEnumerable<string> mergedLibraries)
         {
             if (XPlat.IsMono) return;
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToEnumerable();
             if (errors.Any())
             {
-                var origErrors = PeverifyHelper.Peverify(tempDirectory, "foo.dll").ToEnumerable();
+                var origErrors = mergedLibraries.SelectMany(it => PeverifyHelper.Peverify(tempDirectory, it).ToEnumerable());
                 if (errors.Count() != origErrors.Count())
                     Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
             }

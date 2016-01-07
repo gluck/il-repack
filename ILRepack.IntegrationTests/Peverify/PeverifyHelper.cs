@@ -18,6 +18,7 @@ namespace ILRepack.IntegrationTests.Peverify
         public const string META_E_CA_FRIENDS_SN_REQUIRED = "801311e6";
         public const string VER_E_TOKEN_RESOLVE = "80131869";
         public const string VER_E_TYPELOAD = "801318f3";
+        public const string VER_E_STACK_OVERFLOW = "80131856";
 
         static Regex Success = new Regex(@"All Classes and Methods in .* Verified");
         static Regex Failure = new Regex(@"\d+ Error\(s\) Verifying .*");
