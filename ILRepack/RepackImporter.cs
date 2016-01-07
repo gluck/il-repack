@@ -438,10 +438,10 @@ namespace ILRepacking
                             break;
                         case OperandType.ShortInlineBrTarget:
                         case OperandType.InlineBrTarget:
-                            ni = Instruction.Create(instr.OpCode, (Instruction)instr.Operand); // TODO review
+                            ni = Instruction.Create(instr.OpCode, (Instruction)instr.Operand);
                             break;
                         case OperandType.InlineSwitch:
-                            ni = Instruction.Create(instr.OpCode, (Instruction[])instr.Operand); // TODO review
+                            ni = Instruction.Create(instr.OpCode, (Instruction[])instr.Operand);
                             break;
                         case OperandType.InlineR:
                             ni = Instruction.Create(instr.OpCode, (double)instr.Operand);
@@ -478,11 +478,18 @@ namespace ILRepacking
             for (int i = 0; i < body.Instructions.Count; i++)
             {
                 Instruction instr = nb.Instructions[i];
-                if (instr.OpCode.OperandType != OperandType.ShortInlineBrTarget &&
-                    instr.OpCode.OperandType != OperandType.InlineBrTarget)
-                    continue;
-
-                instr.Operand = GetInstruction(body, nb, (Instruction)body.Instructions[i].Operand);
+                switch (instr.OpCode.OperandType)
+                {
+                    case OperandType.ShortInlineBrTarget:
+                    case OperandType.InlineBrTarget:
+                        instr.Operand = GetInstruction(body, nb, (Instruction)body.Instructions[i].Operand);
+                        break;
+                    case OperandType.InlineSwitch:
+                        instr.Operand = ((Instruction[])body.Instructions[i].Operand).Select(op => GetInstruction(body, nb, op)).ToArray();
+                        break;
+                    default:
+                        break;
+                }
             }
 
             foreach (ExceptionHandler eh in body.ExceptionHandlers)
