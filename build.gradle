@@ -1,10 +1,11 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id "com.ullink.msbuild" version "2.11"
-  id "com.ullink.nuget" version "2.12"
-  id "com.ullink.nunit" version "1.4"
-  id "com.ullink.opencover" version "1.2"
+  id 'com.ullink.msbuild' version '2.11'
+  id 'com.ullink.nuget' version '2.12'
+  id 'com.ullink.nunit' version '1.4'
+  id 'com.ullink.opencover' version '1.2'
+  id 'net.researchgate.release' version '2.3.4'
 }
 
 archivesBaseName = 'ILRepack'
@@ -125,3 +126,6 @@ task nugetPushLib(type: com.ullink.NuGetPush) {
 }
 
 nugetPush.dependsOn nugetPushLib
+
+project.tasks.afterReleaseBuild.dependsOn project.tasks.nugetPush
+
