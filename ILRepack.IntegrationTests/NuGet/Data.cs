@@ -53,6 +53,10 @@ namespace ILRepack.IntegrationTests.NuGet
             Platform.From(
                 Package.From("Paket.Core", "1.11.6").WithFwk("net45"),
                 Package.From("FSharp.Core", "3.1.2.1").WithFwk("net40")
+            ),
+            Platform.From(
+                Package.From("FSharp.Compiler.Service", "1.4.0.6").WithFwk("net40"),
+                Package.From("FSharp.Core", "4.0.0.1").WithFwk("net40")
             )
         });
     }
