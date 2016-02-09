@@ -42,6 +42,7 @@
     <Compile Include="DummyUserControl.xaml.cs">
       <DependentUpon>DummyUserControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="GenericBasedResourceKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TemplatedDummyUserControl.cs" />
   </ItemGroup>
