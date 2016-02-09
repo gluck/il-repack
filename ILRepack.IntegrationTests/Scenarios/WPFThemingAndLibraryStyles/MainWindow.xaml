@@ -6,15 +6,16 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/ClassLibrary;component/TextBlockStyles.xaml"/>
-                <ResourceDictionary Source="/ClassLibrary;component/ButtonStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/ClassLibrary;component/TextBlockStyles.xaml" />
+                <ResourceDictionary Source="/ClassLibrary;component/ButtonStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="{classLibrary:GenericBasedThemeResourceKey ResourceKey=Background}" Color="Yellow" />
         </ResourceDictionary>
     </Window.Resources>
     <StackPanel>
         <classLibrary:DummyUserControl />
         <Button x:Name="StyledButton" Style="{StaticResource PredefinedButtonContentStyle}" />
-        <TextBlock x:Name="StyledTextBlock" Style="{StaticResource RedTextTextBlock}" HorizontalAlignment="Center">Red text</TextBlock>
+        <TextBlock x:Name="StyledTextBlock" Style="{StaticResource RedTextTextBlock}" HorizontalAlignment="Center" Text="Red text" />
         <classLibrary:TemplatedDummyUserControl x:Name="TemplatedDummyUserControl" />
     </StackPanel>
 </Window>

@@ -72,6 +72,7 @@
     <Compile Include="RepackLoggerTests.cs" />
     <Compile Include="RepackOptionsTests.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlGeneratorTests.cs" Condition=" '$(Configuration)' != 'Debug_unix' " />
+    <Compile Include="Steps\ResourceProcessing\BamlResourcePatcherTests.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStepTests.cs" />
     <Compile Include="Utils\BamlDocumentMatcher.cs" />
   </ItemGroup>

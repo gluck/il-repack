@@ -39,7 +39,8 @@ namespace ILRepacking.Steps.ResourceProcessing
             {
                 { typeof(AssemblyInfoRecord), (r, asm) => ProcessRecord((AssemblyInfoRecord)r) },
                 { typeof(PropertyWithConverterRecord), (r, asm) => ProcessRecord((PropertyWithConverterRecord)r, asm) },
-                { typeof(XmlnsPropertyRecord), (r, asm) => ProcessRecord((XmlnsPropertyRecord)r) }
+                { typeof(XmlnsPropertyRecord), (r, asm) => ProcessRecord((XmlnsPropertyRecord)r) },
+                { typeof(TypeInfoRecord), (r, asm) => ProcessRecord((TypeInfoRecord)r) }
             };
         }
 
@@ -110,6 +111,24 @@ namespace ILRepacking.Steps.ResourceProcessing
 
             string xmlNsWithoutAssembly = xmlNamespace.Substring(0, assemblyStart);
             record.XmlNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
+        }
+
+        private void ProcessRecord(TypeInfoRecord record)
+        {
+            record.TypeFullName = RemoveTypeAssemblyInformation(record.TypeFullName);
+        }
+
+        public static string RemoveTypeAssemblyInformation(string fullTypeName)
+        {
+            // ClassLibrary.GenericResourceKey`1[[ClassLibrary.ThemesResourceKey, ClassLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+            int genericTypeStartIndex = fullTypeName.IndexOf("[[", StringComparison.Ordinal);
+            if (genericTypeStartIndex == -1)
+                return fullTypeName;
+
+            int assemblyInfoStartIndex = fullTypeName.IndexOf(',', genericTypeStartIndex);
+            int genericTypeEndIndex = fullTypeName.IndexOf("]]", genericTypeStartIndex, StringComparison.Ordinal);
+
+            return fullTypeName.Remove(assemblyInfoStartIndex, genericTypeEndIndex - assemblyInfoStartIndex);
         }
     }
 }
