@@ -9,7 +9,19 @@ namespace ILRepacking
     /// </summary>
     internal class MethodMatcher
     {
-        public static MethodDefinition MapVirtualMethod(MethodDefinition method)
+        public static MethodDefinition MapVirtualMethodToDeepestBase(MethodDefinition method)
+        {
+            MethodDefinition baseMethod = null;
+            var candidate = GetBaseMethodInTypeHierarchy(method);
+            while (candidate != null)
+            {
+                baseMethod = candidate;
+                candidate = GetBaseMethodInTypeHierarchy(baseMethod);
+            }
+            return baseMethod;
+        }
+
+        public static MethodDefinition MapVirtualMethodToNearestBase(MethodDefinition method)
         {
             return GetBaseMethodInTypeHierarchy(method);
         }
