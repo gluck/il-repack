@@ -21,11 +21,6 @@ namespace ILRepacking
             return baseMethod;
         }
 
-        public static MethodDefinition MapVirtualMethodToNearestBase(MethodDefinition method)
-        {
-            return GetBaseMethodInTypeHierarchy(method);
-        }
-
         static MethodDefinition GetBaseMethodInTypeHierarchy(MethodDefinition method)
         {
             TypeDefinition @base = GetBaseType(method.DeclaringType);
