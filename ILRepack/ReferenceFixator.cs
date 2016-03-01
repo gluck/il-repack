@@ -584,7 +584,7 @@ namespace ILRepacking
             }
 
             // no explicit overrides found, check implicit overrides
-            MethodDefinition @base = MethodMatcher.MapVirtualMethod(meth);
+            MethodDefinition @base = MethodMatcher.MapVirtualMethodToDeepestBase(meth);
             if (@base != null && @base.IsVirtual)
                 Fix(@base, meth);
         }
