@@ -105,6 +105,8 @@
     <Compile Include="SerReader.cs" />
     <Compile Include="Steps\AttributesRepackStep.cs" />
     <Compile Include="Steps\IRepackStep.cs" />
+    <Compile Include="Steps\LinkerStep.cs" />
+    <Compile Include="Steps\Linker\ApplyPreserveAttribute.cs" />
     <Compile Include="Steps\ReferencesFixStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlGenerator.cs" />
@@ -169,6 +171,14 @@
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
       <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
       <Name>Mono.Cecil.Pdb</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\mono\mcs\tools\linker\Mono.Linker.csproj">
+      <Project>{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}</Project>
+      <Name>Mono.Linker</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\mono\mcs\tools\tuner\Mono.Tuner.csproj">
+      <Project>{e97429ba-279a-4c1d-ae8a-8bd878c661d1}</Project>
+      <Name>Mono.Tuner</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

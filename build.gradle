@@ -41,7 +41,17 @@ task nunitLongRunning(type: nunit.class) {
 }
 nunitLongRunning.dependsOn msbuild
 
-ext.repackList = ['ILRepack.exe', 'Fasterflect.dll', 'BamlParser.dll', 'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Posix.dll']
+ext.repackList = [
+  'ILRepack.exe',
+  'Fasterflect.dll',
+  'BamlParser.dll',
+  'Mono.Cecil.dll',
+  'Mono.Cecil.Mdb.dll',
+  'Mono.Cecil.Pdb.dll',
+  'Mono.Posix.dll',
+  'Mono.Tuner.dll',
+  'Mono.Linker.dll'
+]
 
 // repacking of all dependencies in a single exe
 task repack(dependsOn: [msbuild, nunitLongRunning]) {

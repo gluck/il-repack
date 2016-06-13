@@ -327,7 +327,8 @@ namespace ILRepacking
                 new ResourcesRepackStep(Logger, this, Options),
                 new AttributesRepackStep(Logger, this, _repackImporter, Options),
                 new ReferencesFixStep(Logger, this, _repackImporter, Options),
-                new XamlResourcePathPatcherStep(Logger, this)
+                new XamlResourcePathPatcherStep(Logger, this),
+                new LinkerStep(this, Options)
             };
 
             foreach (var step in repackSteps)
