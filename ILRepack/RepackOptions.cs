@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Mono.Linker.Steps;
 
 namespace ILRepacking
 {
@@ -54,6 +55,11 @@ namespace ILRepacking
         public bool NoRepackRes { get; set; }
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
+
+        // Linker options
+
+        public bool Link { get; set; }
+        public bool MarkPublic { get; internal set; }
 
         public List<Regex> ExcludeInternalizeMatches
         {
@@ -128,6 +134,11 @@ namespace ILRepacking
             DelaySign = cmd.Modifier("delaysign");
             cmd.Option("align"); // not supported, just prevent interpreting this as file...
             Internalize = cmd.HasOption("internalize");
+            Link = cmd.Modifier("link");
+            if (Link)
+            {
+                MarkPublic = cmd.Modifier("markpublic");
+            }
             if (Internalize)
             {
                 // this file shall contain one regex per line to compare agains FullName of types NOT to internalize
@@ -198,10 +209,9 @@ namespace ILRepacking
 
             if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
             {
-                string[] lines = file.ReadAllLines(ExcludeFile);
-                excludeInternalizeMatches = new List<Regex>(lines.Length);
-                foreach (string line in lines)
-                    excludeInternalizeMatches.Add(new Regex(line));
+                excludeInternalizeMatches = file.ReadAllLines(ExcludeFile)
+                    .Select(line => new Regex(line))
+                    .ToList();
             }
         }
 

@@ -67,11 +67,11 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
 repack << {
     exec {
         workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked, '/link'] + project.ext.repackList
     }
     exec {
         workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
+        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library', '/link', '/markpublic'] + project.ext.repackList
     }
 }
 

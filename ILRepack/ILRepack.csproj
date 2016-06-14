@@ -107,6 +107,8 @@
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\LinkerStep.cs" />
     <Compile Include="Steps\Linker\ApplyPreserveAttribute.cs" />
+    <Compile Include="Steps\Linker\BlacklistStep.cs" />
+    <Compile Include="Steps\Linker\RepackMarkStep.cs" />
     <Compile Include="Steps\ReferencesFixStep.cs" />
     <Compile Include="Steps\ReferencesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlGenerator.cs" />

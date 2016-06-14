@@ -15,48 +15,29 @@ namespace ILRepacking.Steps
         readonly IRepackContext _repackContext;
         readonly RepackOptions _repackOptions;
 
-        public LinkerStep(
-            IRepackContext repackContext,
-            RepackOptions repackOptions)
+        public LinkerStep(IRepackContext repackContext, RepackOptions repackOptions)
         {
-            _repackContext = repackContext;
             _repackOptions = repackOptions;
+            _repackContext = repackContext;
         }
 
         public void Perform()
         {
+            if (!_repackOptions.Link)
+                return;
             Pipeline p = new Pipeline();
-            p.AppendStep(new BlacklistStep());
+            p.AppendStep(new Linker.BlacklistStep());
             p.AppendStep(new TypeMapStep());
+            p.AppendStep(new RepackMarkStep(_repackOptions));
             p.AppendStep(new SubStepDispatcher() { new ApplyPreserveAttribute() });
             p.AppendStep(new MarkStep());
             p.AppendStep(new SweepStep());
             p.AppendStep(new CleanStep());
-            LinkContext context = new LinkContext(p, _repackContext.GlobalAssemblyResolver);
+            LinkContext context = new LinkContext(p, _repackContext.GlobalAssemblyResolver) {
+                LogInternalExceptions = true
+            };
             _repackContext.GlobalAssemblyResolver.TargetRepackAssembly = _repackContext.TargetAssemblyDefinition;
-            //if (_repackContext.TargetAssemblyDefinition.EntryPoint != null)
-            //{
-            //    ResolveFromAssemblyStep.ProcessExecutable(context, _repackContext.TargetAssemblyDefinition);
-            //}
-            //else
-            {
-                context.Annotations.SetAction (_repackContext.TargetAssemblyDefinition, AssemblyAction.Link);
-
-                context.Annotations.Push(_repackContext.TargetAssemblyDefinition);
-                if (_repackContext.TargetAssemblyDefinition.EntryPoint != null)
-                {
-                    context.Annotations.Mark(_repackContext.TargetAssemblyDefinition.EntryPoint.DeclaringType);
-                    ResolveFromAssemblyStep.MarkMethod(context, _repackContext.TargetAssemblyDefinition.EntryPoint, MethodAction.Parse);
-                }
-
-                context.Annotations.Mark(_repackContext.TargetAssemblyDefinition.MainModule);
-
-                foreach (TypeDefinition type in _repackContext.TargetAssemblyDefinition.MainModule.Types.Where(t => t.IsPublic))
-                    ResolveFromAssemblyStep.MarkType(context, type);
-
-                context.Annotations.Pop();
-            }
-            p.Process(context);
+           p.Process(context);
         }
     }
 }

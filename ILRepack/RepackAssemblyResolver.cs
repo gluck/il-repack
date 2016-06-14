@@ -16,7 +16,7 @@ namespace ILRepacking
 
         public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters pr)
         {
-            if (TargetRepackAssembly != null && name.FullName == TargetRepackAssembly.FullName)
+            if (TargetRepackAssembly != null && name.Name == TargetRepackAssembly.Name.Name)
                 return TargetRepackAssembly;
             return base.Resolve(name, pr);
         }
