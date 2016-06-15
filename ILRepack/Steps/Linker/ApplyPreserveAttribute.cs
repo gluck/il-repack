@@ -11,11 +11,6 @@ namespace ILRepacking.Steps.Linker
 
     public class ApplyPreserveAttribute : ApplyPreserveAttributeBase
     {
-        public override bool IsActiveFor(AssemblyDefinition assembly)
-        {
-            return Annotations.GetAction(assembly) == AssemblyAction.Link;
-        }
-
         protected override bool IsPreservedAttribute(ICustomAttributeProvider provider, CustomAttribute attribute, out bool removeAttribute)
         {
             removeAttribute = false;
@@ -23,14 +18,6 @@ namespace ILRepacking.Steps.Linker
 
             switch (type.Namespace)
             {
-                case "Android.Runtime":
-                    // there's no need to keep the [Preserve] attribute in the assembly once it was processed
-                    if (type.Name == "PreserveAttribute")
-                    {
-                        removeAttribute = true;
-                        return true;
-                    }
-                    break;
                 case "System.Runtime.Serialization":
                     bool srs = false;
                     // http://bugzilla.xamarin.com/show_bug.cgi?id=1415
