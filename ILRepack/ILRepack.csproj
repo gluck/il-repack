@@ -183,6 +183,10 @@
       <Name>Mono.Tuner</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+      <EmbeddedResource Include="Steps\Linker\ILRepack.xml">
+  <LogicalName>ILRepack.xml</LogicalName>
+      </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

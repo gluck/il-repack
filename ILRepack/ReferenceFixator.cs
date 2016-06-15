@@ -292,8 +292,8 @@ namespace ILRepacking
                 {
                     foreach (var scope in pdbSymbols.IteratorScopes)
                     {
-                        FixReferences(scope.Start);
-                        FixReferences(scope.End);
+                        if (scope.Start != null) FixReferences(scope.Start);
+                        if (scope.End != null) FixReferences(scope.End);
                     }
                 }
 
