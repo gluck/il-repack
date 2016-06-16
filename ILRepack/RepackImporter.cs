@@ -138,10 +138,7 @@ namespace ILRepacking
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = "<" + Guid.NewGuid() + ">" + nt.Name;
-                _logger.Info("Renaming " + nt.FullName + " into " + other);
-                nt.Name = other;
-                // hack: fix hashmap indexing of type
-                _repackContext.TargetAssemblyMainModule.Types[_repackContext.TargetAssemblyMainModule.Types.IndexOf(nt)] = nt;
+                RenameImportedType(nt, other);
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
@@ -169,6 +166,16 @@ namespace ILRepacking
             foreach (PropertyDefinition prop in type.Properties)
                 CloneTo(prop, nt, nt.Properties);
             return nt;
+        }
+
+        private void RenameImportedType(TypeDefinition type, string newName)
+        {
+            _logger.Info("Renaming " + type.FullName + " into " + newName);
+            type.Name = newName;
+            var i = _repackContext.TargetAssemblyMainModule.Types.IndexOf(type);
+            // hack: fix hashmap indexing of type
+            if (i != -1)
+                _repackContext.TargetAssemblyMainModule.Types[i] = type;
         }
 
         // Real stuff below //
@@ -626,7 +633,7 @@ namespace ILRepacking
 
         private static bool IsIndexer(PropertyDefinition prop)
         {
-            if (prop.Name != "Item")
+            if (prop.Name != "Item" && !prop.Name.EndsWith(".Item"))
                 return false;
             var parameters = ExtractIndexerParameters(prop);
             return parameters != null && parameters.Count > 0;
