@@ -18,7 +18,7 @@ nuget {
 }
 
 assemblyInfoPatcher {
-    version = project.version + '.0'
+    version = project.version.replaceFirst(/-beta\d*/, '') + '.0'
 }
 
 msbuild.dependsOn nugetRestore
