@@ -94,6 +94,12 @@ You can tune the mark step in several ways:
 	public class SomeTypeToBePreserved
 ```
 
+Usual stuff which breaks minification:
+- types/methods/fields/properties used by reflection/binding only
+  e.g. you may want to preserve all your view models
+- use of dynamic vars
+- COM interfaces (you may want to preserve them)
+
 How to build
 ------
 
@@ -104,8 +110,6 @@ git clone --recursive https://github.com/gluck/il-repack.git
 cd il-repack
 gradlew.bat msbuild
 ```
-
-(Mono.Posix 3.5-compatible dependency was grabbed from a non-standard nuget repo, it has been commited to git to avoid the dependency on this repo)
 
 TODO
 ------
