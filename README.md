@@ -51,11 +51,47 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /parallel          use as many CPUs as possible to merge the assemblies
  - /pause             pause execution once completed (good for debugging)
  - /verbose           shows more logs
+ - /link              minifies (aka link) the generated assembly, see [Linker](#Linker)
+ - /markpublic        mark public types for non-removal, see [Linker](#Linker)
  - /out:<path>        target assembly path, symbol/config/doc files will be written here as well
  - <path_to_primary>  primary assembly, gives the name, version to the merged one
  - <other_assemblies> ...
 
 Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.
+```
+
+Linker
+------
+
+Enabling the linker (`/link`) will make ILRepack apply the following Mono.Linker processing:
+- recursively mark all accessible types/methods/fields/properties
+- sweep everything which wasn't marked
+
+You can tune the mark step in several ways:
+- for executable output, the entry point (`Main`) will be automatically marked
+- if you supply `/markpublic`, all public types will be marked (usually suitable for dlls)
+- you can embbed an XML resource within your assembly with the name: `[output_assembly_name].xml`
+  and the list of types/namespaces to mark:
+
+  [Example](https://github.com/gluck/il-repack/blob/linker/ILRepack/Steps/Linker/ILRepack.xml)
+
+  Note that VS prefixes the embedded resource name with the namespace, hence you need to modify your csproj to specify the logical name like:
+```
+  <EmbeddedResource Include="Steps\Linker\ILRepack.xml">
+    <LogicalName>ILRepack.xml</LogicalName>
+  </EmbeddedResource>
+```
+
+- you can apply a \[Preserve\] attribute (matched by name, whatever the namespace) to the types you want to preserve.
+
+```
+    class PreserveAttribute : Attribute {
+        // set to true if you want the fields/methods to be preserved, not just the type itself
+        public bool AllMembers;
+    }
+
+    [Preserve(AllMembers = true)]
+	public class SomeTypeToBePreserved
 ```
 
 How to build
