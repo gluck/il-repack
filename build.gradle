@@ -55,13 +55,17 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
 }
 
 repack << {
+    def isMono = !OperatingSystem.current().windows
+    def outputPath = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+    def repackExe = new File(outputPath, 'ILRepack.exe')
+    def executable = isMono ? ['mono', repackExe] : [repackExe]
     exec {
-        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+        workingDir = outputPath
+        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
     }
     exec {
-        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
+        workingDir = outputPath
+        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
     }
 }
 
