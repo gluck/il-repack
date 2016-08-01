@@ -1,7 +1,7 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id 'com.ullink.msbuild' version '2.14'
+  id 'com.ullink.msbuild' version '2.15'
   id 'com.ullink.nuget' version '2.12'
   id 'com.ullink.nunit' version '1.4'
   id 'com.ullink.opencover' version '1.2'
@@ -55,13 +55,17 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
 }
 
 repack << {
+    def isMono = !OperatingSystem.current().windows
+    def outputPath = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+    def repackExe = new File(outputPath, 'ILRepack.exe')
+    def executable = isMono ? ['mono', repackExe] : [repackExe]
     exec {
-        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+        workingDir = outputPath
+        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
     }
     exec {
-        workingDir = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-        commandLine = [new File(workingDir, 'ILRepack.exe'), '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
+        workingDir = outputPath
+        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
     }
 }
 

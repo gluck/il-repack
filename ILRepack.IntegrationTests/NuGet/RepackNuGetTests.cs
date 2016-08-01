@@ -38,10 +38,11 @@ namespace ILRepack.IntegrationTests.NuGet
         }
 
         [Category("LongRunning")]
+        [Platform(Include = "win")]
         [TestCaseSource(typeof(Data), "Platforms", Category = "ComplexTests")]
         public void NupkgPlatform(Platform platform)
         {
-            var files = Observable.ToObservable(platform.Packages)
+            Observable.ToObservable(platform.Packages)
             .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
             .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
             .Select(lib => Path.GetFileName(lib.Item1))
