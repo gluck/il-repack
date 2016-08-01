@@ -143,6 +143,7 @@ namespace ILRepacking
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                     throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                GlobalAssemblyResolver.RegisterAssembly(mergeAsm);
 
                 return new AssemblyDefinitionContainer
                 {
@@ -266,7 +267,6 @@ namespace ILRepacking
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
-            GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             _platformFixer = new PlatformFixer(this, PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
@@ -347,8 +347,10 @@ namespace ILRepacking
                 Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
                 Directory.CreateDirectory(outputDir);
             }
-            TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
             Logger.Info("Writing output assembly to disk");
+            TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+            TargetAssemblyDefinition.Dispose();
+            GlobalAssemblyResolver.Dispose();
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly
             if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)

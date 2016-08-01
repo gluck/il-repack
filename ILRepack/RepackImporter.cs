@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil.Pdb;
+using ILRepacking.Mixins;
 
 namespace ILRepacking
 {
@@ -317,6 +318,10 @@ namespace ILRepacking
             // use void placeholder as we'll do the return type import later on (after generic parameters)
             MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, _repackContext.TargetAssemblyMainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
+            if (meth.DebugInformation.HasCustomDebugInformations)
+                nm.DebugInformation.CustomDebugInformations.AddRange(meth.DebugInformation.CustomDebugInformations);
+            if (meth.DebugInformation.HasSequencePoints)
+                nm.DebugInformation.SequencePoints.AddRange(meth.DebugInformation.SequencePoints);
 
             type.Methods.Add(nm);
 
@@ -374,15 +379,13 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(var.Name,
+                nb.Variables.Add(new VariableDefinition(
                     Import(var.VariableType, parent)));
 
             nb.Instructions.SetCapacity(body.Instructions.Count);
             _repackContext.LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
-                _repackContext.LineIndexer.ProcessMethodBodyInstruction(instr);
-
                 Instruction ni;
 
                 if (instr.OpCode.Code == Code.Calli)
@@ -471,11 +474,8 @@ namespace ILRepacking
                         default:
                             throw new InvalidOperationException();
                     }
-                ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
-            _repackContext.LineIndexer.PostMethodBodyRepack(parent);
-
             for (int i = 0; i < body.Instructions.Count; i++)
             {
                 Instruction instr = nb.Instructions[i];
@@ -492,9 +492,6 @@ namespace ILRepacking
                         break;
                 }
             }
-
-            if (body.Scope != null)
-                nb.Scope = CloneScope(body, parent, nb, body.Scope);
 
             foreach (ExceptionHandler eh in body.ExceptionHandlers)
             {
@@ -516,60 +513,6 @@ namespace ILRepacking
 
                 nb.ExceptionHandlers.Add(neh);
             }
-
-            // Generate a copy of symbols
-            if (body.Symbols != null)
-            {
-                nb.Symbols = body.Symbols.Clone();
-                nb.Symbols.Body = nb;
-
-                // Update PDB specific symbols (they contain method references)
-                var pdbSymbols = nb.Symbols as PdbMethodSymbols;
-                if (pdbSymbols != null)
-                {
-                    if (pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod != null)
-                        pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod =
-                            Import(pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod, parent);
-
-                    // Note: we don't need to update PdbScope.Start/End since offsets shouldn't change
-
-                    if (pdbSymbols.SynchronizationInformation != null)
-                    {
-                        if (pdbSymbols.SynchronizationInformation.KickoffMethod != null)
-                            pdbSymbols.SynchronizationInformation.KickoffMethod =
-                                Import(pdbSymbols.SynchronizationInformation.KickoffMethod);
-
-                        foreach (var syncPoint in pdbSymbols.SynchronizationInformation.SynchronizationPoints)
-                        {
-                            if (syncPoint.ContinuationMethod != null)
-                                syncPoint.ContinuationMethod = Import(syncPoint.ContinuationMethod);
-                        }
-                    }
-                }
-            }
-        }
-
-        private Scope CloneScope(MethodBody body, MethodDefinition parent, MethodBody nb, Scope scope)
-        {
-            var result = new Scope
-            {
-                Start = GetInstruction(body, nb, scope.Start),
-                End = GetInstruction(body, nb, scope.End),
-            };
-
-            if (scope.HasVariables)
-            {
-                foreach (var var in scope.Variables)
-                    result.Variables.Add(nb.Variables[var.Index]);
-            }
-
-            if (scope.HasScopes)
-            {
-                foreach (var subscope in scope.Scopes)
-                    result.Scopes.Add(CloneScope(body, parent, nb, subscope));
-            }
-
-            return result;
         }
 
         private TypeDefinition CreateType(TypeDefinition type, Collection<TypeDefinition> col, bool internalize, string rename)
@@ -593,9 +536,19 @@ namespace ILRepacking
             // don't copy these twice if UnionMerge==true
             // TODO: we can move this down if we chek for duplicates when adding
             CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyInterfaces(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             return nt;
+        }
+
+        private void CopyInterfaces(Collection<InterfaceImplementation> interfaces1, Collection<InterfaceImplementation> interfaces2, TypeDefinition nt)
+        {
+            foreach (var iface in interfaces1)
+            {
+                var newIface = new InterfaceImplementation(Import(iface.InterfaceType, nt));
+                CopyCustomAttributes(iface.CustomAttributes, newIface.CustomAttributes, nt);
+                interfaces2.Add(newIface);
+            }
         }
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)

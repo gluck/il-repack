@@ -119,7 +119,11 @@ namespace ILRepacking
             type.BaseType = Fix(type.BaseType);
 
             // interfaces before methods, because methods will have to go through them
-            FixReferences(type.Interfaces);
+            foreach (InterfaceImplementation nested in type.Interfaces)
+            {
+                nested.InterfaceType = Fix(nested.InterfaceType);
+                FixReferences(nested.CustomAttributes);
+            }
 
             // nested types first
             foreach (TypeDefinition nested in type.NestedTypes)
@@ -261,9 +265,6 @@ namespace ILRepacking
 
         private void FixReferences(MethodBody body)
         {
-            if (body.Scope != null)
-                FixReferences(body.Scope);
-
             foreach (VariableDefinition var in body.Variables)
                 FixReferences(var);
 
@@ -279,46 +280,6 @@ namespace ILRepacking
                         eh.CatchType = Fix(eh.CatchType);
                         break;
                 }
-            }
-
-            // If we have PDB symbols, let's fix method references
-            var pdbSymbols = body.Symbols as PdbMethodSymbols;
-            if (pdbSymbols != null)
-            {
-                if (pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod != null)
-                    pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod = Fix(pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod);
-
-                if (pdbSymbols.IteratorScopes != null)
-                {
-                    foreach (var scope in pdbSymbols.IteratorScopes)
-                    {
-                        FixReferences(scope.Start);
-                        FixReferences(scope.End);
-                    }
-                }
-
-                if (pdbSymbols.SynchronizationInformation != null)
-                {
-                    if (pdbSymbols.SynchronizationInformation.KickoffMethod != null)
-                        pdbSymbols.SynchronizationInformation.KickoffMethod = Fix(pdbSymbols.SynchronizationInformation.KickoffMethod);
-
-                    foreach (var syncPoint in pdbSymbols.SynchronizationInformation.SynchronizationPoints)
-                    {
-                        if (syncPoint.ContinuationMethod != null)
-                            syncPoint.ContinuationMethod = Fix(syncPoint.ContinuationMethod);
-                    }
-                }
-            }
-        }
-
-        private void FixReferences(Scope scope)
-        {
-            // Note: no need to fix variables as they are pointing to body.Variables elements
-
-            if (scope.HasScopes)
-            {
-                foreach (var subscope in scope.Scopes)
-                    FixReferences(subscope);
             }
         }
 
@@ -376,7 +337,7 @@ namespace ILRepacking
         {
             if (typeAttribute == null)
                 return false;
-            if (typeAttribute.Interfaces.Any(@interface => @interface.FullName == "java.lang.annotation.Annotation"))
+            if (typeAttribute.Interfaces.Any(@interface => @interface.InterfaceType.FullName == "java.lang.annotation.Annotation"))
                 return true;
             return typeAttribute.BaseType != null && IsAnnotation(typeAttribute.BaseType.Resolve());
         }
