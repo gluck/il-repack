@@ -93,6 +93,7 @@
     <Compile Include="ILRepack.cs" />
     <Compile Include="MethodMatcher.cs" />
     <Compile Include="Mixins\AssemblyNameReferenceCollectionMixins.cs" />
+    <Compile Include="Mixins\CollectionMixins.cs" />
     <Compile Include="PermissionsetHelper.cs" />
     <Compile Include="PlatformFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

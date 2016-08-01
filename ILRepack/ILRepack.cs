@@ -144,6 +144,7 @@ namespace ILRepacking
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                     throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                GlobalAssemblyResolver.RegisterAssembly(mergeAsm);
 
                 return new AssemblyDefinitionContainer
                 {
@@ -264,7 +265,6 @@ namespace ILRepacking
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
-            GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             _platformFixer = new PlatformFixer(this, PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
@@ -337,10 +337,16 @@ namespace ILRepacking
                     step.Perform();
                 }
 
+                for (int i = 1; i < MergedAssemblies.Count; ++i)
+                {
+                    MergedAssemblies[i].Dispose();
+                }
+                
                 var parameters = new WriterParameters
                 {
                     StrongNameKeyPair = signingStep.KeyPair,
-                    WriteSymbols = Options.DebugInfo
+                    WriteSymbols = Options.DebugInfo && PrimaryAssemblyMainModule.SymbolReader != null,
+                    SymbolWriterProvider = PrimaryAssemblyMainModule.SymbolReader?.GetWriterProvider(),
                 };
                 // create output directory if it does not exist
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
@@ -350,11 +356,12 @@ namespace ILRepacking
                     Directory.CreateDirectory(outputDir);
                 }
 
-                TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
-
                 sourceServerDataStep.Write();
 
                 Logger.Info("Writing output assembly to disk");
+                TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+                TargetAssemblyDefinition.Dispose();
+                GlobalAssemblyResolver.Dispose();
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
                 if (isUnixEnvironment)
