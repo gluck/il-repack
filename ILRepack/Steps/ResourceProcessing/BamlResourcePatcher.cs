@@ -87,10 +87,14 @@ namespace ILRepacking.Steps.ResourceProcessing
         {
             var assemblyName = new System.Reflection.AssemblyName(record.AssemblyFullName);
 
-            var assemblyDefinition = _otherAssemblies.FirstOrDefault(
-                asm => asm.Name.Name == assemblyName.Name || asm.Name.FullName == record.AssemblyFullName);
+            var isMergedAssembly = _otherAssemblies.FirstOrDefault(
+                asm => asm.Name.Name == assemblyName.Name || asm.Name.FullName == record.AssemblyFullName) != null;
 
-            if (assemblyDefinition != null)
+            // we are interested in the main assembly in order to fix the signing information, when
+            // we sign the repacked assembly
+            var isMainAssembly = assemblyName.Name == _mainAssembly.Name.Name;
+
+            if (isMergedAssembly || isMainAssembly)
             {
                 record.AssemblyFullName = _mainAssembly.Name.Name;
             }
