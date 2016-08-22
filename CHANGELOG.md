@@ -1,11 +1,15 @@
 # IL Repack changelog
 
-## 2.0.10
+## 2.0.11
+### Fixed
+* Signed WPF applications during the repack process now work properly
+* Generic-based resource keys can now be used in WPF applications
+* UWP applications are now properly merged
 
 ## 2.0.9
 
 ### Added
-* Add set Log level verbose in IlRepack constructor.
+* Add set Log level verbose in IlRepack constructor
 
 ### Fixed
 * Indirect xaml dependency merge now copes with conflicting versions
