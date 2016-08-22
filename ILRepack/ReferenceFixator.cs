@@ -261,9 +261,6 @@ namespace ILRepacking
 
         private void FixReferences(MethodBody body)
         {
-            if (body.Scope != null)
-                FixReferences(body.Scope);
-
             foreach (VariableDefinition var in body.Variables)
                 FixReferences(var);
 
@@ -308,17 +305,6 @@ namespace ILRepacking
                             syncPoint.ContinuationMethod = Fix(syncPoint.ContinuationMethod);
                     }
                 }
-            }
-        }
-
-        private void FixReferences(Scope scope)
-        {
-            // Note: no need to fix variables as they are pointing to body.Variables elements
-
-            if (scope.HasScopes)
-            {
-                foreach (var subscope in scope.Scopes)
-                    FixReferences(subscope);
             }
         }
 

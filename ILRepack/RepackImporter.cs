@@ -493,9 +493,6 @@ namespace ILRepacking
                 }
             }
 
-            if (body.Scope != null)
-                nb.Scope = CloneScope(body, parent, nb, body.Scope);
-
             foreach (ExceptionHandler eh in body.ExceptionHandlers)
             {
                 ExceptionHandler neh = new ExceptionHandler(eh.HandlerType);
@@ -521,7 +518,6 @@ namespace ILRepacking
             if (body.Symbols != null)
             {
                 nb.Symbols = body.Symbols.Clone();
-                nb.Symbols.Body = nb;
 
                 // Update PDB specific symbols (they contain method references)
                 var pdbSymbols = nb.Symbols as PdbMethodSymbols;
@@ -547,29 +543,6 @@ namespace ILRepacking
                     }
                 }
             }
-        }
-
-        private Scope CloneScope(MethodBody body, MethodDefinition parent, MethodBody nb, Scope scope)
-        {
-            var result = new Scope
-            {
-                Start = GetInstruction(body, nb, scope.Start),
-                End = GetInstruction(body, nb, scope.End),
-            };
-
-            if (scope.HasVariables)
-            {
-                foreach (var var in scope.Variables)
-                    result.Variables.Add(nb.Variables[var.Index]);
-            }
-
-            if (scope.HasScopes)
-            {
-                foreach (var subscope in scope.Scopes)
-                    result.Scopes.Add(CloneScope(body, parent, nb, subscope));
-            }
-
-            return result;
         }
 
         private TypeDefinition CreateType(TypeDefinition type, Collection<TypeDefinition> col, bool internalize, string rename)
