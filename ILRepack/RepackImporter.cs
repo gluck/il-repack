@@ -20,7 +20,6 @@ using Mono.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mono.Cecil.Pdb;
 
 namespace ILRepacking
 {
@@ -512,36 +511,6 @@ namespace ILRepacking
                 }
 
                 nb.ExceptionHandlers.Add(neh);
-            }
-
-            // Generate a copy of symbols
-            if (body.Symbols != null)
-            {
-                nb.Symbols = body.Symbols.Clone();
-
-                // Update PDB specific symbols (they contain method references)
-                var pdbSymbols = nb.Symbols as PdbMethodSymbols;
-                if (pdbSymbols != null)
-                {
-                    if (pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod != null)
-                        pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod =
-                            Import(pdbSymbols.MethodWhoseUsingInfoAppliesToThisMethod, parent);
-
-                    // Note: we don't need to update PdbScope.Start/End since offsets shouldn't change
-
-                    if (pdbSymbols.SynchronizationInformation != null)
-                    {
-                        if (pdbSymbols.SynchronizationInformation.KickoffMethod != null)
-                            pdbSymbols.SynchronizationInformation.KickoffMethod =
-                                Import(pdbSymbols.SynchronizationInformation.KickoffMethod);
-
-                        foreach (var syncPoint in pdbSymbols.SynchronizationInformation.SynchronizationPoints)
-                        {
-                            if (syncPoint.ContinuationMethod != null)
-                                syncPoint.ContinuationMethod = Import(syncPoint.ContinuationMethod);
-                        }
-                    }
-                }
             }
         }
 
