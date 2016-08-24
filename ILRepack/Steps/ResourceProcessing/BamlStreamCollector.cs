@@ -28,7 +28,7 @@ namespace ILRepacking.Steps.ResourceProcessing
     /// This collector removes the BAML streams from non-main assemblies and
     /// moves them in a assembly-name directory, to prevent duplication.
     /// </summary>
-    internal class BamlStreamCollector : IResProcessor, IEmbeddedResourceProcessor
+    internal class StreamCollector : IResProcessor, IEmbeddedResourceProcessor
     {
         private const string GenericThemesBamlName = "themes/generic.baml";
 
@@ -36,8 +36,9 @@ namespace ILRepacking.Steps.ResourceProcessing
         private readonly AssemblyDefinition _primaryAssemblyDefinition;
         private readonly BamlGenerator _bamlGenerator;
         private readonly IDictionary<Res, AssemblyDefinition> _bamlStreams = new Dictionary<Res, AssemblyDefinition>();
+        private readonly IDictionary<Res, AssemblyDefinition> _nonBamlStreams = new Dictionary<Res, AssemblyDefinition>();
 
-        public BamlStreamCollector(ILogger logger, IRepackContext repackContext)
+        public StreamCollector(ILogger logger, IRepackContext repackContext)
         {
             _logger = logger;
             _primaryAssemblyDefinition = repackContext.PrimaryAssemblyDefinition;
@@ -51,10 +52,19 @@ namespace ILRepacking.Steps.ResourceProcessing
         public bool Process(AssemblyDefinition containingAssembly,
             Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
-            if (!resource.IsBamlStream)
+            if (resource.IsBamlStream)
+            {
+                _bamlStreams.Add(resource, containingAssembly); 
+            }
+            else if (containingAssembly.Name.Name == _primaryAssemblyDefinition.Name.Name)
+            {
+                _nonBamlStreams.Add(resource, containingAssembly);
+            }
+            else
+            {
                 return false;
+            }
 
-            _bamlStreams.Add(resource, containingAssembly);
             return true;
         }
 
@@ -64,6 +74,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                 return;
 
             WriteCollectedBamlStreams(resourceWriter);
+            WriteOtherStreams(resourceWriter);
             PatchGenericThemesBaml(resourceWriter);
         }
 
@@ -73,6 +84,15 @@ namespace ILRepacking.Steps.ResourceProcessing
             {
                 resourceWriter.AddResourceData(
                     GetResourceName(bamlStream.Key, bamlStream.Value), bamlStream.Key.type, bamlStream.Key.data);
+            }
+        }
+
+        private void WriteOtherStreams(ResourceWriter resourceWriter)
+        {
+            foreach (var stream in _nonBamlStreams)
+            {
+                resourceWriter.AddResourceData(
+                    GetResourceName(stream.Key, stream.Value), stream.Key.type, stream.Key.data);
             }
         }
 

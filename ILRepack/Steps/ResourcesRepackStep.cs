@@ -55,7 +55,7 @@ namespace ILRepacking.Steps
                 repackList = _repackContext.MergedAssemblies.Select(a => a.FullName).ToList();
             }
 
-            var bamlStreamCollector = new BamlStreamCollector(_logger, _repackContext);
+            var bamlStreamCollector = new StreamCollector(_logger, _repackContext);
             var bamlResourcePatcher = new BamlResourcePatcher(_repackContext);
 
             var primaryAssemblyProcessors =
@@ -120,10 +120,19 @@ namespace ILRepacking.Steps
 
                                         newResource = FixResxResource(assembly, er, assemblyProcessors,
                                             shouldWriteCollectedBamlStreams ? bamlStreamCollector : null);
+
+                                        if (!isPrimaryAssembly && assembly.Name.Name == _repackContext.PrimaryAssemblyDefinition.Name.Name)
+                                        {
+                                            newResource = null; // nothing to write, as all streams were collected
+                                        }
                                     }
                                     break;
                             }
-                            _targetAssemblyMainModule.Resources.Add(newResource);
+
+                            if (newResource != null)
+                            {
+                                _targetAssemblyMainModule.Resources.Add(newResource);
+                            }
                         }
                     }
                 }
