@@ -119,7 +119,7 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private string GetResourceName(Res resource, AssemblyDefinition assembly)
         {
-            if (assembly == _primaryAssemblyDefinition)
+            if (assembly.Name.Name == _primaryAssemblyDefinition.Name.Name)
                 return resource.name;
 
             return string.Format("{0}/{1}", assembly.Name.Name.ToLowerInvariant(), resource.name);
