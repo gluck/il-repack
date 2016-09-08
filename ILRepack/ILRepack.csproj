@@ -59,11 +59,21 @@
       <HintPath>..\packages\fasterflect.2.1.3\lib\net40\Fasterflect.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Build" />
     <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>..\packages\Mono.Posix.4.0.0.0\lib\net40\Mono.Posix.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="SourceLink.Core, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SourceLink.Core.1.1.0\lib\net45\SourceLink.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -119,6 +129,9 @@
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
     <Compile Include="Steps\SigningStep.cs" />
+    <Compile Include="Steps\SourceServerData\SourceFileDescriptor.cs" />
+    <Compile Include="Steps\SourceServerData\SourceServerDataRepackStep.cs" />
+    <Compile Include="Steps\SourceServerData\HttpSourceServerDescriptor.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
