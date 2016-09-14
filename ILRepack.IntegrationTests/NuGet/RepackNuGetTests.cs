@@ -98,6 +98,23 @@ namespace ILRepack.IntegrationTests.NuGet
             Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
         }
 
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesPdbAreGenerated()
+        {
+            var platform = Platform.From(Package.From("SourceLink.Core", "1.1.0"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .ToList()
+                .Select(pathes => pathes.Where(path => path.EndsWith("dll")).ToList())
+                .Do(list => RepackPlatform(platform, list))
+                .First();
+
+            Assert.IsTrue(File.Exists(Tmp("test.pdb")));
+        }
+
         void RepackPlatform(Platform platform, IList<string> list)
         {
             Assert.IsTrue(list.Count >= platform.Packages.Count());
