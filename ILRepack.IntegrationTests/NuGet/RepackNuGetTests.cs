@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text.RegularExpressions;
+using SourceLink;
 
 namespace ILRepack.IntegrationTests.NuGet
 {
@@ -96,6 +97,83 @@ namespace ILRepack.IntegrationTests.NuGet
             .First();
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
             Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
+        }
+
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesPdbAreGenerated()
+        {
+            var platform = Platform.From(Package.From("SourceLink.Core", "1.1.0"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .ToList()
+                .Select(pathes => pathes.Where(path => path.EndsWith("dll")).ToList())
+                .Do(list => RepackPlatform(platform, list))
+                .First();
+
+            Assert.IsTrue(File.Exists(Tmp("test.pdb")));
+        }
+
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesMergedPdbKeepSourceIndexationForTfsIndexation()
+        {
+            const string LibName = "TfsEngine.dll";
+            const string PdbName = "TfsEngine.pdb";
+
+            var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Where(lib => new[] { LibName, PdbName }.Any(lib.Item1.EndsWith))
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .ToArray() // to download PDB file as well
+                .SelectMany(_ => _)
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .Where(path => path.EndsWith("dll"))
+                .Do(path => RepackPlatform(platform, new List<string> { path }))
+                .Single();
+
+            Assert.IsTrue(File.ReadAllText(Tmp(PdbName)).Contains("SRCSRV"), "SRCSRV should be present in " + PdbName);
+            CollectionAssert.AreEqual(
+                PdbFile.readSrcSrvBytes(Tmp(PdbName)),
+                PdbFile.readSrcSrvBytes(Tmp("test.pdb")));
+        }
+
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesMergedPdbKeepSourceIndexationForHttpIndexation()
+        {
+            var platform = Platform.From(
+                Package.From("SourceLink.Core", "1.1.0"),
+                Package.From("sourcelink.symbolstore", "1.1.0"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .Where(path => path.EndsWith("dll"))
+                .ToArray()
+                .Do(path => RepackPlatform(platform, path))
+                .Single();
+
+            var primarySources = GetSourceLinks(Tmp("SourceLink.Core.pdb"));
+            var otherSources = GetSourceLinks(Tmp("SourceLink.SymbolStore.pdb"));
+            var mergedSources = GetSourceLinks(Tmp("test.pdb"));
+            CollectionAssert.AreEquivalent(primarySources.Union(otherSources), mergedSources);
+        }
+
+        private IEnumerable<string> GetSourceLinks(string pdbName)
+        {
+            var sourcLinkOutput = new List<string>();
+            var sourceLinkProcess = new Process();
+            sourceLinkProcess.FileName = Path.Combine(
+                TestContext.CurrentContext.TestDirectory,
+                @"..\..\..\packages\SourceLink.1.1.0\tools\SourceLink.exe");
+            sourceLinkProcess.Arguments = "srctoolx --pdb " + Tmp(pdbName);
+            sourceLinkProcess.Stdout.AddHandler((_, line) => sourcLinkOutput.Add(line));
+            sourceLinkProcess.Run();
+            return sourcLinkOutput.Take(sourcLinkOutput.Count - 1).Skip(1);
         }
 
         void RepackPlatform(Platform platform, IList<string> list)

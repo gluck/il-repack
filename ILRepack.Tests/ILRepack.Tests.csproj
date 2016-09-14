@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ILRepack.Tests</RootNamespace>
     <AssemblyName>ILRepack.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug_unix|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -38,6 +40,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BamlParser, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -73,6 +76,9 @@
     <Compile Include="RepackOptionsTests.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlGeneratorTests.cs" Condition=" '$(Configuration)' != 'Debug_unix' " />
     <Compile Include="Steps\ResourceProcessing\BamlResourcePatcherTests.cs" />
+    <Compile Include="Steps\SourceServerData\SourceFileDescriptorTest.cs" />
+    <Compile Include="Steps\SourceServerData\SourceServerDataRepackStepTest.cs" />
+    <Compile Include="Steps\SourceServerData\HttpSourceServerDescriptorTest.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStepTests.cs" />
     <Compile Include="Utils\BamlDocumentMatcher.cs" />
   </ItemGroup>
