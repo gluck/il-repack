@@ -117,6 +117,11 @@
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
     <Compile Include="Steps\SigningStep.cs" />
+    <Compile Include="Steps\SourceServerData\HttpSourceServerDescriptor.cs" />
+    <Compile Include="Steps\SourceServerData\PdbStr.cs" />
+    <Compile Include="Steps\SourceServerData\SourceFileDescriptor.cs" />
+    <Compile Include="Steps\SourceServerData\SourceServerDataRepackStep.cs" />
+    <Compile Include="Steps\SourceServerData\StringMixins.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
@@ -171,6 +176,8 @@
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="..\packages\SourceLink.1.1.0\tools\pdbstr.exe" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
