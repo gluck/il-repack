@@ -26,6 +26,7 @@ using Mono.Unix.Native;
 using ILRepacking.Mixins;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
+using ILRepacking.Steps.SourceServerData;
 
 namespace ILRepacking
 {
@@ -318,6 +319,7 @@ namespace ILRepacking
 
             _lineIndexer = new IKVMLineIndexer(this, Options.LineIndexation);
             var signingStep = new SigningStep(this, Options);
+            var sourceServerDataRepackStep = new SourceServerDataRepackStep(Options.OutputFile, MergedAssemblyFiles);
 
             List<IRepackStep> repackSteps = new List<IRepackStep>
             {
@@ -327,7 +329,8 @@ namespace ILRepacking
                 new ResourcesRepackStep(Logger, this, Options),
                 new AttributesRepackStep(Logger, this, _repackImporter, Options),
                 new ReferencesFixStep(Logger, this, _repackImporter, Options),
-                new XamlResourcePathPatcherStep(Logger, this)
+                new XamlResourcePathPatcherStep(Logger, this),
+                sourceServerDataRepackStep
             };
 
             foreach (var step in repackSteps)
@@ -348,6 +351,7 @@ namespace ILRepacking
                 Directory.CreateDirectory(outputDir);
             }
             TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+            sourceServerDataRepackStep.Write();
             Logger.Info("Writing output assembly to disk");
             // If this is an executable and we are on linux/osx we should copy file permissions from
             // the primary assembly

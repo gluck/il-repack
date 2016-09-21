@@ -3,10 +3,12 @@ using ILRepack.IntegrationTests.Peverify;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text.RegularExpressions;
+using ILRepacking.Steps.SourceServerData;
 
 namespace ILRepack.IntegrationTests.NuGet
 {
@@ -96,6 +98,84 @@ namespace ILRepack.IntegrationTests.NuGet
             .First();
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
             Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
+        }
+
+
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesMergedPdbUnchangedSourceIndexationForTfsIndexation()
+        {
+            const string LibName = "TfsEngine.dll";
+            const string PdbName = "TfsEngine.pdb";
+
+            var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Where(lib => new[] { LibName, PdbName }.Any(lib.Item1.EndsWith))
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .ToArray() // to download PDB file as well
+                .SelectMany(_ => _)
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .Where(path => path.EndsWith("dll"))
+                .Do(path => RepackPlatform(platform, new List<string> { path }))
+                .Single();
+
+            var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
+            var actual = GetSrcSrv(Tmp("test.pdb"));
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private static IEnumerable<string> GetSrcSrv(string pdb)
+        {
+            return new PdbStr().Read(pdb).GetLines();
+        }
+
+        [Test]
+        [Platform(Include = "win")]
+        public void VerifiesMergedPdbKeepSourceIndexationForHttpIndexation()
+        {
+            var platform = Platform.From(
+                Package.From("SourceLink.Core", "1.1.0"),
+                Package.From("sourcelink.symbolstore", "1.1.0"));
+            platform.Packages.ToObservable()
+                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
+                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                .Select(lib => Path.GetFileName(lib.Item1))
+                .Where(path => path.EndsWith("dll"))
+                .ToArray()
+                .Do(path => RepackPlatform(platform, path))
+                .Single();
+
+            AssertSourceLinksAreEquivalent(
+                new[] { "SourceLink.Core.pdb", "SourceLink.SymbolStore.pdb", "SourceLink.SymbolStore.CorSym.pdb" }.Select(Tmp),
+                Tmp("test.pdb"));
+        }
+
+        private void AssertSourceLinksAreEquivalent(IEnumerable<string> expectedPdbNames, string actualPdbName)
+        {
+            CollectionAssert.AreEquivalent(expectedPdbNames.SelectMany(GetSourceLinks), GetSourceLinks(actualPdbName));
+        }
+
+        private static IEnumerable<string> GetSourceLinks(string pdbName)
+        {
+            var processInfo = new ProcessStartInfo
+                              {
+                                  CreateNoWindow = true,
+                                  UseShellExecute = false,
+                                  RedirectStandardOutput = true,
+                                  FileName = Path.Combine(
+                                          TestContext.CurrentContext.TestDirectory,
+                                          @"..\..\..\packages\SourceLink.1.1.0\tools\SourceLink.exe"),
+                                  Arguments = "srctoolx --pdb " + pdbName
+                              };
+            using (var sourceLinkProcess = Process.Start(processInfo))
+            using (StreamReader reader = sourceLinkProcess.StandardOutput)
+            {
+                return reader.ReadToEnd()
+                        .GetLines()
+                        .Take(reader.ReadToEnd().GetLines().ToArray().Length - 1)
+                        .Skip(1);
+            }
         }
 
         void RepackPlatform(Platform platform, IList<string> list)
