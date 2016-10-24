@@ -1,5 +1,9 @@
 # IL Repack changelog
 
+## 2.0.12
+### Added
+* SRCSRV data from PDBs are merged for sources available with HTTP. Others are not merged and only the one from the primary assembly is kept.
+
 ## 2.0.11
 ### Fixed
 * Signed WPF applications during the repack process now work properly
