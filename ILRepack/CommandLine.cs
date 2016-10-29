@@ -20,11 +20,11 @@ using System.Text;
 
 namespace ILRepacking
 {
-    internal class CommandLine
+    public class CommandLine : ICommandLine
     {
         private readonly List<string> parameters;
 
-        public CommandLine(string[] args)
+        public CommandLine(IEnumerable<string> args)
         {
             parameters = new List<string>(args);
         }
@@ -72,6 +72,16 @@ namespace ILRepacking
             string val = Option(name);
             return val == null ? def : StringComparer.InvariantCultureIgnoreCase.Equals(val, "true");
         }
+        
+        public int OptionsCount 
+        {
+            get { return parameters.Count; }
+        }
+
+        public bool HasNoOptions
+        {
+            get { return OptionsCount == 0; }
+        }
 
         private static string OptionFinder(string option, string param)
         {
@@ -90,5 +100,6 @@ namespace ILRepacking
                 return null;
             return ret.Substring(1).Trim();
         }
+
     }
 }

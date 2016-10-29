@@ -7,10 +7,11 @@ _ReSharper*
 .classpath
 .project
 .gradle
-build
-bin
-obj
-packages
+build/
+buildSrc/
+bin/
+obj/
+packages/
 *.suo
 *.user
 *.pidb
@@ -24,3 +25,8 @@ glob:_UpgradeReport_Files
 glob:UpgradeLog*.XML
 glob:*.orig
 glob:Backup
+_NCrunch*
+*.ncrunchsolution
+*.ncrunchproject
+*.sln.cache
+*.DotSettings

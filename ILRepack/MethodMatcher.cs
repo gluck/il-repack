@@ -7,11 +7,18 @@ namespace ILRepacking
     /// Copied and modified from http://markmail.org/message/srpyljbjtaskoahk
     /// Which was copied and modified from Mono's Mono.Linker.Steps.TypeMapStep
     /// </summary>
-    public class MethodMatcher
+    internal class MethodMatcher
     {
-        public static MethodDefinition MapVirtualMethod(MethodDefinition method)
+        public static MethodDefinition MapVirtualMethodToDeepestBase(MethodDefinition method)
         {
-            return GetBaseMethodInTypeHierarchy(method);
+            MethodDefinition baseMethod = null;
+            var candidate = GetBaseMethodInTypeHierarchy(method);
+            while (candidate != null)
+            {
+                baseMethod = candidate;
+                candidate = GetBaseMethodInTypeHierarchy(baseMethod);
+            }
+            return baseMethod;
         }
 
         static MethodDefinition GetBaseMethodInTypeHierarchy(MethodDefinition method)

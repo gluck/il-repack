@@ -1,52 +1,52 @@
 ﻿/*
- * BinarySerializationStreamAnalysis - a simple demo class for parsing the 
- *  output of the BinaryFormatter class' "Serialize" method, eg counting objects and 
+ * BinarySerializationStreamAnalysis - a simple demo class for parsing the
+ *  output of the BinaryFormatter class' "Serialize" method, eg counting objects and
  *  values.
- * 
+ *
  * Copyright Tao Klerks, 2010-2011, tao@klerks.biz
  * Licensed under the modified BSD license:
- * 
+ *
 
-Redistribution and use in source and binary forms, with or without modification, are 
+Redistribution and use in source and binary forms, with or without modification, are
 permitted provided that the following conditions are met:
 
- - Redistributions of source code must retain the above copyright notice, this list of 
+ - Redistributions of source code must retain the above copyright notice, this list of
 conditions and the following disclaimer.
- - Redistributions in binary form must reproduce the above copyright notice, this list 
+ - Redistributions in binary form must reproduce the above copyright notice, this list
 of conditions and the following disclaimer in the documentation and/or other materials
 provided with the distribution.
- - The name of the author may not be used to endorse or promote products derived from 
+ - The name of the author may not be used to endorse or promote products derived from
 this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR 
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY 
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
 
- * 
+ *
  */
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 
 namespace ILRepacking
 {
     /*
      * Copied (and modified) from https://github.com/TaoK/BinarySerializationAnalysis
-     * 
+     *
      * Home-made Serialized data parser, that only parses records to map merged type references
      * Other than that, it just streams the data from the input to the output unchanged.
      */
-    public class SerReader
+    internal class SerReader
     {
-        private readonly ILRepack repack;
+        private readonly IRepackContext _repackContext;
 
         //yeah, I know, these could be better protected...
         internal readonly Dictionary<int, SerialObject> SerialObjectsFound = new Dictionary<int, SerialObject>();
@@ -65,9 +65,9 @@ namespace ILRepacking
         private long pos;
         private long start, end;
 
-        public SerReader(ILRepack repack, Stream inputStream, Stream outputStream)
+        public SerReader(IRepackContext repackContext, Stream inputStream, Stream outputStream)
         {
-            this.repack = repack;
+            _repackContext = repackContext;
             reader = new BinaryReader(inputStream, Encoding.UTF8);
             pos = inputStream.Position;
             writer = new BinaryWriter(outputStream, Encoding.UTF8);
@@ -96,7 +96,7 @@ namespace ILRepacking
 
         public void FixTypeName(string assemblyName, string typeName)
         {
-            string str2 = repack.FixTypeName(assemblyName, typeName);
+            string str2 = _repackContext.FixTypeName(assemblyName, typeName);
             if (typeName != str2)
             {
                 TransferMarked();
@@ -107,7 +107,7 @@ namespace ILRepacking
         public string ReadAssemblyName()
         {
             string str = ReadMarkString();
-            string str2 = repack.FixAssemblyName(str);
+            string str2 = _repackContext.FixAssemblyName(str);
             if (str != str2)
             {
                 TransferMarked();
@@ -119,7 +119,7 @@ namespace ILRepacking
         public string ReadAndFixString()
         {
             string str = ReadMarkString();
-            string str2 = repack.FixStr(str);
+            string str2 = _repackContext.FixStr(str);
             if (str != str2)
             {
                 TransferMarked();
@@ -243,19 +243,19 @@ namespace ILRepacking
         }
     }
 
-    public class BinaryLibrary
+    internal class BinaryLibrary
     {
         public int LibraryID;
         public string Name;
     }
 
-    public interface SerialObject
+    internal interface SerialObject
     {
         int ObjectID { get; set; }
         long? ParentObjectID { get; set; }
     }
 
-    public interface TypeHoldingThing
+    internal interface TypeHoldingThing
     {
         SerialObject RelevantObject { get; set; }
         BinaryTypeEnumeration? BinaryType { get; set; }
@@ -269,7 +269,7 @@ namespace ILRepacking
         object ValueRefID { get; set; }
     }
 
-    public class ObjectWithId : SerialObject
+    internal class ObjectWithId : SerialObject
     {
         public int ObjectID { get; set; }
         public long? ParentObjectID { get; set; }
@@ -281,7 +281,7 @@ namespace ILRepacking
         }
     }
 
-    public class ClassInfo : ObjectWithId
+    internal class ClassInfo : ObjectWithId
     {
         internal ClassInfo() { }
 
@@ -343,7 +343,7 @@ namespace ILRepacking
         public int ReferenceCount;
     }
 
-    public class MemberInfo : TypeHoldingThing, ValueHoldingThing
+    internal class MemberInfo : TypeHoldingThing, ValueHoldingThing
     {
         public string Name;
         public SerialObject RelevantObject { get; set; }
@@ -354,13 +354,13 @@ namespace ILRepacking
         public object ValueRefID { get; set; }
     }
 
-    public class ClassTypeInfo
+    internal class ClassTypeInfo
     {
         public string TypeName;
         public int? LibraryID;
     }
 
-    public class ObjectString : ObjectWithId
+    internal class ObjectString : ObjectWithId
     {
         public string String;
 
@@ -377,7 +377,7 @@ namespace ILRepacking
         }
     }
 
-    public class BinaryArray : ObjectWithId, TypeHoldingThing
+    internal class BinaryArray : ObjectWithId, TypeHoldingThing
     {
         internal BinaryArray() { }
 
@@ -580,7 +580,7 @@ namespace ILRepacking
     }
 
 
-    public enum RecordTypeEnumeration
+    internal enum RecordTypeEnumeration
     {
         SerializedStreamHeader = 0,
         ClassWithID = 1,                    //Object,
@@ -607,7 +607,7 @@ namespace ILRepacking
         MethodReturn = 22
     }
 
-    public enum BinaryTypeEnumeration
+    internal enum BinaryTypeEnumeration
     {
         Primitive = 0,
         String = 1,
@@ -619,7 +619,7 @@ namespace ILRepacking
         PrimitiveArray = 7
     }
 
-    public enum PrimitiveTypeEnumeration
+    internal enum PrimitiveTypeEnumeration
     {
         Boolean = 1,
         Byte = 2,
@@ -641,7 +641,7 @@ namespace ILRepacking
         String = 18
     }
 
-    public enum BinaryArrayTypeEnumeration
+    internal enum BinaryArrayTypeEnumeration
     {
         Single = 0,
         Jagged = 1,

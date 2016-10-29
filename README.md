@@ -1,3 +1,6 @@
+[![Build status](https://img.shields.io/appveyor/ci/gluck/il-repack.svg?label=build windows)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://img.shields.io/travis/gluck/il-repack.svg?label=build linux)](https://travis-ci.org/gluck/il-repack) [![NuGet](https://img.shields.io/nuget/dt/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![NuGet](https://img.shields.io/nuget/v/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![GitHub license](https://img.shields.io/github/license/gluck/il-repack.svg)](http://www.apache.org/licenses/LICENSE-2.0)   
+[![Gitter chat](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/gluck/il-repack)
+
 Introduction
 ============
 
@@ -20,8 +23,8 @@ Syntax
 ------
 
 A console application has been released (can be used as DLL as well), using same syntax as ILMerge:
-<pre>
-`Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]`
+```
+Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]
 
   - /help              displays this usage
  - /keyfile:<path>    specifies a keyfile to sign the output assembly
@@ -53,7 +56,20 @@ A console application has been released (can be used as DLL as well), using same
  - <other_assemblies> ...
 
 Note: for compatibility purposes, all options can be specified using '/', '-' or '--' prefix.
-</pre>
+```
+
+How to build
+------
+
+Builds directly from within VS, or using gradle:
+
+```
+git clone --recursive https://github.com/gluck/il-repack.git
+cd il-repack
+gradlew.bat msbuild
+```
+
+(Mono.Posix 3.5-compatible dependency was grabbed from a non-standard nuget repo, it has been commited to git to avoid the dependency on this repo)
 
 TODO
 ------
@@ -75,3 +91,9 @@ DONE
   * Delay signing (Simon)
   * Target platform selection (Simon)
   * Automatic internal type renaming
+
+Sponsoring / Donations
+------
+If you like this tool and want to express your thanks, you can contribute either time to the project (issue triage or pull-requests) or donate money to the Free Software Foundation.
+
+[![Donate](https://www.gnu.org/graphics/logo-fsf.org-tiny.png)](https://my.fsf.org/donate/)

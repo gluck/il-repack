@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-using Mono.Cecil;
 
 namespace ILRepacking
 {
@@ -31,12 +30,11 @@ namespace ILRepacking
                 foreach (string assembly in repack.MergedAssemblyFiles)
                 {
                     string assemblyConfig = assembly + ".config";
-                    if (File.Exists(assemblyConfig))
-                    {
-                        var doc = new XmlDocument();
-                        doc.Load(assemblyConfig);
-                        validConfigFiles.Add(assemblyConfig);
-                    }
+                    if (!File.Exists(assemblyConfig))
+                        continue;
+                    var doc = new XmlDocument();
+                    doc.Load(assemblyConfig);
+                    validConfigFiles.Add(assemblyConfig);
                 }
 
                 if (validConfigFiles.Count == 0)
@@ -53,11 +51,11 @@ namespace ILRepacking
                     nextDataset.ReadXml(configFile);
                     dataset.Merge(nextDataset);
                 }
-                dataset.WriteXml(repack.OutputFile + ".config");
+                dataset.WriteXml(repack.Options.OutputFile + ".config");
             }
             catch (Exception e)
             {
-                repack.ERROR("Failed to merge configuration files: " + e);
+                repack.Logger.Error("Failed to merge configuration files: " + e);
             }
         }
     }

@@ -1,0 +1,27 @@
+﻿<controls:MetroWindow x:Class="WPFSampleApplication.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:wpfSampleApplication="clr-namespace:WPFSampleApplication"
+        xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        Style="{DynamicResource WindowStyle}" Height="350" Width="525" Loaded="MainWindowOnLoaded">
+    <controls:MetroWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
+                <ResourceDictionary Source="/WPFSampleApplication;component/SampleResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </controls:MetroWindow.Resources>
+    <i:Interaction.Behaviors>
+        <wpfSampleApplication:CloseWindowOnAttachBehaviour />
+    </i:Interaction.Behaviors>
+    <xctk:BusyIndicator BusyContent="Pretending to be busy..." IsBusy="True">
+        <wpfSampleApplication:MyUserControl x:Name="MyUserControl" />
+    </xctk:BusyIndicator>
+</controls:MetroWindow>

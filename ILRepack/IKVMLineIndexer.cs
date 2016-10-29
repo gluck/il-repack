@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Mono.Cecil;
+using Mono.Cecil.Cil;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace ILRepacking
 {
@@ -15,11 +15,10 @@ namespace ILRepacking
     /// </summary>
     internal class IKVMLineIndexer
     {
-        private readonly ILRepack repack;
+        private readonly IRepackContext repack;
         private bool enabled;
         private LineNumberWriter lineNumberWriter;
         private string fileName;
-        private IMetadataScope ikvmRuntimeReference;
         private TypeReference sourceFileAttributeTypeReference;
         private TypeReference lineNumberTableAttributeTypeReference;
         private MethodReference lineNumberTableAttributeConstructor1;
@@ -34,9 +33,10 @@ namespace ILRepacking
             }
         }
 
-        public IKVMLineIndexer(ILRepack ilRepack)
+        public IKVMLineIndexer(IRepackContext ilRepack, bool doLineIndexing)
         {
             repack = ilRepack;
+            enabled = doLineIndexing;
         }
 
         public void Reset()
@@ -149,15 +149,19 @@ namespace ILRepacking
 
         public void PostRepackReferences()
         {
-            if (!repack.LineIndexation)
+            if (!enabled)
                 return;
 
-            ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
-            if (ikvmRuntimeReference == null && repack.LineIndexation)
+            IMetadataScope ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
+            if (ikvmRuntimeReference == null)
             {
-                ikvmRuntimeReference = repack.globalAssemblyResolver.Resolve("IKVM.Runtime").MainModule;
+                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").Name);
             }
-            if (ikvmRuntimeReference != null)
+            if (ikvmRuntimeReference == null)
+            {
+                enabled = false;
+            }
+            else
             {
                 sourceFileAttributeTypeReference = new TypeReference("IKVM.Attributes", "SourceFileAttribute", TargetAssemblyMainModule, ikvmRuntimeReference);
                 sourceFileAttributeConstructor = new MethodReference(".ctor", TargetAssemblyMainModule.TypeSystem.Void, sourceFileAttributeTypeReference)
@@ -168,7 +172,6 @@ namespace ILRepacking
                                                            {HasThis = true, Parameters = {new ParameterDefinition(TargetAssemblyMainModule.TypeSystem.UInt16)}};
                 lineNumberTableAttributeConstructor2 = new MethodReference(".ctor", TargetAssemblyMainModule.TypeSystem.Void, lineNumberTableAttributeTypeReference)
                                                            {HasThis = true, Parameters = {new ParameterDefinition(new ArrayType(TargetAssemblyMainModule.TypeSystem.Byte))}};
-                enabled = true;
             }
         }
     }

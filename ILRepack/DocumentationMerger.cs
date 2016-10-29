@@ -33,14 +33,14 @@ namespace ILRepacking
                 foreach (string assembly in repack.MergedAssemblyFiles)
                 {
                     string assemblyDoc = Path.ChangeExtension(assembly, ".xml");
-                    if (File.Exists (assemblyDoc))
+                    if (File.Exists(assemblyDoc))
                     {
                         doc = new XmlDocument();
-                        doc.Load (assemblyDoc);
+                        doc.Load(assemblyDoc);
                         validXmlFiles.Add(doc);
                     }
                 }
-    			
+
                 if (validXmlFiles.Count == 0)
                     return;
 
@@ -64,19 +64,19 @@ namespace ILRepacking
                     while (iterator.MoveNext())
                     {
                         XPathNavigator navigator = iterator.Current;
-                        node.AppendChild(doc.ImportNode((XmlNode) navigator.UnderlyingObject, true));
+                        node.AppendChild(doc.ImportNode((XmlNode)navigator.UnderlyingObject, true));
                     }
                 }
 
                 // write
-                using (var writer = XmlWriter.Create(Path.ChangeExtension(repack.OutputFile, ".xml"), new XmlWriterSettings() { Indent = true, IndentChars = "    " }))
+                using (var writer = XmlWriter.Create(Path.ChangeExtension(repack.Options.OutputFile, ".xml"), new XmlWriterSettings() { Indent = true, IndentChars = "    " }))
                 {
                     doc.WriteTo(writer);
                 }
             }
             catch (Exception e)
             {
-                repack.ERROR("Failed to merge documentation files: " + e);
+                repack.Logger.Error("Failed to merge documentation files: " + e);
             }
         }
     }

@@ -1,23 +1,25 @@
-﻿using System;
+﻿using Mono.Cecil;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Mono.Cecil;
-using System.Diagnostics;
 
 namespace ILRepacking
 {
-    class MappingHandler
+    internal class MappingHandler
     {
-        internal class Pair
+        struct Pair : IEquatable<Pair>
         {
-            internal readonly string scope;
-            internal readonly string name;
+            readonly string scope;
+            readonly string name;
+            public readonly IMetadataScope MetadataScope;
 
-            public Pair(string scope, string name)
+            public Pair(string scope, string name, IMetadataScope metadataScope)
             {
                 this.scope = scope;
                 this.name = name;
+                MetadataScope = metadataScope;
             }
 
             public override int GetHashCode()
@@ -25,13 +27,8 @@ namespace ILRepacking
                 return scope.GetHashCode() + name.GetHashCode();
             }
 
-            public override bool Equals(object obj)
+            public bool Equals(Pair p)
             {
-                if (obj == this)
-                    return true;
-                if (!(obj is Pair))
-                    return false;
-                Pair p = (Pair) obj;
                 return p.scope == scope && p.name == name;
             }
         }
@@ -72,7 +69,7 @@ namespace ILRepacking
 
         private static Pair GetTypeKey(IMetadataScope scope, String fullName)
         {
-            return new Pair(GetScopeName(scope), fullName);
+            return new Pair(GetScopeName(scope), fullName, scope);
         }
 
         internal static string GetScopeName(IMetadataScope scope)
@@ -98,14 +95,17 @@ namespace ILRepacking
             TypeReference other;
             if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
             {
+                // when reading forwarded types, we don't know if they are value types, fix that later on
+                if (type.IsValueType && !other.IsValueType)
+                    other.IsValueType = true;
                 return other;
             }
             return null;
         }
 
-        internal string GetOrigTypeModule(TypeDefinition nt)
+        internal T GetOrigTypeScope<T>(TypeDefinition nt) where T : class, IMetadataScope
         {
-            return mappings.Where(p => p.Value == nt).Select(p => p.Key.scope).FirstOrDefault();
+            return mappings.Where(p => p.Value == nt).Select(p => p.Key.MetadataScope).FirstOrDefault() as T;
         }
     }
 }
