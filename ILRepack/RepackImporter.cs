@@ -570,7 +570,7 @@ namespace ILRepacking
 
         private static bool IsIndexer(PropertyDefinition prop)
         {
-            if (prop.Name != "Item")
+            if (prop.Name != "Item" && !prop.Name.EndsWith(".Item")) // cover explicitely implemented properties
                 return false;
             var parameters = ExtractIndexerParameters(prop);
             return parameters != null && parameters.Count > 0;
