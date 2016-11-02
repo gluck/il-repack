@@ -1,4 +1,4 @@
-[![Build status](https://img.shields.io/appveyor/ci/gluck/il-repack.svg?label=build windows)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://img.shields.io/travis/gluck/il-repack.svg?label=build linux)](https://travis-ci.org/gluck/il-repack) [![NuGet](https://img.shields.io/nuget/dt/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![NuGet](https://img.shields.io/nuget/v/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![GitHub license](https://img.shields.io/github/license/gluck/il-repack.svg)](http://www.apache.org/licenses/LICENSE-2.0)   
+[![Build status](https://img.shields.io/appveyor/ci/gluck/il-repack.svg?label=build windows)](https://ci.appveyor.com/project/gluck/il-repack) [![Build Status](https://img.shields.io/travis/gluck/il-repack.svg?label=build linux)](https://travis-ci.org/gluck/il-repack) [![NuGet](https://img.shields.io/nuget/v/ILRepack.svg)](https://www.nuget.org/packages/ILRepack/) [![GitHub license](https://img.shields.io/github/license/gluck/il-repack.svg)](http://www.apache.org/licenses/LICENSE-2.0)   
 [![Gitter chat](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/gluck/il-repack)
 
 Introduction
@@ -22,11 +22,11 @@ Or if you're old-school (and want to stay like that), this [direct link](http://
 Syntax
 ------
 
-A console application has been released (can be used as DLL as well), using same syntax as ILMerge:
+A console application is available (can be used as DLL as well), using same syntax as ILMerge:
 ```
 Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies> ...]
 
-  - /help              displays this usage
+ - /help              displays this usage
  - /keyfile:<path>    specifies a keyfile to sign the output assembly
  - /log:<logfile>     enable logging (to a file, if given) (default is disabled)
  - /ver:M.X.Y.Z       target assembly version
@@ -61,7 +61,7 @@ Note: for compatibility purposes, all options can be specified using '/', '-' or
 How to build
 ------
 
-Builds directly from within VS, or using gradle:
+Builds directly from within Visual Studio 2015, or using gradle:
 
 ```
 git clone --recursive https://github.com/gluck/il-repack.git
