@@ -352,7 +352,9 @@ namespace ILRepacking
                 Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
                 Directory.CreateDirectory(outputDir);
             }
-            TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+            using (FileStream outputStream = File.OpenWrite(Options.OutputFile))
+                TargetAssemblyDefinition.Write(outputStream, parameters);
+            
             if (!isUnixEnvironment)
                 sourceServerDataRepackStep.Write();
             else
