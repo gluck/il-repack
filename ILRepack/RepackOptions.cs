@@ -31,6 +31,7 @@ namespace ILRepacking
         public string[] InputAssemblies { get; set; }
         public bool Internalize { get; set; }
         public string KeyFile { get; set; }
+        public string KeyContainer { get; set; }
         public bool Parallel { get; set; }
         public bool PauseBeforeExit { get; set; }
         public bool Log { get; set; }
@@ -134,6 +135,7 @@ namespace ILRepacking
                 ExcludeFile = cmd.Option("internalize");
             }
             KeyFile = cmd.Option("keyfile");
+            KeyContainer = cmd.Option("keycontainer");
             Log = cmd.HasOption("log");
             if (Log)
                 LogFile = cmd.Option("log");
@@ -210,8 +212,8 @@ namespace ILRepacking
         /// </summary>
         internal void Validate()
         {
-            if (string.IsNullOrEmpty(KeyFile) && DelaySign)
-                throw new InvalidOperationException("Option 'delaysign' is only valid with 'keyfile'.");
+            if (DelaySign && KeyFile == null && KeyContainer == null)
+                throw new InvalidOperationException("Option 'delaysign' is only valid with 'keyfile' or 'keycontainer'.");
 
             if (AllowMultipleAssemblyLevelAttributes && !CopyAttributes)
                 throw new InvalidOperationException("Option 'allowMultiple' is only valid with 'copyattrs'.");
