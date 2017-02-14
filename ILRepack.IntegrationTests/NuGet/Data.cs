@@ -48,7 +48,18 @@ namespace ILRepack.IntegrationTests.NuGet
             Package.From("MassTransit", "2.9.9"),
             Package.From("Magnum", "2.1.3"),
             Package.From("Newtonsoft.Json", "6.0.8")
-        ).WithFwks("net35", "net40")).Concat(new [] {
+        ).WithFwks("net35", "net40")).Concat(new[]
+        {
+            Platform.From(
+                Package.From("Microsoft.Bcl", "1.1.10")
+                    .WithMatcher(p => p.StartsWith($"lib{Path.DirectorySeparatorChar}net40")),
+                Package.From("Microsoft.Bcl.Async", "1.0.168")
+                    .WithMatcher(p => p.StartsWith($"lib{Path.DirectorySeparatorChar}net40")),
+                Package.From("System.Runtime", "4.3.0").WithFwk("net462"),
+                Package.From("System.Collections.Immutable", "1.3.1").WithFwk("portable-net45+win8+wp8+wpa81")
+            )
+        }).Concat(new[]
+        {
             Platform.From(Ikvm),
             Platform.From(
                 Package.From("Paket.Core", "1.11.6").WithFwk("net45"),
