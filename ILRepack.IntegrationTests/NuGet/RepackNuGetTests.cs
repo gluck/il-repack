@@ -28,7 +28,7 @@ namespace ILRepack.IntegrationTests.NuGet
             TestHelpers.CleanupTempFolder(ref tempDirectory);
         }
 
-        [TestCaseSource(typeof(Data), "Packages")]
+        [TestCaseSource(typeof(Data), nameof(Data.Packages))]
         public void RoundtripNupkg(Package p)
         {
             var count = NuGetHelpers.GetNupkgAssembliesAsync(p)
@@ -41,7 +41,7 @@ namespace ILRepack.IntegrationTests.NuGet
 
         [Category("LongRunning")]
         [Platform(Include = "win")]
-        [TestCaseSource(typeof(Data), "Platforms", Category = "ComplexTests")]
+        [TestCaseSource(typeof(Data), nameof(Data.Platforms), Category = "ComplexTests")]
         public void NupkgPlatform(Platform platform)
         {
             Observable.ToObservable(platform.Packages)
@@ -180,7 +180,8 @@ namespace ILRepack.IntegrationTests.NuGet
 
         void RepackPlatform(Platform platform, IList<string> list)
         {
-            Assert.IsTrue(list.Count >= platform.Packages.Count());
+            Assert.IsTrue(list.Count >= platform.Packages.Count(), 
+                "There should be at least the same number of .dlls as the number of packages");
             Console.WriteLine("Merging {0}", string.Join(",",list));
             TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
             Assert.IsTrue(File.Exists(Tmp("test.dll")));
@@ -189,15 +190,6 @@ namespace ILRepack.IntegrationTests.NuGet
         string Tmp(string file)
         {
             return Path.Combine(tempDirectory, file);
-        }
-
-        static IEnumerable<string> GetPortable(string lib)
-        {
-            if (lib.StartsWith(@"lib")) lib = lib.Substring(4);
-            var dirName = Path.GetDirectoryName(lib);
-            if (string.IsNullOrEmpty(dirName) || !dirName.StartsWith(@"portable-")) return Enumerable.Empty<string>();
-            dirName = dirName.Substring(9);
-            return new Regex(@"\+|%2[bB]").Split(dirName);
         }
 
         void VerifyTest(IEnumerable<string> mergedLibraries)

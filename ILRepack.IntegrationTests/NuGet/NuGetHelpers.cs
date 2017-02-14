@@ -59,11 +59,18 @@ namespace ILRepack.IntegrationTests.NuGet
             return o.SelectMany(input => {
                 return Observable.Create<Tuple<ZipFile, ZipEntry>>(observer => {
                     var z = new ZipFile(new MemoryStream(input)) { IsStreamOwner = true };
-                    var sub = Observable.ToObservable(z.Cast<ZipEntry>()).Select(ze => Tuple.Create(z, ze)).Subscribe(observer);
+                    var sub = z.Cast<ZipEntry>().ToObservable()
+                        .Select(ze => Tuple.Create(z, ze))
+                        .Subscribe(observer);
                     return new CompositeDisposable() { z, sub };
                 });
             })
-            .Select(t => Tuple.Create<string, Func<Stream>>(t.Item2.Name.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar), () => t.Item1.GetInputStream(t.Item2)));
+            .Select(t => Tuple.Create<string, Func<Stream>>(
+                t.Item2.Name
+                    .Replace('\\', Path.DirectorySeparatorChar)
+                    .Replace('/', Path.DirectorySeparatorChar)
+                    .Replace("%2B", "+"),
+                () => t.Item1.GetInputStream(t.Item2)));
         }
     }
 }
