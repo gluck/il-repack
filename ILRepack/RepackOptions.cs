@@ -26,7 +26,29 @@ namespace ILRepacking
         public bool CopyAttributes { get; set; }
         public bool DebugInfo { get; set; }
         public bool DelaySign { get; set; }
-        public string ExcludeFile { get; set; }
+
+         /// <summary>
+        /// Gets or sets a file that contains one regex per line to compare against 
+        /// FullName of types NOT to internalize. The items will replace the contents of
+        /// <see cref="ExcludeInternalizeMatches" />. This option only has an effect if
+        /// <see cref="Internalize"/> is set to true. 
+        /// </summary>
+        public string ExcludeFile
+        {
+            get { return excludeFile; }
+            set
+            {
+                excludeFile = value;
+                ExcludeInternalizeMatches.Clear();
+                if (!string.IsNullOrEmpty(excludeFile))
+                {
+                    string[] lines = file.ReadAllLines(excludeFile);
+                    foreach (var line in lines)
+                        ExcludeInternalizeMatches.Add(new Regex(line));
+                }
+            }
+        }
+
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
         public bool Internalize { get; set; }
@@ -56,6 +78,11 @@ namespace ILRepacking
         public bool KeepOtherVersionReferences { get; set; }
         public bool LineIndexation { get; set; }
 
+        /// <summary>
+        /// If Internalize is set to true, any which match these 
+        /// regular expressions will not be internalized. 
+        /// If internalize is false, then this property is ignored.
+        /// </summary>
         public List<Regex> ExcludeInternalizeMatches
         {
             get { return excludeInternalizeMatches; }
@@ -71,9 +98,10 @@ namespace ILRepacking
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
+        private readonly List<Regex> excludeInternalizeMatches = new List<Regex>();
         private readonly ICommandLine cmd;
         private readonly IFile file;
-        private List<Regex> excludeInternalizeMatches;
+        private string excludeFile;
 
         private void AllowDuplicateType(string typeName)
         {
@@ -197,14 +225,6 @@ namespace ILRepacking
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
             InputAssemblies = cmd.OtherAguments;
-
-            if (Internalize && !string.IsNullOrEmpty(ExcludeFile))
-            {
-                string[] lines = file.ReadAllLines(ExcludeFile);
-                excludeInternalizeMatches = new List<Regex>(lines.Length);
-                foreach (string line in lines)
-                    excludeInternalizeMatches.Add(new Regex(line));
-            }
         }
 
         /// <summary>
