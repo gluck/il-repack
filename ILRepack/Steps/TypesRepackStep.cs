@@ -103,14 +103,17 @@ namespace ILRepacking.Steps
         /// </summary>
         private bool ShouldInternalize(string typeFullName)
         {
-            if (_repackOptions.ExcludeInternalizeMatches == null)
-            {
-                return _repackOptions.Internalize;
-            }
+            if (!_repackOptions.Internalize)
+                return false;
+
+            if (_repackOptions.ExcludeInternalizeMatches.Count == 0)
+                return true;
+
             string withSquareBrackets = "[" + typeFullName + "]";
             foreach (Regex r in _repackOptions.ExcludeInternalizeMatches)
                 if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
                     return false;
+
             return true;
         }
 
