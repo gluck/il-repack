@@ -240,16 +240,13 @@ namespace ILRepacking
             return repackAssemblyNames?.FirstOrDefault(name => name.Name == repackedAssemblyName) ?? fallbackType.Assembly.GetName();
         }
 
-        void PrintRepackVersion()
+        void PrintRepackHeader()
         {
             var assemblies = GetRepackAssemblyNames(typeof(ILRepack));
             var ilRepack = GetRepackAssemblyName(assemblies, "ILRepack", typeof(ILRepack));
             Logger.Info($"IL Repack - Version {ilRepack.Version.ToString(3)}");
             Logger.Verbose($"Runtime: {typeof(ILRepack).Assembly.FullName}");
-            foreach (var asb in assemblies)
-            {
-                Logger.Verbose($" - {asb.FullName}");
-            }
+            Logger.Info(Options.ToCommandLine());
         }
 
         /// <summary>
@@ -261,7 +258,7 @@ namespace ILRepacking
             var timer = new Stopwatch();
             timer.Start();
             Options.Validate();
-            PrintRepackVersion();
+            PrintRepackHeader();
             _reflectionHelper = new ReflectionHelper(this);
             ResolveSearchDirectories();
 
