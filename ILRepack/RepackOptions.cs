@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ILRepacking
@@ -243,6 +244,24 @@ namespace ILRepacking
             string dir = Path.GetDirectoryName(s);
             if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
             return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
+        }
+
+        public string ToCommandLine()
+        {
+            StringBuilder commandLine = new StringBuilder();
+
+            var assembliesArgument = InputAssemblies.Aggregate(
+                string.Empty,
+                (previous, item) => previous + ' ' + item);
+
+            commandLine.AppendLine("------------- IL Repack Arguments -------------");
+            commandLine.Append($"/out:{OutputFile} ");
+            commandLine.Append(!string.IsNullOrEmpty(KeyFile) ? $"/keyfile:{KeyFile} " : string.Empty);
+            commandLine.Append(Internalize ? "/internalize" : string.Empty);
+            commandLine.AppendLine(assembliesArgument);
+            commandLine.Append("-----------------------------------------------");
+
+            return commandLine.ToString();
         }
     }
 }
