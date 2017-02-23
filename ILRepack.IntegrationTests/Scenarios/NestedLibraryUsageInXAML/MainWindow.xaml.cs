@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using AnotherClassLibrary;
 
 namespace NestedLibraryUsageInXAML
 {
@@ -9,8 +10,9 @@ namespace NestedLibraryUsageInXAML
             InitializeComponent();
         }
 
-        private void MainWindowLoaded(object sender, RoutedEventArgs e)
+        private async void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
+            await new BclAsyncUsage().GetNumber();
             Close();
         }
     }

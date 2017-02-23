@@ -1,13 +1,16 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace AnotherClassLibrary
 {
     public class BclAsyncUsage
     {
-        public async Task<int> GetNumber()
+        public async Task<int> GetNumber([CallerMemberName] string caller = "<none>")
         {
+            Console.WriteLine("CallerMemberName: " + caller);
+
             using (var stringWriter = new StringWriter())
             {
                 // use the Async extension methods
