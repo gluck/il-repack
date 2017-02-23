@@ -7,7 +7,7 @@ namespace ILRepack.IntegrationTests
 {
     [TestFixture]
     [Platform(Include = "win")]
-    public class WPFScenarios
+    public class Scenarios
     {
         private const int ScenarioProcessWaitTimeInMs = 10000;
 
@@ -39,6 +39,12 @@ namespace ILRepack.IntegrationTests
         public void GivenSampleApplicationWithMahAppsAndSystemWindowsInteractivityWPF_MergedWPFApplicationRunsSuccessfully()
         {
             RunScenario("WPFSampleApplication");
+        }
+
+        [Test]
+        public void GivenDotNet462AppReferencingMicrosoftBclAsyncAndSystemRuntime_MergedApplicationRunsSuccessfully()
+        {
+            RunScenario("DotNet462Application");
         }
 
         private void RunScenario(string scenarioName)
