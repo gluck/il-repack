@@ -96,11 +96,6 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\ILRepack\ILRepack.csproj">
-      <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
-      <Name>ILRepack</Name>
-      <Private>False</Private>
-    </ProjectReference>
     <ProjectReference Include="..\AnotherClassLibrary\AnotherClassLibrary.csproj">
       <Project>{f92cf620-f1a5-4a3e-a774-4199f54fef2e}</Project>
       <Name>AnotherClassLibrary</Name>
@@ -117,12 +112,13 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>mkdir $(TargetDir)\merged
-$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)ClassLibrary.dll
-set SAVED_ERROR_LEVEL=%25ERRORLEVEL%25
-REM Ensure re-build is done every time to use latest built ILRepack version
+    <PostBuildEvent>REM Ensure re-build is done every time to use latest built ILRepack version
 del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*
-exit /b %25SAVED_ERROR_LEVEL%25
+
+mkdir $(TargetDir)\merged
+$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)ClassLibrary.dll $(TargetDir)Microsoft.Threading.Tasks.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.Desktop.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.dll $(TargetDir)System.IO.dll $(TargetDir)System.Runtime.dll $(TargetDir)System.Threading.Tasks.dll
+
+exit /b %25ERRORLEVEL%25
 </PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
