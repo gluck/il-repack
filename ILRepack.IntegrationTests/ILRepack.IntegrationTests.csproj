@@ -79,6 +79,7 @@
     <Compile Include="NuGet\Platform.cs" />
     <Compile Include="NuGet\RepackNuGetTests.cs" />
     <Compile Include="NuGet\TestHelpers.cs" />
+    <Compile Include="NuGet\TestsPlatformEnglightenmentProvider.cs" />
     <Compile Include="Peverify\PeverifyHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scenarios.cs" />
