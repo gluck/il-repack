@@ -17,6 +17,7 @@
 
 using Mono.Cecil;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -138,6 +139,7 @@ namespace ILRepacking.Steps
             {
                 if (cas[i].AttributeType.FullName == attrTypeName && predicate(cas[i]))
                 {
+                    _logger.Verbose($"Removing attribute {attrTypeName}");
                     cas.RemoveAt(i);
                     ret = true;
                     continue;
