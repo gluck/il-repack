@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+using System;
 using Mono.Cecil;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -72,6 +74,9 @@ namespace ILRepacking.Steps
             {
                 foreach (var r in m.ExportedTypes)
                 {
+                    if (r.IsForwarder)
+                        continue;
+
                     _repackContext.MappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
                 }
             }
@@ -87,7 +92,11 @@ namespace ILRepacking.Steps
             {
                 foreach (var r in m.ExportedTypes)
                 {
-                    if (!ShouldInternalize(r.FullName))
+                    bool parentIsForwarder = r.DeclaringType != null && r.DeclaringType.IsForwarder;
+                    bool forwarded = r.IsForwarder || parentIsForwarder;
+
+                    if (!ShouldInternalize(r.FullName) &&
+                        !forwarded)
                     {
                         _logger.Verbose($"- Importing Exported Type {r} from {m}");
                         _repackImporter.Import(r, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
