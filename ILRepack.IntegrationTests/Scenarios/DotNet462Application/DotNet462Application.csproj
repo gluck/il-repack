@@ -88,7 +88,7 @@
 del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*
 
 mkdir $(TargetDir)\merged
-$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)Microsoft.Threading.Tasks.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.dll $(TargetDir)System.Runtime.dll
+$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)Microsoft.Threading.Tasks.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.dll $(TargetDir)System.Runtime.dll $(TargetDir)System.Collections.Immutable.dll
 
 exit /b %25ERRORLEVEL%25</PostBuildEvent>
   </PropertyGroup>
