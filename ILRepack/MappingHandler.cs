@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Fasterflect;
+using Mono.Cecil.Metadata;
 
 namespace ILRepacking
 {
@@ -95,6 +97,14 @@ namespace ILRepacking
             TypeReference other;
             if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
             {
+                // ElementType is used when serializing the Assembly.
+                // It should match the actual type (e.g., Boolean for System.Boolean). But because of forwarded types, this is not known at read time, thus having to fix it here.
+                var etype = type.GetFieldValue("etype");
+                if (etype != (object) 0x0)
+                {
+                    other.SetFieldValue("etype", etype);
+                }
+
                 // when reading forwarded types, we don't know if they are value types, fix that later on
                 if (type.IsValueType && !other.IsValueType)
                     other.IsValueType = true;
