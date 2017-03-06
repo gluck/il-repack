@@ -16,6 +16,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using Mono.Cecil;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -28,6 +29,7 @@ namespace ILRepacking.Steps
         private readonly IRepackContext _repackContext;
         private readonly IRepackImporter _repackImporter;
         private readonly RepackOptions _repackOptions;
+        private List<TypeDefinition> _allTypes;
 
         public TypesRepackStep(
             ILogger logger,
@@ -39,6 +41,12 @@ namespace ILRepacking.Steps
             _repackContext = repackContext;
             _repackImporter = repackImporter;
             _repackOptions = repackOptions;
+
+            _allTypes =
+                _repackContext.OtherAssemblies.Concat(new[] { _repackContext.PrimaryAssemblyDefinition })
+                    .SelectMany(x => x.Modules)
+                    .SelectMany(m => m.Types)
+                    .ToList();
         }
 
         public void Perform()
@@ -66,6 +74,14 @@ namespace ILRepacking.Steps
             }
         }
 
+        private bool SkipExportedType(ExportedType type)
+        {
+            bool parentIsForwarder = type.DeclaringType != null && type.DeclaringType.IsForwarder;
+            bool forwarded = type.IsForwarder || parentIsForwarder;
+
+            return forwarded && _allTypes.Any(t => t.FullName == type.FullName);
+        }
+
         private void RepackExportedTypes()
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
@@ -74,7 +90,7 @@ namespace ILRepacking.Steps
             {
                 foreach (var r in m.ExportedTypes)
                 {
-                    if (r.IsForwarder)
+                    if (SkipExportedType(r))
                         continue;
 
                     _repackContext.MappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
@@ -91,12 +107,9 @@ namespace ILRepacking.Steps
             foreach (var m in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.ExportedTypes)
-                {
-                    bool parentIsForwarder = r.DeclaringType != null && r.DeclaringType.IsForwarder;
-                    bool forwarded = r.IsForwarder || parentIsForwarder;
-
+                { 
                     if (!ShouldInternalize(r.FullName) &&
-                        !forwarded)
+                        !SkipExportedType(r))
                     {
                         _logger.Verbose($"- Importing Exported Type {r} from {m}");
                         _repackImporter.Import(r, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
