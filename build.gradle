@@ -90,7 +90,7 @@ nugetSpec {
         ],
         files: [
             { file(src: repack.ext.repacked, target: 'tools') },
-            { file(src: 'ILRepack.props', target: 'build') }
+            { file(src: "..\\..\\..\\ILRepack.props", target: 'build') }
         ]
     ]
 }
@@ -108,7 +108,7 @@ task nugetSpecLib(type: com.ullink.NuGetSpec) {
         ],
         files: [
             { file(src: repack.ext.repackedLib, target: 'lib/net40') },
-            { file(src: 'ILRepack.props', target: 'build') }
+            { file(src: "..\\..\\..\\ILRepack.props", target: 'build') }
         ]
     ]
 }
