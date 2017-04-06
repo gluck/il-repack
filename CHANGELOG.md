@@ -1,5 +1,23 @@
 # IL Repack changelog
 
+## 2.1.X - Beta
+###Changed
+* Migrated to Cecil 0.10
+
+## 2.0.13
+### Changed
+* Less aggressive attribute cleanup for the main assembly (unchanged for merged ones) (#174)
+* Allow proper use of ExcludeFile in Library mode (#185)
+* Handle System.Runtime merging (#188)
+
+### Fixed
+* PdbStr doesn't work on Unix, skip it on these OS (#176)
+
+### Added
+* Support /keycontainer flag (#183)
+* More verbose output header for debugging (#187)
+* Expose an $(ILRepack) property for nuget consumers (#192)
+
 ## 2.0.12
 ### Added
 * SRCSRV data from PDBs are merged for sources available with HTTP. Others are not merged and only the one from the primary assembly is kept.
