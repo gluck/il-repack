@@ -22,6 +22,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
+using System.Text.RegularExpressions;
+using ILRepacking.Mixins;
 
 namespace ILRepacking.Steps
 {
@@ -94,7 +96,7 @@ namespace ILRepacking.Steps
             {
                 String name = (string)ca.ConstructorArguments[0].Value;
                 int idx;
-                if ((idx = name.IndexOf(", PublicKey=", StringComparison.Ordinal)) != -1)
+                if ((idx = name.IndexOfRegex(new Regex(", ?PublicKey="))) != -1)
                 {
                     name = name.Substring(0, idx);
                 }
@@ -106,7 +108,7 @@ namespace ILRepacking.Steps
                 if (!targetIsSigned)
                     return false;
                 String name = (string)ca.ConstructorArguments[0].Value;
-                bool isSigned = name.IndexOf(", PublicKey=", StringComparison.Ordinal) != -1 && name.IndexOf(", PublicKey=null", StringComparison.Ordinal) == -1;
+                bool isSigned = name.IndexOfRegex(new Regex(", ?PublicKey=")) != -1 && name.IndexOfRegex(new Regex(", ?PublicKey=null")) == -1;
                 // remove non-signed refs from signed merged assembly
                 return !isSigned;
             });
