@@ -13,7 +13,6 @@ archivesBaseName = 'ILRepack'
 defaultTasks('nugetPack')
 
 nuget {
-    serverUrl = 'https://www.nuget.org/api/v2/package'
     version = '3.5.0'
 }
 
@@ -121,11 +120,13 @@ nugetPackLib.dependsOn repack
 
 // nuget package upload, requires API key to be set
 nugetPush {
+    serverUrl = 'https://www.nuget.org/api/v2/package'
     apiKey = project.properties.nugetApiKey
     nupkgFile = nugetPack.packageFile
 }
 
 task nugetPushLib(type: com.ullink.NuGetPush) {
+    serverUrl = 'https://www.nuget.org/api/v2/package'
     apiKey = project.properties.nugetApiKey
     nupkgFile = nugetPackLib.packageFile
 }
