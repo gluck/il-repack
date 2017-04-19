@@ -30,7 +30,7 @@
       <_LibDir Include="@(_AssembliesDir -> Distinct())" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(ILRepack)&quot; @(_LibDir->'/lib:&quot;%(Identity).&quot;', ' ') /internalize $(_KeyFileArg) /targetplatform:&quot;v4,$(FullFrameworkReferenceAssemblyPaths.TrimEnd(\\))&quot; /out:&quot;@(IntermediateAssembly->'%(FullPath)')&quot; &quot;@(IntermediateAssembly->'%(FullPath)')&quot; @(_MergedAssemblies->'&quot;%(FullPath)&quot;', ' ')"
+    <Exec Command="$(ILRepack) @(_LibDir->'/lib:&quot;%(Identity).&quot;', ' ') /internalize $(_KeyFileArg) /targetplatform:&quot;v4,$(FullFrameworkReferenceAssemblyPaths.TrimEnd(\\))&quot; /out:&quot;@(IntermediateAssembly->'%(FullPath)')&quot; &quot;@(IntermediateAssembly->'%(FullPath)')&quot; @(_MergedAssemblies->'&quot;%(FullPath)&quot;', ' ')"
 			  StandardErrorImportance="high"
 			  StandardOutputImportance="low"
 			  ConsoleToMSBuild="true"
