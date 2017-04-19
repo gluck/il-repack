@@ -2,5 +2,6 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ILRepack>$(MSBuildThisFileDirectory)..\tools\ILRepack.exe</ILRepack>
+    <ILRepackDeleteMergedAssemblies>true</ILRepackDeleteMergedAssemblies>
   </PropertyGroup>
 </Project>
