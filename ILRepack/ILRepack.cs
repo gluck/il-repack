@@ -223,11 +223,11 @@ namespace ILRepacking
             try
             {
                 using (Stream stream = typeInRepackedAssembly.Assembly.GetManifestResourceStream(ResourcesRepackStep.ILRepackListResourceName))
-                if (stream != null)
-                {
-                    string[] list = (string[])new BinaryFormatter().Deserialize(stream);
-                    return list.Select(x => new AssemblyName(x));
-                }
+                    if (stream != null)
+                    {
+                        string[] list = (string[])new BinaryFormatter().Deserialize(stream);
+                        return list.Select(x => new AssemblyName(x));
+                    }
             }
             catch (Exception)
             {
@@ -317,62 +317,75 @@ namespace ILRepacking
             _lineIndexer = new IKVMLineIndexer(this, Options.LineIndexation);
             var signingStep = new SigningStep(this, Options);
             var isUnixEnvironment = Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix;
-            var sourceServerDataRepackStep = new SourceServerDataRepackStep(Options.OutputFile, MergedAssemblyFiles);
 
-            List<IRepackStep> repackSteps = new List<IRepackStep>
+            using (var sourceServerDataStep = GetSourceServerDataStep(isUnixEnvironment))
             {
-                signingStep,
-                new ReferencesRepackStep(Logger, this),
-                new TypesRepackStep(Logger, this, _repackImporter, Options),
-                new ResourcesRepackStep(Logger, this, Options),
-                new AttributesRepackStep(Logger, this, _repackImporter, Options),
-                new ReferencesFixStep(Logger, this, _repackImporter, Options),
-                new XamlResourcePathPatcherStep(Logger, this),
-            };
-            if (!isUnixEnvironment)
-                repackSteps.Add(sourceServerDataRepackStep);
+                List<IRepackStep> repackSteps = new List<IRepackStep>
+                {
+                    signingStep,
+                    new ReferencesRepackStep(Logger, this),
+                    new TypesRepackStep(Logger, this, _repackImporter, Options),
+                    new ResourcesRepackStep(Logger, this, Options),
+                    new AttributesRepackStep(Logger, this, _repackImporter, Options),
+                    new ReferencesFixStep(Logger, this, _repackImporter, Options),
+                    new XamlResourcePathPatcherStep(Logger, this),
+                    sourceServerDataStep
+                };
 
-            foreach (var step in repackSteps)
-            {
-                step.Perform();
+                foreach (var step in repackSteps)
+                {
+                    step.Perform();
+                }
+
+                var parameters = new WriterParameters
+                {
+                    StrongNameKeyPair = signingStep.KeyPair,
+                    WriteSymbols = Options.DebugInfo
+                };
+                // create output directory if it does not exist
+                var outputDir = Path.GetDirectoryName(Options.OutputFile);
+                if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+                {
+                    Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
+                    Directory.CreateDirectory(outputDir);
+                }
+
+                TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+
+                sourceServerDataStep.Write();
+
+                Logger.Info("Writing output assembly to disk");
+                // If this is an executable and we are on linux/osx we should copy file permissions from
+                // the primary assembly
+                if (isUnixEnvironment)
+                {
+                    Stat stat;
+                    Logger.Info("Copying permissions from " + PrimaryAssemblyFile);
+                    Syscall.stat(PrimaryAssemblyFile, out stat);
+                    Syscall.chmod(Options.OutputFile, stat.st_mode);
+                }
+                if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
+                    Options.StrongNameLost = true;
+
+                // nice to have, merge .config (assembly configuration file) & .xml (assembly documentation)
+                ConfigMerger.Process(this);
+                if (Options.XmlDocumentation)
+                    DocumentationMerger.Process(this);
             }
 
-            var parameters = new WriterParameters
-            {
-                StrongNameKeyPair = signingStep.KeyPair,
-                WriteSymbols = Options.DebugInfo
-            };
-            // create output directory if it does not exist
-            var outputDir = Path.GetDirectoryName(Options.OutputFile);
-            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-            {
-                Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
-                Directory.CreateDirectory(outputDir);
-            }
-            TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
-            if (!isUnixEnvironment)
-                sourceServerDataRepackStep.Write();
-            else
-                Logger.Warn("Did not write source server data to output assembly. " +
-                            "Source server data is only writeable on Windows");
-            Logger.Info("Writing output assembly to disk");
-            // If this is an executable and we are on linux/osx we should copy file permissions from
-            // the primary assembly
+            Logger.Info($"Finished in {timer.Elapsed}");
+        }
+
+        private ISourceServerDataRepackStep GetSourceServerDataStep(bool isUnixEnvironment)
+        {
             if (isUnixEnvironment)
             {
-                Stat stat;
-                Logger.Info("Copying permissions from " + PrimaryAssemblyFile);
-                Syscall.stat(PrimaryAssemblyFile, out stat);
-                Syscall.chmod(Options.OutputFile, stat.st_mode);
+                return new NullSourceServerStep(Logger);
             }
-            if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
-                Options.StrongNameLost = true;
-
-            // nice to have, merge .config (assembly configuration file) & .xml (assembly documentation)
-            ConfigMerger.Process(this);
-            if (Options.XmlDocumentation)
-                DocumentationMerger.Process(this);
-            Logger.Info($"Finished in {timer.Elapsed}");
+            else
+            {
+                return new SourceServerDataRepackStep(Options.OutputFile, MergedAssemblyFiles);
+            }
         }
 
         private void ResolveSearchDirectories()
