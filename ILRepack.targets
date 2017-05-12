@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemDefinitionGroup>
+    <ReferenceCopyLocalPaths>
+      <!-- By default, ILRepack everything -->
+      <ILRepack>true</ILRepack>
+    </ReferenceCopyLocalPaths>
+  </ItemDefinitionGroup>
+
+  <Target Name="ILRepack"
+			AfterTargets="CoreCompile"
+			DependsOnTargets="CoreCompile"
+			Inputs="@(IntermediateAssembly)"
+			Outputs="$(TargetPath)"
+			Returns="@(_MergedAssemblies)">
+
+    <GetReferenceAssemblyPaths BypassFrameworkInstallChecks="False" TargetFrameworkMoniker="$(TargetFrameworkMoniker)">
+      <Output TaskParameter="FullFrameworkReferenceAssemblyPaths" PropertyName="FullFrameworkReferenceAssemblyPaths" />
+    </GetReferenceAssemblyPaths>
+
+    <PropertyGroup>
+      <_KeyFileArg Condition="'$(AssemblyOriginatorKeyFile)' != ''">/keyfile:&quot;$(AssemblyOriginatorKeyFile)&quot;</_KeyFileArg>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedAssemblies Include="@(ReferenceCopyLocalPaths)"
+                         Condition="'%(ReferenceCopyLocalPaths.ILRepack)' == 'true'" />
+      <_AssembliesDir Include="@(ReferenceCopyLocalPaths -> '%(RootDir)%(Directory)')" />
+      <_LibDir Include="@(_AssembliesDir -> Distinct())" />
+    </ItemGroup>
+
+    <Exec Command="$(ILRepack) @(_LibDir->'/lib:&quot;%(Identity).&quot;', ' ') /internalize $(_KeyFileArg) /targetplatform:&quot;v4,$(FullFrameworkReferenceAssemblyPaths.TrimEnd(\\))&quot; /out:&quot;@(IntermediateAssembly->'%(FullPath)')&quot; &quot;@(IntermediateAssembly->'%(FullPath)')&quot; @(_MergedAssemblies->'&quot;%(FullPath)&quot;', ' ')"
+			  StandardErrorImportance="high"
+			  StandardOutputImportance="low"
+			  ConsoleToMSBuild="true"
+			  ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ILRepackOutput"/>
+      <Output TaskParameter="ExitCode" PropertyName="_ILRepackExitCode"/>
+    </Exec>
+
+    <Message Importance="high" Text="$(_ILRepackOutput)" Condition="'$(_ILRepackExitCode)' != '0'" />
+    <Error Text="$(_ILRepackOutput)" Condition="'$(_ILRepackExitCode)' != '0'" />
+    <Delete Condition="'$(ILRepackDeleteMergedAssemblies)' == 'true'"
+            Files="@(_MergedAssemblies -> '$(OutDir)%(DestinationSubDirectory)%(Filename)%(Extension)')" />
+
+  </Target>
+
+</Project>

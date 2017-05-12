@@ -90,7 +90,8 @@ nugetSpec {
         ],
         files: [
             { file(src: repack.ext.repacked, target: 'tools') },
-            { file(src: project.file('ILRepack.props'), target: 'build') }
+            { file(src: project.file('ILRepack.props'), target: 'build') },
+            { file(src: project.file('ILRepack.targets'), target: 'build') }
         ]
     ]
 }
