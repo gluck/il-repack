@@ -5,8 +5,16 @@ using System.IO;
 using System.Linq;
 
 namespace ILRepacking.Steps.SourceServerData
-{
-    internal class SourceServerDataRepackStep : IRepackStep
+{ 
+    internal interface ISourceServerDataRepackStep : IRepackStep, IDisposable
+    {
+        void Write();
+    }
+
+    /// <summary>
+    /// Get the pdb info from source servers.
+    /// </summary>
+    internal class SourceServerDataRepackStep : ISourceServerDataRepackStep
     {
         private readonly string _targetPdbFile;
 
@@ -14,7 +22,7 @@ namespace ILRepacking.Steps.SourceServerData
 
         private string _srcSrv;
 
-        private readonly PdbStr _pdbStr = new PdbStr();
+        private PdbStr _pdbStr = new PdbStr();
 
         public SourceServerDataRepackStep(string targetFile, IEnumerable<string> assemblyFiles)
         {
@@ -54,6 +62,43 @@ namespace ILRepacking.Steps.SourceServerData
             _pdbStr.Write(_targetPdbFile, _srcSrv);
         }
 
+        public void Dispose()
+        {
+            if (_pdbStr != null)
+            {
+                _pdbStr.Dispose();
+                _pdbStr = null;
+            }
+        }
+
         private static string PdbPath(string assemblyFile) => Path.ChangeExtension(assemblyFile, ".pdb");
+    }
+
+    /// <summary>
+    /// Intended for use on platforms where source server is not supported.
+    /// </summary>
+    internal class NullSourceServerStep : ISourceServerDataRepackStep
+    {
+        private ILogger _logger;
+
+        public NullSourceServerStep(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public void Perform()
+        {
+            // intentionally blank
+        }
+
+        public void Write()
+        {
+            _logger.Warn("Did not write source server data to output assembly. " +
+            "Source server data is only writeable on Windows");
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }

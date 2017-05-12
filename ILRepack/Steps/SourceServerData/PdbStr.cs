@@ -1,11 +1,12 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace ILRepacking.Steps.SourceServerData
 {
-    internal class PdbStr
+    internal class PdbStr : IDisposable
     {
-        private readonly string _pdbStrPath = Path.GetTempFileName();
+        private string _pdbStrPath = Path.GetTempFileName();
 
         public PdbStr()
         {
@@ -46,9 +47,32 @@ namespace ILRepacking.Steps.SourceServerData
             }
         }
 
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            string file = _pdbStrPath;
+            _pdbStrPath = null;
+            SafeDeleteFile(file);
+        }
+
+        private void SafeDeleteFile(string filePath)
+        {
+            if (filePath != null)
+            {
+                try
+                {
+                    if (File.Exists(filePath))
+                        File.Delete(filePath);
+                }
+                catch { }
+            }
+        }
+
         ~PdbStr()
         {
-            File.Delete(_pdbStrPath);
+            string file = _pdbStrPath;
+            _pdbStrPath = null;
+            SafeDeleteFile(file);
         }
     }
 }
