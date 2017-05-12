@@ -141,7 +141,14 @@ namespace ILRepacking.Steps
             // we've got no non-primary assembly knowledge so far,
             // that means it's a relative path in the source assembly -> just add the assembly's name as subdirectory
             // /themes/file.xaml -> /library/themes/file.xaml
-            return "/" + sourceAssembly.Name.Name + path;
+            if (primaryAssembly.Name.Name != sourceAssembly.Name.Name)
+            {
+                return "/" + sourceAssembly.Name.Name + path;
+            }
+            else
+            {
+                return path;
+            }
         }
 
         private static bool TryPatchPath(
@@ -151,7 +158,14 @@ namespace ILRepacking.Steps
             string newPath = GetAssemblyPath(primaryAssembly) + "/" + referenceAssembly.Name.Name;
 
             // /library;component/file.xaml -> /primary;component/library/file.xaml
-            patchedPath = path.Replace(referenceAssemblyPath, newPath);
+            if (primaryAssembly.Name.Name != referenceAssembly.Name.Name)
+            {
+                patchedPath = path.Replace(referenceAssemblyPath, newPath);
+            }
+            else
+            {
+                patchedPath = path;
+            }
 
             // if they're modified, we're good!
             return !ReferenceEquals(patchedPath, path);
