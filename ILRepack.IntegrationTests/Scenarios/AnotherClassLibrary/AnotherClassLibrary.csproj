@@ -72,12 +72,20 @@
       <DependentUpon>AnotherDummyUserControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="BclAsyncUsage.cs" />
+    <Compile Include="ADummyUserControl.xaml.cs">
+      <DependentUpon>ADummyUserControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WpfWindowStarter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="AnotherDummyUserControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ADummyUserControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
