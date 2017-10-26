@@ -37,6 +37,8 @@ namespace ILRepacking.Steps.ResourceProcessing
         private readonly BamlGenerator _bamlGenerator;
         private readonly IDictionary<Res, AssemblyDefinition> _bamlStreams = new Dictionary<Res, AssemblyDefinition>();
 
+        public bool HasBamlStreams => _bamlStreams.Count > 0;
+
         public BamlStreamCollector(ILogger logger, IRepackContext repackContext)
         {
             _logger = logger;
