@@ -27,21 +27,10 @@ namespace ILRepacking.Steps.ResourceProcessing
         private readonly AssemblyDefinition _mainAssembly;
         private readonly IList<AssemblyDefinition> _otherAssemblies;
 
-        private readonly Dictionary<Type, Action<BamlRecord, AssemblyDefinition>> _nodeProcessors;
-
         public BamlResourcePatcher(IRepackContext repackContext)
         {
             _mainAssembly = repackContext.PrimaryAssemblyDefinition;
             _otherAssemblies = repackContext.OtherAssemblies;
-
-            //TODO: use dynamic when we upgrade to .NET 4
-            _nodeProcessors = new Dictionary<Type, Action<BamlRecord, AssemblyDefinition>>
-            {
-                { typeof(AssemblyInfoRecord), (r, asm) => ProcessRecord((AssemblyInfoRecord)r) },
-                { typeof(PropertyWithConverterRecord), (r, asm) => ProcessRecord((PropertyWithConverterRecord)r, asm) },
-                { typeof(XmlnsPropertyRecord), (r, asm) => ProcessRecord((XmlnsPropertyRecord)r) },
-                { typeof(TypeInfoRecord), (r, asm) => ProcessRecord((TypeInfoRecord)r) }
-            };
         }
 
         public bool Process(
@@ -59,14 +48,9 @@ namespace ILRepacking.Steps.ResourceProcessing
         {
             BamlDocument bamlDocument = BamlUtils.FromResourceBytes(resource.data);
 
-            foreach (BamlRecord node in bamlDocument)
+            foreach (dynamic node in bamlDocument)
             {
-                Action<BamlRecord, AssemblyDefinition> recordProcessor;
-
-                if (_nodeProcessors.TryGetValue(node.GetType(), out recordProcessor))
-                {
-                    recordProcessor(node, containingAssembly);
-                }
+                ProcessRecord(node, containingAssembly);
             }
 
             //TODO: diminishing return optimisation: remove duplications + update assembly ids
@@ -83,7 +67,7 @@ namespace ILRepacking.Steps.ResourceProcessing
                 _otherAssemblies);
         }
 
-        private void ProcessRecord(AssemblyInfoRecord record)
+        private void ProcessRecord(AssemblyInfoRecord record, AssemblyDefinition containingAssembly)
         {
             var assemblyName = new System.Reflection.AssemblyName(record.AssemblyFullName);
 
@@ -100,7 +84,7 @@ namespace ILRepacking.Steps.ResourceProcessing
             }
         }
 
-        private void ProcessRecord(XmlnsPropertyRecord record)
+        private void ProcessRecord(XmlnsPropertyRecord record, AssemblyDefinition containingAssembly)
         {
             string xmlNamespace = record.XmlNamespace;
             const string AssemblyDef = "assembly=";
@@ -117,9 +101,13 @@ namespace ILRepacking.Steps.ResourceProcessing
             record.XmlNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
         }
 
-        private void ProcessRecord(TypeInfoRecord record)
+        private void ProcessRecord(TypeInfoRecord record, AssemblyDefinition containingAssembly)
         {
             record.TypeFullName = RemoveTypeAssemblyInformation(record.TypeFullName);
+        }
+
+        private void ProcessRecord(BamlRecord record, AssemblyDefinition containingAssembly)
+        {
         }
 
         public static string RemoveTypeAssemblyInformation(string fullTypeName)
