@@ -66,6 +66,15 @@ namespace ILRepacking.Steps.ResourceProcessing
                 _otherAssemblies);
         }
 
+        private void ProcessRecord(TextWithConverterRecord record, AssemblyDefinition containingAssembly)
+        {
+            record.Value = XamlResourcePathPatcherStep.PatchPath(
+                record.Value,
+                _mainAssembly,
+                containingAssembly,
+                _otherAssemblies);
+        }
+
         private void ProcessRecord(AssemblyInfoRecord record, AssemblyDefinition containingAssembly)
         {
             var assemblyName = new System.Reflection.AssemblyName(record.AssemblyFullName);
