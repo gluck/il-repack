@@ -264,7 +264,7 @@ namespace ILRepacking.Steps
                 {
                     foreach (var processor in resourcePrcessors)
                     {
-                        if (processor.Process(containingAssembly, res, rr, rw))
+                        if (processor.Process(res, containingAssembly, er, rr, rw))
                             break;
                     }
                 }
