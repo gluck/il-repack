@@ -1,8 +1,15 @@
 # IL Repack changelog
 
-## 2.1.X - Beta
-###Changed
+## 2.0.15
+### Added
+* WPF merging now works with resources (e.g., images) in used libraries
+
+## 2.0.14
+### Changed
 * Migrated to Cecil 0.10
+
+### Fixed
+* WPF merging handles correctly cases when there in no XAML in the merged project
 
 ## 2.0.13
 ### Changed
@@ -52,8 +59,8 @@
 
 ### Fixed
 * Bcl+BclAsync now repacks correctly
- * Due to caching, some TypeRefs where incorrectly flagged class instead of valuetype
- * Some original AssemblyReferences were kept in the merged assembly as ExportedType scope or TypeRef scope, this caused issue unless (by luck) the repacked token was the same as original one
+* Due to caching, some TypeRefs where incorrectly flagged class instead of valuetype
+* Some original AssemblyReferences were kept in the merged assembly as ExportedType scope or TypeRef scope, this caused issue unless (by luck) the repacked token was the same as original one
 
 ### Added
 * Added ILRepack version in repack log
@@ -81,3 +88,4 @@
 
 ### Changed
 * API has been cleaned up (with potential breaking changes, depending on the usage).
+
