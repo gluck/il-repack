@@ -33,8 +33,7 @@ namespace ILRepacking.Steps.ResourceProcessing
             _otherAssemblies = repackContext.OtherAssemblies;
         }
 
-        public bool Process(
-            AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(Res resource, AssemblyDefinition containingAssembly, EmbeddedResource embeddedResource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
             if (!resource.IsBamlStream)
                 return false;
@@ -59,6 +58,15 @@ namespace ILRepacking.Steps.ResourceProcessing
         }
 
         private void ProcessRecord(PropertyWithConverterRecord record, AssemblyDefinition containingAssembly)
+        {
+            record.Value = XamlResourcePathPatcherStep.PatchPath(
+                record.Value,
+                _mainAssembly,
+                containingAssembly,
+                _otherAssemblies);
+        }
+
+        private void ProcessRecord(TextWithConverterRecord record, AssemblyDefinition containingAssembly)
         {
             record.Value = XamlResourcePathPatcherStep.PatchPath(
                 record.Value,

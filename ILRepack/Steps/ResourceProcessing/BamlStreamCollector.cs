@@ -50,10 +50,9 @@ namespace ILRepacking.Steps.ResourceProcessing
                 _primaryAssemblyDefinition);
         }
 
-        public bool Process(AssemblyDefinition containingAssembly,
-            Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(Res resource, AssemblyDefinition containingAssembly, EmbeddedResource embeddedResource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
-            if (!resource.IsBamlStream)
+            if (!resource.IsBamlStream && !embeddedResource.Name.EndsWith(".g.resources"))
                 return false;
 
             _bamlStreams.Add(resource, containingAssembly);

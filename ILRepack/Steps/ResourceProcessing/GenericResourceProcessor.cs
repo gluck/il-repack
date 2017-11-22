@@ -29,7 +29,7 @@ namespace ILRepacking.Steps.ResourceProcessing
             _repackContext = repackContext;
         }
 
-        public bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter)
+        public bool Process(Res resource, AssemblyDefinition containingAssembly, EmbeddedResource embeddedResource, ResReader resourceReader, ResourceWriter resourceWriter)
         {
             string fix = _repackContext.FixStr(resource.type);
             if (fix == resource.type)

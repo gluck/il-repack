@@ -26,6 +26,6 @@ namespace ILRepacking.Steps.ResourceProcessing
     internal interface IResProcessor
     {
         /// <returns>True to stop further processing, false otherwise</returns>
-        bool Process(AssemblyDefinition containingAssembly, Res resource, ResReader resourceReader, ResourceWriter resourceWriter);
+        bool Process(Res resource, AssemblyDefinition containingAssembly, EmbeddedResource embeddedResource, ResReader resourceReader, ResourceWriter resourceWriter);
     }
 }
