@@ -2,10 +2,15 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:classLibrary="clr-namespace:ClassLibrary;assembly=ClassLibrary"
-        Title="MainWindow" Height="350" Width="525" Loaded="MainWindowLoaded">
+        xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+        Title="MainWindow" Height="350" Width="525">
     <Window.Resources>
-        <classLibrary:DummyConverter x:Key="DummyConverter"/>
+        <classLibrary:DummyConverter x:Key="DummyConverter" />
     </Window.Resources>
 
-    <TextBlock Text="{Binding Converter={StaticResource DummyConverter}}" />
+    <TextBlock Text="{Binding Converter={StaticResource DummyConverter}}">
+        <dxmvvm:Interaction.Behaviors>
+            <dxmvvm:EventToCommand EventName="Loaded" Command="{Binding LoadedCommand}" />
+        </dxmvvm:Interaction.Behaviors>
+    </TextBlock>
 </Window>
