@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using DevExpress.Mvvm;
+using System.Windows.Input;
 
 namespace LibraryClassUsageInXAML
 {
@@ -7,11 +8,10 @@ namespace LibraryClassUsageInXAML
         public MainWindow()
         {
             InitializeComponent();
+
+            DataContext = this;
         }
 
-        private void MainWindowLoaded(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
+        public ICommand LoadedCommand => new DelegateCommand(Close);
     }
 }
