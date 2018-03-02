@@ -118,17 +118,23 @@ namespace ILRepacking.Steps.ResourceProcessing
         {
         }
 
-        public static string RemoveTypeAssemblyInformation(string fullTypeName)
+        public string RemoveTypeAssemblyInformation(string fullTypeName)
         {
             // ClassLibrary.GenericResourceKey`1[[ClassLibrary.ThemesResourceKey, ClassLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+            // DevExpress.Mvvm.UI.Interactivity.EventTriggerBase`1[[System.Windows.DependencyObject, WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]
             int genericTypeStartIndex = fullTypeName.IndexOf("[[", StringComparison.Ordinal);
             if (genericTypeStartIndex == -1)
                 return fullTypeName;
 
-            int assemblyInfoStartIndex = fullTypeName.IndexOf(',', genericTypeStartIndex);
+            int assemblyInfoStartIndex = fullTypeName.IndexOf(',', genericTypeStartIndex) + 1;
             int genericTypeEndIndex = fullTypeName.IndexOf("]]", genericTypeStartIndex, StringComparison.Ordinal);
 
-            return fullTypeName.Remove(assemblyInfoStartIndex, genericTypeEndIndex - assemblyInfoStartIndex);
+            string assemblyName = fullTypeName
+                .Substring(assemblyInfoStartIndex, genericTypeEndIndex - assemblyInfoStartIndex).Trim();
+
+            if (_otherAssemblies.Any(a => a.FullName == assemblyName))
+                return fullTypeName.Replace(assemblyName, _mainAssembly.FullName);
+            return fullTypeName;
         }
     }
 }
