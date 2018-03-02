@@ -119,7 +119,11 @@ namespace ILRepacking
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
-            _logger.Verbose("- Importing " + type);
+			if (CanInclude(type) == false) {
+				_logger.Log("Repack dropped " + type.FullName);
+				return null;
+			}
+			_logger.Verbose("- Importing " + type);
 
             TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
@@ -156,31 +160,41 @@ namespace ILRepacking
             _repackContext.MappingHandler.StoreRemappedType(type, nt);
 
             // nested types first (are never internalized)
-            foreach (TypeDefinition nested in type.NestedTypes)
+            foreach (TypeDefinition nested in type.NestedTypes.Where(CanInclude))
                 Import(nested, nt.NestedTypes, false);
-            foreach (FieldDefinition field in type.Fields)
+            foreach (FieldDefinition field in type.Fields.Where(CanInclude))
                 CloneTo(field, nt);
 
             // methods before fields / events
-            foreach (MethodDefinition meth in type.Methods)
+            foreach (MethodDefinition meth in type.Methods.Where(CanInclude))
                 CloneTo(meth, nt, justCreatedType);
 
-            foreach (EventDefinition evt in type.Events)
+            foreach (EventDefinition evt in type.Events.Where(CanInclude))
                 CloneTo(evt, nt, nt.Events);
-            foreach (PropertyDefinition prop in type.Properties)
+            foreach (PropertyDefinition prop in type.Properties.Where(CanInclude))
                 CloneTo(prop, nt, nt.Properties);
             return nt;
         }
 
-        // Real stuff below //
-        // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
-        // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
-        //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
+		private bool CanInclude<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition {
+			// skip members marked with a custom attribute named "RepackDropAttribute"(by default)
+			var marked = member.HasCustomAttributes
+				&& member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
+			if (marked) {
+				_logger.Log("Repack dropped " + member.FullName);
+			}
+			return marked == false;
+		}
 
-        /// <summary>
-        /// Clones a field to a newly created type
-        /// </summary>
-        private void CloneTo(FieldDefinition field, TypeDefinition nt)
+		// Real stuff below //
+		// These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
+		// They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
+		//  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
+
+		/// <summary>
+		/// Clones a field to a newly created type
+		/// </summary>
+		private void CloneTo(FieldDefinition field, TypeDefinition nt)
         {
             if (nt.Fields.Any(x => x.Name == field.Name))
             {

@@ -97,6 +97,8 @@ namespace ILRepacking
             get { return allowedDuplicateNameSpaces; }
         }
 
+		public string RepackDropAttribute { get; set; }
+
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly List<Regex> excludeInternalizeMatches = new List<Regex>();
@@ -224,8 +226,13 @@ namespace ILRepacking
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
-            // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
-            InputAssemblies = cmd.OtherAguments;
+			RepackDropAttribute = cmd.Option("repackdrop");
+			if (String.IsNullOrWhiteSpace(RepackDropAttribute)) {
+				RepackDropAttribute = "RepackDropAttribute";
+			}
+
+			// everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
+			InputAssemblies = cmd.OtherAguments;
         }
 
         /// <summary>
