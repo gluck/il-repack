@@ -119,11 +119,11 @@ namespace ILRepacking
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
-			if (CanInclude(type) == false) {
-				_logger.Log("Repack dropped " + type.FullName);
+			_logger.Verbose("- Importing " + type);
+			bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
+			if (hasFilter && ShouldDrop(type)) {
 				return null;
 			}
-			_logger.Verbose("- Importing " + type);
 
             TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
@@ -160,30 +160,44 @@ namespace ILRepacking
             _repackContext.MappingHandler.StoreRemappedType(type, nt);
 
             // nested types first (are never internalized)
-            foreach (TypeDefinition nested in type.NestedTypes.Where(CanInclude))
-                Import(nested, nt.NestedTypes, false);
-            foreach (FieldDefinition field in type.Fields.Where(CanInclude))
-                CloneTo(field, nt);
+            foreach (TypeDefinition nested in type.NestedTypes) {
+				if (hasFilter && ShouldDrop(nested) == false) {
+					Import(nested, nt.NestedTypes, false);
+				}
+			}
+			foreach (FieldDefinition field in type.Fields) {
+				if (hasFilter && ShouldDrop(field) == false) {
+					CloneTo(field, nt);
+				}
+			}
+			// methods before fields / events
+			foreach (MethodDefinition meth in type.Methods) {
+				if (hasFilter && ShouldDrop(meth) == false) {
+					CloneTo(meth, nt, justCreatedType);
+				}
+			}
+			foreach (EventDefinition evt in type.Events) {
+				if (hasFilter && ShouldDrop(evt) == false) {
+					CloneTo(evt, nt, nt.Events);
+				}
+			}
+			foreach (PropertyDefinition prop in type.Properties) {
+				if (hasFilter && ShouldDrop(prop) == false) {
+					CloneTo(prop, nt, nt.Properties);
+				}
+			}
 
-            // methods before fields / events
-            foreach (MethodDefinition meth in type.Methods.Where(CanInclude))
-                CloneTo(meth, nt, justCreatedType);
-
-            foreach (EventDefinition evt in type.Events.Where(CanInclude))
-                CloneTo(evt, nt, nt.Events);
-            foreach (PropertyDefinition prop in type.Properties.Where(CanInclude))
-                CloneTo(prop, nt, nt.Properties);
-            return nt;
+			return nt;
         }
 
-		private bool CanInclude<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition {
-			// skip members marked with a custom attribute named "RepackDropAttribute"(by default)
-			var marked = member.HasCustomAttributes
+		private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition {
+			// skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
+			var shouldDrop = member.HasCustomAttributes
 				&& member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
-			if (marked) {
-				_logger.Log("Repack dropped " + member.FullName);
+			if (shouldDrop) {
+				_logger.Log("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with "+ _options.RepackDropAttribute);
 			}
-			return marked == false;
+			return shouldDrop;
 		}
 
 		// Real stuff below //

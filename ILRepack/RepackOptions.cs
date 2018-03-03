@@ -226,9 +226,11 @@ namespace ILRepacking
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
-			RepackDropAttribute = cmd.Option("repackdrop");
-			if (String.IsNullOrWhiteSpace(RepackDropAttribute)) {
-				RepackDropAttribute = "RepackDropAttribute";
+			if (cmd.HasOption("repackdrop")) {
+				RepackDropAttribute = cmd.Option("repackdrop");
+				if (String.IsNullOrWhiteSpace(RepackDropAttribute)) {
+					RepackDropAttribute = "RepackDropAttribute";
+				}
 			}
 
 			// everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
