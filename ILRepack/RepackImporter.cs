@@ -119,11 +119,12 @@ namespace ILRepacking
 
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
-			_logger.Verbose("- Importing " + type);
-			bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
-			if (hasFilter && ShouldDrop(type)) {
-				return null;
-			}
+            _logger.Verbose("- Importing " + type);
+            bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
+            if (hasFilter && ShouldDrop(type))
+            {
+                return null;
+            }
 
             TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
@@ -160,55 +161,67 @@ namespace ILRepacking
             _repackContext.MappingHandler.StoreRemappedType(type, nt);
 
             // nested types first (are never internalized)
-            foreach (TypeDefinition nested in type.NestedTypes) {
-				if (hasFilter && ShouldDrop(nested) == false) {
-					Import(nested, nt.NestedTypes, false);
-				}
-			}
-			foreach (FieldDefinition field in type.Fields) {
-				if (hasFilter && ShouldDrop(field) == false) {
-					CloneTo(field, nt);
-				}
-			}
-			// methods before fields / events
-			foreach (MethodDefinition meth in type.Methods) {
-				if (hasFilter && ShouldDrop(meth) == false) {
-					CloneTo(meth, nt, justCreatedType);
-				}
-			}
-			foreach (EventDefinition evt in type.Events) {
-				if (hasFilter && ShouldDrop(evt) == false) {
-					CloneTo(evt, nt, nt.Events);
-				}
-			}
-			foreach (PropertyDefinition prop in type.Properties) {
-				if (hasFilter && ShouldDrop(prop) == false) {
-					CloneTo(prop, nt, nt.Properties);
-				}
-			}
+            foreach (TypeDefinition nested in type.NestedTypes)
+            {
+                if (hasFilter == false || ShouldDrop(nested) == false)
+                {
+                    Import(nested, nt.NestedTypes, false);
+                }
+            }
+            foreach (FieldDefinition field in type.Fields)
+            {
+                if (hasFilter == false || ShouldDrop(field) == false)
+                {
+                    CloneTo(field, nt);
+                }
+            }
+            // methods before fields / events
+            foreach (MethodDefinition meth in type.Methods)
+            {
+                if (hasFilter == false || ShouldDrop(meth) == false)
+                {
+                    CloneTo(meth, nt, justCreatedType);
+                }
+            }
+            foreach (EventDefinition evt in type.Events)
+            {
+                if (hasFilter == false || ShouldDrop(evt) == false)
+                {
+                    CloneTo(evt, nt, nt.Events);
+                }
+            }
+            foreach (PropertyDefinition prop in type.Properties)
+            {
+                if (hasFilter == false || ShouldDrop(prop) == false)
+                {
+                    CloneTo(prop, nt, nt.Properties);
+                }
+            }
 
-			return nt;
+            return nt;
         }
 
-		private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition {
-			// skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
-			var shouldDrop = member.HasCustomAttributes
-				&& member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
-			if (shouldDrop) {
-				_logger.Log("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with "+ _options.RepackDropAttribute);
-			}
-			return shouldDrop;
-		}
+        private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition
+        {
+            // skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
+            var shouldDrop = member.HasCustomAttributes
+                && member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
+            if (shouldDrop)
+            {
+                _logger.Log("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + _options.RepackDropAttribute);
+            }
+            return shouldDrop;
+        }
 
-		// Real stuff below //
-		// These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
-		// They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
-		//  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
+        // Real stuff below //
+        // These methods are somehow a merge between the clone methods of Cecil 0.6 and the import ones of 0.9
+        // They use Cecil's MetaDataImporter to rebase imported stuff into the new assembly, but then another pass is required
+        //  to clean the TypeRefs Cecil keeps around (although the generated IL would be kind-o valid without, whatever 'valid' means)
 
-		/// <summary>
-		/// Clones a field to a newly created type
-		/// </summary>
-		private void CloneTo(FieldDefinition field, TypeDefinition nt)
+        /// <summary>
+        /// Clones a field to a newly created type
+        /// </summary>
+        private void CloneTo(FieldDefinition field, TypeDefinition nt)
         {
             if (nt.Fields.Any(x => x.Name == field.Name))
             {
