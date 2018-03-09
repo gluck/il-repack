@@ -120,8 +120,7 @@ namespace ILRepacking
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             _logger.Verbose("- Importing " + type);
-            bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
-            if (hasFilter && ShouldDrop(type))
+            if (ShouldDrop(type))
             {
                 return null;
             }
@@ -163,14 +162,14 @@ namespace ILRepacking
             // nested types first (are never internalized)
             foreach (TypeDefinition nested in type.NestedTypes)
             {
-                if (hasFilter == false || ShouldDrop(nested) == false)
+                if (ShouldDrop(nested) == false)
                 {
                     Import(nested, nt.NestedTypes, false);
                 }
             }
             foreach (FieldDefinition field in type.Fields)
             {
-                if (hasFilter == false || ShouldDrop(field) == false)
+                if (ShouldDrop(field) == false)
                 {
                     CloneTo(field, nt);
                 }
@@ -178,21 +177,21 @@ namespace ILRepacking
             // methods before fields / events
             foreach (MethodDefinition meth in type.Methods)
             {
-                if (hasFilter == false || ShouldDrop(meth) == false)
+                if (ShouldDrop(meth) == false)
                 {
                     CloneTo(meth, nt, justCreatedType);
                 }
             }
             foreach (EventDefinition evt in type.Events)
             {
-                if (hasFilter == false || ShouldDrop(evt) == false)
+                if (ShouldDrop(evt) == false)
                 {
                     CloneTo(evt, nt, nt.Events);
                 }
             }
             foreach (PropertyDefinition prop in type.Properties)
             {
-                if (hasFilter == false || ShouldDrop(prop) == false)
+                if (ShouldDrop(prop) == false)
                 {
                     CloneTo(prop, nt, nt.Properties);
                 }
@@ -203,6 +202,11 @@ namespace ILRepacking
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition
         {
+            bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
+            if (hasFilter == false)
+            {
+                return false;
+            }
             // skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
             var shouldDrop = member.HasCustomAttributes
                 && member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;

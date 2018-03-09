@@ -28,7 +28,7 @@ namespace ILRepacking
         public bool DebugInfo { get; set; }
         public bool DelaySign { get; set; }
 
-         /// <summary>
+        /// <summary>
         /// Gets or sets a file that contains one regex per line to compare against 
         /// FullName of types NOT to internalize. The items will replace the contents of
         /// <see cref="ExcludeInternalizeMatches" />. This option only has an effect if
@@ -97,7 +97,7 @@ namespace ILRepacking
             get { return allowedDuplicateNameSpaces; }
         }
 
-		public string RepackDropAttribute { get; set; }
+        public string RepackDropAttribute { get; set; }
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
@@ -226,15 +226,17 @@ namespace ILRepacking
             LogVerbose = cmd.Modifier("verbose");
             LineIndexation = cmd.Modifier("index");
 
-			if (cmd.HasOption("repackdrop")) {
-				RepackDropAttribute = cmd.Option("repackdrop");
-				if (String.IsNullOrWhiteSpace(RepackDropAttribute)) {
-					RepackDropAttribute = "RepackDropAttribute";
-				}
-			}
+            if (cmd.HasOption("repackdrop"))
+            {
+                RepackDropAttribute = cmd.Option("repackdrop");
+                if (String.IsNullOrWhiteSpace(RepackDropAttribute))
+                {
+                    RepackDropAttribute = "RepackDropAttribute";
+                }
+            }
 
-			// everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
-			InputAssemblies = cmd.OtherAguments;
+            // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
+            InputAssemblies = cmd.OtherAguments;
         }
 
         /// <summary>
