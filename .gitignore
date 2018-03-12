@@ -30,3 +30,4 @@ _NCrunch*
 *.ncrunchproject
 *.sln.cache
 *.DotSettings
+/.vs

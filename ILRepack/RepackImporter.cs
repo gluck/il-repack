@@ -120,6 +120,10 @@ namespace ILRepacking
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             _logger.Verbose("- Importing " + type);
+            if (ShouldDrop(type))
+            {
+                return null;
+            }
 
             TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
             bool justCreatedType = false;
@@ -157,19 +161,60 @@ namespace ILRepacking
 
             // nested types first (are never internalized)
             foreach (TypeDefinition nested in type.NestedTypes)
-                Import(nested, nt.NestedTypes, false);
+            {
+                if (ShouldDrop(nested) == false)
+                {
+                    Import(nested, nt.NestedTypes, false);
+                }
+            }
             foreach (FieldDefinition field in type.Fields)
-                CloneTo(field, nt);
-
+            {
+                if (ShouldDrop(field) == false)
+                {
+                    CloneTo(field, nt);
+                }
+            }
             // methods before fields / events
             foreach (MethodDefinition meth in type.Methods)
-                CloneTo(meth, nt, justCreatedType);
-
+            {
+                if (ShouldDrop(meth) == false)
+                {
+                    CloneTo(meth, nt, justCreatedType);
+                }
+            }
             foreach (EventDefinition evt in type.Events)
-                CloneTo(evt, nt, nt.Events);
+            {
+                if (ShouldDrop(evt) == false)
+                {
+                    CloneTo(evt, nt, nt.Events);
+                }
+            }
             foreach (PropertyDefinition prop in type.Properties)
-                CloneTo(prop, nt, nt.Properties);
+            {
+                if (ShouldDrop(prop) == false)
+                {
+                    CloneTo(prop, nt, nt.Properties);
+                }
+            }
+
             return nt;
+        }
+
+        private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition
+        {
+            bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
+            if (hasFilter == false)
+            {
+                return false;
+            }
+            // skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
+            var shouldDrop = member.HasCustomAttributes
+                && member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
+            if (shouldDrop)
+            {
+                _logger.Log("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + _options.RepackDropAttribute);
+            }
+            return shouldDrop;
         }
 
         // Real stuff below //

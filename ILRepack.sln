@@ -1,10 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4547EE79-6D49-4318-B473-B5BBF73B434C}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		build.gradle = build.gradle
 		README.md = README.md
 	EndProjectSection
@@ -138,5 +139,8 @@ Global
 		{A183949D-1057-4585-B76D-F86CA28C69D0} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{6A827942-BEEF-4E49-A3A4-306E21428E85} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{EECC6459-78C6-4A08-9039-DE37E75866E6} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {54C7CB02-6231-428F-BBD0-113CC9852908}
 	EndGlobalSection
 EndGlobal
