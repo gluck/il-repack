@@ -5,3 +5,6 @@ install:
 build_script:
 - gradlew.bat -is nunit nugetPack
 test: off
+artifacts:
+  - path: '**\*.nupkg'
+    name: Nuget
