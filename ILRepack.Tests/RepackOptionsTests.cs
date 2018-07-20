@@ -335,7 +335,7 @@ namespace ILRepack.Tests
         {
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(string.Empty);
-            commandLine.Setup(cmd => cmd.Modifier("renameInternalized")).Returns(renameInternalized);
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(renameInternalized);
             Parse();
             Assert.AreEqual(renameInternalized, options.RenameInternalized);
         }
@@ -349,7 +349,7 @@ namespace ILRepack.Tests
             
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(string.Empty);
-            commandLine.Setup(cmd => cmd.Modifier("renameInternalized")).Returns(true);
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(true);
             Parse();
             options.Validate();
             Assert.DoesNotThrow(() => options.Validate());
@@ -362,7 +362,7 @@ namespace ILRepack.Tests
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
             commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
             
-            commandLine.Setup(cmd => cmd.Modifier("renameInternalized")).Returns(true);
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(true);
             Parse();
             Assert.Throws<InvalidOperationException>(() => options.Validate());
         }
