@@ -140,7 +140,7 @@ namespace ILRepacking
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
-                string other = "<" + Guid.NewGuid() + ">" + nt.Name;
+                string other = GenerateName(nt);
                 _logger.Info("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
@@ -197,7 +197,19 @@ namespace ILRepacking
                 }
             }
 
+            if (internalize && _options.RenameInternalized)
+            {
+                string newName = GenerateName(nt);
+                _logger.Verbose("Renaming " + nt.FullName + " into " + newName);
+                nt.Name = newName;
+            }
+
             return nt;
+        }
+
+        private string GenerateName(TypeDefinition typeDefinition)
+        {
+            return "<" + Guid.NewGuid() + ">" + typeDefinition.Name;
         }
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition

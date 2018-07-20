@@ -41,6 +41,7 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /xmldocs             merges XML documentation as well
  - /lib:<path>          adds the path to the search directories for referenced assemblies (can be specified multiple times)
  - /internalize         sets all types but the ones from the first assembly 'internal'
+ - /renameInternalized  rename all internalized types
  - /delaysign           sets the key, but don't sign the assembly
  - /usefullpublickeyforreferences - NOT IMPLEMENTED
  - /align               - NOT IMPLEMENTED
