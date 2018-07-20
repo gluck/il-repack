@@ -167,7 +167,7 @@ namespace ILRepacking
                 ExcludeFile = cmd.Option("internalize");
             }
 
-            RenameInternalized = cmd.Modifier("renameInternalized");
+            RenameInternalized = cmd.Modifier("renameinternalized");
             KeyFile = cmd.Option("keyfile");
             KeyContainer = cmd.Option("keycontainer");
             Log = cmd.HasOption("log");
