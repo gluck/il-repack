@@ -31,3 +31,4 @@ _NCrunch*
 *.sln.cache
 *.DotSettings
 /.vs
+/.idea

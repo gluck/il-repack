@@ -328,5 +328,43 @@ namespace ILRepack.Tests
             Assert.AreEqual(excludeFile, options.ExcludeFile);
             CollectionAssert.AreEqual(excludeLines, options.ExcludeInternalizeMatches.Select(r => r.ToString()));
         }
+                
+        [TestCase(false)]
+        [TestCase(true)]
+        public void WithRenameInternalizedSet_WithInternalize__Parse__RenameInternalized_ShouldBeCorrect(bool renameInternalized)
+        {
+            commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
+            commandLine.Setup(cmd => cmd.Option("internalize")).Returns(string.Empty);
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(renameInternalized);
+            Parse();
+            Assert.AreEqual(renameInternalized, options.RenameInternalized);
+        }
+
+        [Test]
+        public void WithRenameInternalizedSet_WithInternalize__Parse__NoException()
+        {
+            var inputAssemblies = new List<string> { "A", "B", "C" };
+            commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
+            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            
+            commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
+            commandLine.Setup(cmd => cmd.Option("internalize")).Returns(string.Empty);
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(true);
+            Parse();
+            options.Validate();
+            Assert.DoesNotThrow(() => options.Validate());
+        }
+
+        [Test]
+        public void WithRenameInternalizedSet_WithoutInternalize__Parse__ThrowsInvalidOperationException()
+        {
+            var inputAssemblies = new List<string> { "A", "B", "C" };
+            commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
+            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            
+            commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(true);
+            Parse();
+            Assert.Throws<InvalidOperationException>(() => options.Validate());
+        }
     }
 }
