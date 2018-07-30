@@ -1,10 +1,10 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id 'com.ullink.msbuild' version '2.15'
-  id 'com.ullink.nuget' version '2.12'
-  id 'com.ullink.nunit' version '1.4'
-  id 'com.ullink.opencover' version '1.2'
+  id 'com.ullink.msbuild' version '2.21'
+  id 'com.ullink.nuget' version '2.15'
+  id 'com.ullink.nunit' version '1.12'
+  id 'com.ullink.opencover' version '1.10'
   id 'net.researchgate.release' version '2.3.4'
 }
 
@@ -29,13 +29,13 @@ msbuild {
 }
 
 nunit {
-    exclude 'LongRunning'
+    exclude = 'LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunit.dependsOn msbuild
 
 task nunitLongRunning(type: nunit.class) {
-    include 'LongRunning'
+    include = 'LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunitLongRunning.dependsOn msbuild
