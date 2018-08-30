@@ -47,6 +47,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("DotNet462Application");
         }
 
+        [Test]
+        public void GivenDotNet462AppUsingNetStandard2LibrarySetAndReflection_MergedApplicationRunsSuccessfully()
+        {
+            RunScenario("DotNet462NetStandard2");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);
