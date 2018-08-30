@@ -64,6 +64,15 @@ namespace ILRepacking
                 // I've never seen an exported type redirected to a module, doing so would be blind guessing
                 scope = type.Scope;
             }
+            if (type.IsForwarder)
+            {
+                // Skip duplicated forwarders
+                var fullName = type.FullName;
+                if (col.Any(t => t.IsForwarder && t.FullName == fullName))
+                {
+                    return;
+                }
+            }
             var nt = new ExportedType(type.Namespace, type.Name, module, scope)
             {
                 Attributes = type.Attributes,
