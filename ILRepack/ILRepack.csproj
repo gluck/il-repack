@@ -125,6 +125,18 @@
     <Compile Include="Steps\SourceServerData\SourceServerDataRepackStep.cs" />
     <Compile Include="Steps\SourceServerData\StringMixins.cs" />
     <Compile Include="Steps\TypesRepackStep.cs" />
+    <Compile Include="Steps\Win32Resources\PE\BinaryStreamWriter.cs" />
+    <Compile Include="Steps\Win32Resources\PE\ByteBuffer.cs" />
+    <Compile Include="Steps\Win32Resources\PE\ImageReader.cs" />
+    <Compile Include="Steps\Win32Resources\PE\BinaryStreamReader.cs" />
+    <Compile Include="Steps\Win32Resources\PE\ImageWriter.cs" />
+    <Compile Include="Steps\Win32Resources\PE\Section.cs" />
+    <Compile Include="Steps\Win32Resources\PE\SectionData.cs" />
+    <Compile Include="Steps\Win32Resources\ResourceDirectory.cs" />
+    <Compile Include="Steps\Win32Resources\ResourceEntry.cs" />
+    <Compile Include="Steps\Win32Resources\RsrcReader.cs" />
+    <Compile Include="Steps\Win32Resources\RsrcWriter.cs" />
+    <Compile Include="Steps\Win32Resources\Win32ResourceStep.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStep.cs" />
   </ItemGroup>
   <ItemGroup>

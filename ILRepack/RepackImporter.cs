@@ -447,7 +447,7 @@ namespace ILRepacking
                 nb.Variables.Add(new VariableDefinition(
                     Import(var.VariableType, parent)));
 
-            nb.Instructions.SetCapacity(body.Instructions.Count);
+            nb.Instructions.Capacity = Math.Max(nb.Instructions.Capacity, body.Instructions.Count);
             _repackContext.LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
