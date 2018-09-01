@@ -1,7 +1,5 @@
 version: 1.0.{build}
 os: Previous Visual Studio 2017
-install:
-- git submodule update --init --recursive
 build_script:
 - gradlew.bat -is nunit nugetPack
 test: off

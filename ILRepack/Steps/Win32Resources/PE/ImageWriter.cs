@@ -29,13 +29,12 @@ namespace ILRepacking.Steps.Win32Resources.PE
         const RVA text_rva = 0x2000;
 
         private readonly ImageReader _source;
-        private ByteBuffer win32_resources;
+        private ByteBuffer _win32Resources;
         private Section _origText;
         private Section _text;
         private Section _rsrc;
         private Section _origReloc;
         private Section _reloc;
-        private bool _createdRsrc;
         private ushort _sections;
 
         public ImageWriter(ImageReader source, Stream stream) : base(stream)
@@ -64,8 +63,8 @@ namespace ILRepacking.Steps.Win32Resources.PE
                 _rsrc = CreateSection(".rsrc", _text);
             }
 
-            win32_resources = RsrcWriter.WriteWin32ResourcesDirectory(_rsrc.VirtualAddress, merged);
-            SetSectionSize(_rsrc, (uint) win32_resources.length);
+            _win32Resources = RsrcWriter.WriteWin32ResourcesDirectory(_rsrc.VirtualAddress, merged);
+            SetSectionSize(_rsrc, (uint) _win32Resources.length);
 
             if (_origReloc != null)
             {
@@ -136,7 +135,7 @@ namespace ILRepacking.Steps.Win32Resources.PE
             WriteOptionalHeaders();
             WriteSectionHeaders();
             CopySection(_origText, _text);
-            WriteSection(_rsrc, win32_resources);
+            WriteSection(_rsrc, _win32Resources);
             CopySection(_origReloc, _reloc);
         }
 
