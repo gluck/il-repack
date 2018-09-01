@@ -356,11 +356,10 @@ namespace ILRepacking
                     Directory.CreateDirectory(outputDir);
                 }
 
-                sourceServerDataStep.Write();
-
                 Logger.Info("Writing output assembly to disk");
                 TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
                 
+                sourceServerDataStep.Write();
 
                 for (int i = 1; i < MergedAssemblies.Count; ++i)
                 {
