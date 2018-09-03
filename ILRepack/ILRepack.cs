@@ -264,6 +264,9 @@ namespace ILRepacking
             timer.Start();
             Options.Validate();
             PrintRepackHeader();
+
+            var actualOutFile = Options.OutputFile;
+            Options.OutputFile = GetTempFile(Options.OutputFile);
             _reflectionHelper = new ReflectionHelper(this);
             ResolveSearchDirectories();
 
@@ -361,15 +364,18 @@ namespace ILRepacking
                 
                 sourceServerDataStep.Write();
 
-                for (int i = 1; i < MergedAssemblies.Count; ++i)
+                foreach (var assembly in MergedAssemblies)
                 {
-                    MergedAssemblies[i].Dispose();
+                    assembly.Dispose();
                 }
                 
                 TargetAssemblyDefinition.Dispose();
                 GlobalAssemblyResolver.Dispose();
 
                 win32ResourceStep.Patch(Options.OutputFile);
+
+                MoveTempFile(Options.OutputFile, actualOutFile);
+                Options.OutputFile = actualOutFile;
 
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
@@ -390,6 +396,33 @@ namespace ILRepacking
             }
 
             Logger.Info($"Finished in {timer.Elapsed}");
+        }
+
+        private void MoveTempFile(string tempFile, string outFile)
+        {
+            var srcDir = Path.GetDirectoryName(tempFile);
+            var tgtDir = Path.GetDirectoryName(outFile);
+
+            foreach (var srcFileName in Directory.EnumerateFiles(srcDir))
+            {
+                var fileName = Path.GetFileName(srcFileName);
+                var tgtFileName = Path.Combine(tgtDir, fileName);
+                if (File.Exists(tgtFileName))
+                {
+                    File.Delete(tgtFileName);
+                }
+                File.Move(srcFileName, tgtFileName);
+            }
+
+            Directory.Delete(srcDir, false);
+        }
+
+        private string GetTempFile(string outputFileName)
+        {
+            var fileName = Path.GetFileName(outputFileName);
+            var dirName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(dirName);
+            return Path.Combine(dirName, fileName);
         }
 
         private ISourceServerDataRepackStep GetSourceServerDataStep(bool isUnixEnvironment)
