@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Threading;
 
 namespace AnotherClassLibrary
 {
@@ -9,6 +10,8 @@ namespace AnotherClassLibrary
             Window window = new Window();
             window.Content = new ADummyUserControl();
             window.Show();
+            window.Close();
+            Dispatcher.CurrentDispatcher.InvokeShutdown();
         }
     }
 }
