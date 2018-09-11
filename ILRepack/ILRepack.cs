@@ -27,6 +27,7 @@ using ILRepacking.Mixins;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
 using ILRepacking.Steps.SourceServerData;
+using Mono.Cecil.Cil;
 
 namespace ILRepacking
 {
@@ -115,6 +116,9 @@ namespace ILRepacking
                 if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                 {
                     rp.ReadSymbols = true;
+                    rp.SymbolReaderProvider = File.Exists(Path.ChangeExtension(assembly, "pdb"))
+                        ? (ISymbolReaderProvider)new Mono.Cecil.Pdb.PdbReaderProvider()
+                        : (ISymbolReaderProvider)new Mono.Cecil.Mdb.MdbReaderProvider();
                 }
                 AssemblyDefinition mergeAsm;
                 try
