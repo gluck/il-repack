@@ -98,6 +98,7 @@ namespace ILRepacking
         }
 
         public string RepackDropAttribute { get; set; }
+        public bool RenameInternalized { get; set; }
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
@@ -165,6 +166,8 @@ namespace ILRepacking
                 // this file shall contain one regex per line to compare agains FullName of types NOT to internalize
                 ExcludeFile = cmd.Option("internalize");
             }
+
+            RenameInternalized = cmd.Modifier("renameinternalized");
             KeyFile = cmd.Option("keyfile");
             KeyContainer = cmd.Option("keycontainer");
             Log = cmd.HasOption("log");
@@ -253,6 +256,9 @@ namespace ILRepacking
             if (!string.IsNullOrEmpty(AttributeFile) && CopyAttributes)
                 throw new InvalidOperationException("Option 'attr' can not be used with 'copyattrs'.");
 
+            if (RenameInternalized && !Internalize)
+                throw new InvalidOperationException("Option 'renameInternalized' is only valid with 'internalize'.");
+            
             if (string.IsNullOrEmpty(OutputFile))
                 throw new ArgumentException("No output file given.");
 

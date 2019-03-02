@@ -43,6 +43,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFThemingAndLibraryStyles"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet462Application", "ILRepack.IntegrationTests\Scenarios\DotNet462Application\DotNet462Application.csproj", "{EECC6459-78C6-4A08-9039-DE37E75866E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet462NetStandard2", "ILRepack.IntegrationTests\Scenarios\DotNet462NetStandard2\DotNet462NetStandard2.csproj", "{90F1C943-3C23-4091-B07F-0B34748AE056}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A253A60-D998-4CA2-B9D5-46567A2FBF80} = {4A253A60-D998-4CA2-B9D5-46567A2FBF80}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_unix|Any CPU = Debug_unix|Any CPU
@@ -126,6 +131,11 @@ Global
 		{EECC6459-78C6-4A08-9039-DE37E75866E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EECC6459-78C6-4A08-9039-DE37E75866E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EECC6459-78C6-4A08-9039-DE37E75866E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90F1C943-3C23-4091-B07F-0B34748AE056}.Debug_unix|Any CPU.ActiveCfg = Debug|Any CPU
+		{90F1C943-3C23-4091-B07F-0B34748AE056}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90F1C943-3C23-4091-B07F-0B34748AE056}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90F1C943-3C23-4091-B07F-0B34748AE056}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90F1C943-3C23-4091-B07F-0B34748AE056}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -139,6 +149,7 @@ Global
 		{A183949D-1057-4585-B76D-F86CA28C69D0} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{6A827942-BEEF-4E49-A3A4-306E21428E85} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{EECC6459-78C6-4A08-9039-DE37E75866E6} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+		{90F1C943-3C23-4091-B07F-0B34748AE056} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {54C7CB02-6231-428F-BBD0-113CC9852908}

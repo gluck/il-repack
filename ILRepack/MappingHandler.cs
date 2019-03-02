@@ -92,10 +92,21 @@ namespace ILRepacking
             throw new Exception("Unsupported scope: "+ scope);
         }
 
-        public TypeReference GetExportedRemappedType(TypeReference type)
+        private TypeReference GetRootReference(TypeReference type)
         {
             TypeReference other;
             if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
+            {
+                var next = GetRootReference(other);
+                return next ?? other;
+            }
+            return null;
+        }
+
+        public TypeReference GetExportedRemappedType(TypeReference type)
+        {
+            TypeReference other = GetRootReference(type);
+            if (other != null)
             {
                 // ElementType is used when serializing the Assembly.
                 // It should match the actual type (e.g., Boolean for System.Boolean). But because of forwarded types, this is not known at read time, thus having to fix it here.

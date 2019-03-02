@@ -64,6 +64,15 @@ namespace ILRepacking
                 // I've never seen an exported type redirected to a module, doing so would be blind guessing
                 scope = type.Scope;
             }
+            if (type.IsForwarder)
+            {
+                // Skip duplicated forwarders
+                var fullName = type.FullName;
+                if (col.Any(t => t.IsForwarder && t.FullName == fullName))
+                {
+                    return;
+                }
+            }
             var nt = new ExportedType(type.Namespace, type.Name, module, scope)
             {
                 Attributes = type.Attributes,
@@ -140,7 +149,7 @@ namespace ILRepacking
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
-                string other = "<" + Guid.NewGuid() + ">" + nt.Name;
+                string other = GenerateName(nt);
                 _logger.Info("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
@@ -197,7 +206,19 @@ namespace ILRepacking
                 }
             }
 
+            if (internalize && _options.RenameInternalized)
+            {
+                string newName = GenerateName(nt);
+                _logger.Verbose("Renaming " + nt.FullName + " into " + newName);
+                nt.Name = newName;
+            }
+
             return nt;
+        }
+
+        private string GenerateName(TypeDefinition typeDefinition)
+        {
+            return "<" + Guid.NewGuid() + ">" + typeDefinition.Name;
         }
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition

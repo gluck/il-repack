@@ -43,18 +43,29 @@ namespace ILRepacking.Steps
             if (_repackOptions.KeyContainer != null || (_repackOptions.KeyFile != null && File.Exists(_repackOptions.KeyFile)))
             {
                 var snkp = default(StrongNameKeyPair);
+                var publicKey = default(byte[]);
                 if (_repackOptions.KeyContainer != null)
                 {
                     snkp = new StrongNameKeyPair(_repackOptions.KeyContainer);
                 }
-                else
+                else if(_repackOptions.KeyFile != null && File.Exists(_repackOptions.KeyFile))
                 {
-                    using (var stream = new FileStream(_repackOptions.KeyFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    var keyFileContents = File.ReadAllBytes(_repackOptions.KeyFile);
+                    try
                     {
-                        snkp = new StrongNameKeyPair(stream);
+                        snkp = new StrongNameKeyPair(keyFileContents);
+                        publicKey = snkp.PublicKey;
+                    }
+                    catch (ArgumentException)
+                    {
+                        snkp = null;
+                        if(_repackOptions.DelaySign)
+                        {
+                            publicKey = keyFileContents;
+                        }
                     }
                 }
-                _repackContext.TargetAssemblyDefinition.Name.PublicKey = snkp.PublicKey;
+                _repackContext.TargetAssemblyDefinition.Name.PublicKey = publicKey;
                 _repackContext.TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
                 _repackContext.TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
                 if (!_repackOptions.DelaySign)
