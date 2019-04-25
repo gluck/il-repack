@@ -17,6 +17,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ILRepacking.Steps
 {
@@ -25,6 +26,7 @@ namespace ILRepacking.Steps
     {
         private readonly ILogger _logger;
         private readonly IRepackContext _repackContext;
+        private static readonly Regex VersionRegex = new Regex("v(.?\\d)+;", RegexOptions.IgnoreCase);
 
         public XamlResourcePathPatcherStep(ILogger logger, IRepackContext repackContext)
         {
@@ -147,6 +149,11 @@ namespace ILRepacking.Steps
         private static bool TryPatchPath(
             string path, AssemblyDefinition primaryAssembly, AssemblyDefinition referenceAssembly, out string patchedPath)
         {
+            // get rid of potential versions in the path
+            // Starting with a new .NET MSBuild version, in case the project is built
+            // via a new-format .csproj, the version is appended
+            path = VersionRegex.Replace(path, string.Empty);
+
             string referenceAssemblyPath = GetAssemblyPath(referenceAssembly);
             string newPath = GetAssemblyPath(primaryAssembly) + "/" + referenceAssembly.Name.Name;
 
