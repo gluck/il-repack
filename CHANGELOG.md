@@ -1,5 +1,22 @@
 # IL Repack changelog
 
+## 2.0.18
+### Fixed
+* Usage of netstandard2 support layer for .NET 4.6.1-4.7.1
+* WPF merging now handles properly libraries built with the new .NET project formats
+
+## 2.0.17
+### Added
+* /repackdrop:AttributeClass is now a supported argument to allow dropping specific members during merging (#215)
+* /renameInternalized is now a supported argument forcing ILRepack to rename all types from other assemblies during repack (#233)
+
+### Fixed
+* Usage of delay sign & public key (#222)
+
+## 2.0.16
+### Fixed
+* WPF Merging handles correctly cases when BAML types are referencing core .NET types
+
 ## 2.0.15
 ### Added
 * WPF merging now works with resources (e.g., images) in used libraries
