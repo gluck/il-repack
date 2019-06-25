@@ -70,6 +70,14 @@ namespace ILRepack.Tests.Steps
                     "/MainAssembly;component/ClassLibrary/ButtonStyles.xaml"),
 
                 new TestCaseData(
+                    "/ClassLibrary;V2.0.0;component/ButtonStyles.xaml",
+                    "/MainAssembly;component/ClassLibrary/ButtonStyles.xaml"),
+
+                new TestCaseData(
+                    "/ClassLibrary;v2.0.0;component/ButtonStyles.xaml",
+                    "/MainAssembly;component/ClassLibrary/ButtonStyles.xaml"),
+
+                new TestCaseData(
                     "/themes/ButtonStyles.xaml",
                     "/themes/ButtonStyles.xaml"),
 

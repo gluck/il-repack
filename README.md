@@ -52,6 +52,8 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /wildcards           allows (and resolves) file wildcards (e.g. `*`.dll) in input assemblies
  - /parallel            use as many CPUs as possible to merge the assemblies
  - /pause               pause execution once completed (good for debugging)
+ - /repackdrop:AttributeClass allows dropping specific members during merging (#215)
+ - /renameInternalized  forces ILRepack to rename all types from other assemblies during repack (#233)
  - /verbose             shows more logs
  - /out:<path>          target assembly path, symbol/config/doc files will be written here as well
  - <path_to_primary>    primary assembly, gives the name, version to the merged one
