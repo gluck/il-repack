@@ -1,8 +1,8 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id 'com.ullink.msbuild' version '2.21'
-  id 'com.ullink.nuget' version '2.15'
+  id 'com.ullink.msbuild' version '3.6'
+  id 'com.ullink.nuget' version '2.18'
   id 'com.ullink.nunit' version '1.12'
   id 'com.ullink.opencover' version '1.10'
   id 'net.researchgate.release' version '2.3.4'
@@ -11,10 +11,6 @@ plugins {
 archivesBaseName = 'ILRepack'
 
 defaultTasks('nugetPack')
-
-nuget {
-    version = '4.4.1'
-}
 
 assemblyInfoPatcher {
     version = project.version + '.0'
