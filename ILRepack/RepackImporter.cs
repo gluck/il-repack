@@ -206,7 +206,7 @@ namespace ILRepacking
                 }
             }
 
-            if (internalize && _options.RenameInternalized)
+            if (internalize && _options.RenameInternalized && !IsModuleTag(nt))
             {
                 string newName = GenerateName(nt);
                 _logger.Verbose("Renaming " + nt.FullName + " into " + newName);
@@ -215,6 +215,10 @@ namespace ILRepacking
 
             return nt;
         }
+
+        //Module tag must't be renamed. Otherwise after two repacks .dll will contain <Model> and <Guid><Model>
+        //Assembly.Load() will load <Guid><Module> as type and crush
+        private static bool IsModuleTag(TypeDefinition nt) => nt.FullName == "<Module>";
 
         private string GenerateName(TypeDefinition typeDefinition)
         {
