@@ -217,7 +217,7 @@ namespace ILRepacking
         }
 
         //Module tag must't be renamed. Otherwise after two repacks .dll will contain <Model> and <Guid><Model>
-        //Assembly.Load() will load <Guid><Module> as type and crush
+        //Assembly.Load() will load <Guid><Module> as type and crash
         private static bool IsModuleTag(TypeDefinition nt) => nt.FullName == "<Module>";
 
         private string GenerateName(TypeDefinition typeDefinition)
