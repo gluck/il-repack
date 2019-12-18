@@ -111,6 +111,15 @@ namespace ILRepacking
                 FixOverridenMethodDef(meth);
         }
 
+        internal void FixReferences(Collection<GenericParameterConstraint> constraints)
+        {
+            foreach (var constraint in constraints)
+            {
+                constraint.ConstraintType = Fix(constraint.ConstraintType);
+                FixReferences(constraint.CustomAttributes);
+            }
+        }
+
         internal void FixReferences(TypeDefinition type)
         {
             FixReferences(type.GenericParameters);

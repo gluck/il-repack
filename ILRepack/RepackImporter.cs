@@ -838,6 +838,16 @@ namespace ILRepacking
             }
         }
 
+        public void CopyTypeReferences(Collection<GenericParameterConstraint> input, Collection<GenericParameterConstraint> output, IGenericParameterProvider context)
+        {
+            foreach (var gpc in input)
+            {
+                var result = new GenericParameterConstraint(Import(gpc.ConstraintType, context));
+                CopyCustomAttributes(gpc.CustomAttributes, result.CustomAttributes, context);
+                output.Add(result);
+            }
+        }
+
         public CustomAttributeArgument Copy(CustomAttributeArgument arg, IGenericParameterProvider context)
         {
             return new CustomAttributeArgument(Import(arg.Type, context), ImportCustomAttributeValue(arg.Value, context));
