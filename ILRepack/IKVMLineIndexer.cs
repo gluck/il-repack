@@ -17,7 +17,6 @@ namespace ILRepacking
     {
         private readonly IRepackContext repack;
         private bool enabled;
-        private LineNumberWriter lineNumberWriter;
         private string fileName;
         private TypeReference sourceFileAttributeTypeReference;
         private TypeReference lineNumberTableAttributeTypeReference;
@@ -41,29 +40,29 @@ namespace ILRepacking
 
         public void Reset()
         {
-            lineNumberWriter = null;
             fileName = null;
         }
 
         public void PreMethodBodyRepack(MethodBody body, MethodDefinition parent)
         {
-            if (!enabled)
+            if (!enabled || !parent.DebugInformation.HasSequencePoints)
                 return;
 
             Reset();
             if (!parent.CustomAttributes.Any(x => x.Constructor.DeclaringType.Name == "LineNumberTableAttribute"))
             {
-                lineNumberWriter = new LineNumberWriter(body.Instructions.Count / 4);
+                var lineNumberWriter = new LineNumberWriter(body.Instructions.Count / 4);
+                foreach (var sp in parent.DebugInformation.SequencePoints)
+                {
+                    AddSeqPoint(sp, lineNumberWriter);
+                }
+                PostMethodBodyRepack(parent, lineNumberWriter);
             }
         }
 
-        public void ProcessMethodBodyInstruction(Instruction instr)
+        private void AddSeqPoint(SequencePoint currentSeqPoint, LineNumberWriter lineNumberWriter) 
         {
-            if (!enabled)
-                return;
-
-            var currentSeqPoint = instr.SequencePoint;
-            if (lineNumberWriter != null && currentSeqPoint != null)
+            if (currentSeqPoint != null)
             {
                 if (fileName == null && currentSeqPoint.Document != null)
                 {
@@ -84,25 +83,22 @@ namespace ILRepacking
                 {
                     if (lineNumberWriter.LineNo > 0)
                     {
-                        lineNumberWriter.AddMapping(instr.Offset, -1);
+                        lineNumberWriter.AddMapping(currentSeqPoint.Offset, -1);
                     }
                 }
                 else
                 {
                     if (lineNumberWriter.LineNo != currentSeqPoint.StartLine)
                     {
-                        lineNumberWriter.AddMapping(instr.Offset, currentSeqPoint.StartLine);
+                        lineNumberWriter.AddMapping(currentSeqPoint.Offset, currentSeqPoint.StartLine);
                     }
                 }
             }
         }
 
-        public void PostMethodBodyRepack(MethodDefinition parent)
+        private void PostMethodBodyRepack(MethodDefinition parent, LineNumberWriter lineNumberWriter)
         {
-            if (!enabled)
-                return;
-
-            if (lineNumberWriter != null && lineNumberWriter.Count > 0)
+            if (lineNumberWriter.Count > 0)
             {
                 CustomAttribute ca;
                 if (lineNumberWriter.Count == 1)
@@ -155,7 +151,7 @@ namespace ILRepacking
             IMetadataScope ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
             if (ikvmRuntimeReference == null)
             {
-                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").Name);
+                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve(new AssemblyNameReference("IKVM.Runtime", null)).Name);
             }
             if (ikvmRuntimeReference == null)
             {

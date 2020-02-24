@@ -38,11 +38,18 @@ namespace ILRepack.IntegrationTests.NuGet
 
         private static void ReloadAndCheckReferences(RepackOptions repackOptions)
         {
-            var outputFile = AssemblyDefinition.ReadAssembly(repackOptions.OutputFile, new ReaderParameters(ReadingMode.Immediate));
-            var mergedFiles = repackOptions.ResolveFiles().Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred)));
-            foreach (var a in outputFile.MainModule.AssemblyReferences.Where(x => mergedFiles.Any(y => repackOptions.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
+            using (var ar = new DefaultAssemblyResolver())
+            using (var outputFile = AssemblyDefinition.ReadAssembly(repackOptions.OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = ar }))
             {
-                Assert.Fail($"Merged assembly retains a reference to one (or more) of the merged files: {a.FullName}");
+                var mergedFiles = repackOptions.ResolveFiles().Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred) { AssemblyResolver = ar })).ToList();
+                foreach (var a in outputFile.MainModule.AssemblyReferences.Where(x => mergedFiles.Any(y => repackOptions.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
+                {
+                    Assert.Fail($"Merged assembly retains a reference to one (or more) of the merged files: {a.FullName}");
+                }
+                foreach (var a in mergedFiles)
+                {
+                    a.Dispose();
+                }
             }
         }
 

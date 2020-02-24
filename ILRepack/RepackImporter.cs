@@ -20,6 +20,7 @@ using Mono.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ILRepacking.Mixins;
 
 namespace ILRepacking
 {
@@ -386,6 +387,10 @@ namespace ILRepacking
             // use void placeholder as we'll do the return type import later on (after generic parameters)
             MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, _repackContext.TargetAssemblyMainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
+            if (meth.DebugInformation.HasCustomDebugInformations)
+                nm.DebugInformation.CustomDebugInformations.AddRange(meth.DebugInformation.CustomDebugInformations);
+            if (meth.DebugInformation.HasSequencePoints)
+                nm.DebugInformation.SequencePoints.AddRange(meth.DebugInformation.SequencePoints);
 
             type.Methods.Add(nm);
 
@@ -443,15 +448,13 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(var.Name,
+                nb.Variables.Add(new VariableDefinition(
                     Import(var.VariableType, parent)));
 
-            nb.Instructions.SetCapacity(body.Instructions.Count);
+            nb.Instructions.Capacity = Math.Max(nb.Instructions.Capacity, body.Instructions.Count);
             _repackContext.LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
-                _repackContext.LineIndexer.ProcessMethodBodyInstruction(instr);
-
                 Instruction ni;
 
                 if (instr.OpCode.Code == Code.Calli)
@@ -540,11 +543,8 @@ namespace ILRepacking
                         default:
                             throw new InvalidOperationException();
                     }
-                ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
-            _repackContext.LineIndexer.PostMethodBodyRepack(parent);
-
             for (int i = 0; i < body.Instructions.Count; i++)
             {
                 Instruction instr = nb.Instructions[i];
@@ -605,9 +605,19 @@ namespace ILRepacking
             // don't copy these twice if UnionMerge==true
             // TODO: we can move this down if we chek for duplicates when adding
             CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyInterfaces(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             return nt;
+        }
+
+        private void CopyInterfaces(Collection<InterfaceImplementation> interfaces1, Collection<InterfaceImplementation> interfaces2, TypeDefinition nt)
+        {
+            foreach (var iface in interfaces1)
+            {
+                var newIface = new InterfaceImplementation(Import(iface.InterfaceType, nt));
+                CopyCustomAttributes(iface.CustomAttributes, newIface.CustomAttributes, nt);
+                interfaces2.Add(newIface);
+            }
         }
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
@@ -829,6 +839,16 @@ namespace ILRepacking
             foreach (TypeReference ta in input)
             {
                 output.Add(Import(ta, context));
+            }
+        }
+
+        public void CopyTypeReferences(Collection<GenericParameterConstraint> input, Collection<GenericParameterConstraint> output, IGenericParameterProvider context)
+        {
+            foreach (var gpc in input)
+            {
+                var result = new GenericParameterConstraint(Import(gpc.ConstraintType, context));
+                CopyCustomAttributes(gpc.CustomAttributes, result.CustomAttributes, context);
+                output.Add(result);
             }
         }
 

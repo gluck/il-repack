@@ -111,6 +111,15 @@ namespace ILRepacking
                 FixOverridenMethodDef(meth);
         }
 
+        internal void FixReferences(Collection<GenericParameterConstraint> constraints)
+        {
+            foreach (var constraint in constraints)
+            {
+                constraint.ConstraintType = Fix(constraint.ConstraintType);
+                FixReferences(constraint.CustomAttributes);
+            }
+        }
+
         internal void FixReferences(TypeDefinition type)
         {
             FixReferences(type.GenericParameters);
@@ -118,7 +127,11 @@ namespace ILRepacking
             type.BaseType = Fix(type.BaseType);
 
             // interfaces before methods, because methods will have to go through them
-            FixReferences(type.Interfaces);
+            foreach (InterfaceImplementation nested in type.Interfaces)
+            {
+                nested.InterfaceType = Fix(nested.InterfaceType);
+                FixReferences(nested.CustomAttributes);
+            }
 
             // nested types first
             foreach (TypeDefinition nested in type.NestedTypes)
@@ -332,7 +345,7 @@ namespace ILRepacking
         {
             if (typeAttribute == null)
                 return false;
-            if (typeAttribute.Interfaces.Any(@interface => @interface.FullName == "java.lang.annotation.Annotation"))
+            if (typeAttribute.Interfaces.Any(@interface => @interface.InterfaceType.FullName == "java.lang.annotation.Annotation"))
                 return true;
             return typeAttribute.BaseType != null && IsAnnotation(typeAttribute.BaseType.Resolve());
         }
