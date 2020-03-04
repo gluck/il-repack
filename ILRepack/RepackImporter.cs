@@ -126,7 +126,7 @@ namespace ILRepacking
             return _repackContext.TargetAssemblyMainModule.ImportReference(reference, context);
         }
 
-        public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
+        public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize, bool rename)
         {
             _logger.Verbose("- Importing " + type);
             if (ShouldDrop(type))
@@ -173,7 +173,7 @@ namespace ILRepacking
             {
                 if (ShouldDrop(nested) == false)
                 {
-                    Import(nested, nt.NestedTypes, false);
+                    Import(nested, nt.NestedTypes, false, rename);
                 }
             }
             foreach (FieldDefinition field in type.Fields)
@@ -211,10 +211,15 @@ namespace ILRepacking
                 string newName = GenerateName(nt);
                 _logger.Verbose("Renaming " + nt.FullName + " into " + newName);
                 nt.Name = newName;
+            }            
+
+            if (rename && _options.RenameNameSpaces && !IsModuleTag(nt))
+            {                
+                ProcessNameSpaceReplace(ref nt);                               
             }
 
             return nt;
-        }
+        }        
 
         //Module tag must't be renamed. Otherwise after two repacks .dll will contain <Model> and <Guid><Model>
         //Assembly.Load() will load <Guid><Module> as type and crash
@@ -223,6 +228,20 @@ namespace ILRepacking
         private string GenerateName(TypeDefinition typeDefinition)
         {
             return "<" + Guid.NewGuid() + ">" + typeDefinition.Name;
+        }
+
+        private void ProcessNameSpaceReplace(ref TypeDefinition typeDefinition)
+        {
+            foreach (var namespacesToReplace in this._options.RenameNameSpacesMatches)
+            {
+                if (namespacesToReplace.Key.IsMatch(typeDefinition.FullName))
+                {
+                    typeDefinition.Namespace = namespacesToReplace.Key.Replace(typeDefinition.Namespace, namespacesToReplace.Value);
+                    typeDefinition.Name = namespacesToReplace.Key.Replace(typeDefinition.Name, namespacesToReplace.Value);
+
+                    break;
+                }
+            }
         }
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition

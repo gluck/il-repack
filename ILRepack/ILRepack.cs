@@ -324,6 +324,7 @@ namespace ILRepacking
                 {
                     signingStep,
                     new ReferencesRepackStep(Logger, this),
+                    new AddCustomResourceManagerStep(Logger, this,  _repackImporter, Options),
                     new TypesRepackStep(Logger, this, _repackImporter, Options),
                     new ResourcesRepackStep(Logger, this, Options),
                     new AttributesRepackStep(Logger, this, _repackImporter, Options),

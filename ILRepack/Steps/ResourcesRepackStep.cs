@@ -65,6 +65,11 @@ namespace ILRepacking.Steps
                 new GenericResourceProcessor(_repackContext)
             };
 
+            var embeddedResourceProcessors = new List<IEmbeddedResourceProcessor>
+            {
+                new NameSpaceRenameProcessor(_logger, _repackContext, _options)
+            };
+
             var primaryAssemblyProcessors =
                 new[] { bamlResourcePatcher }.Union(commonProcessors).ToList();
             var otherAssemblyProcessors =
@@ -76,7 +81,7 @@ namespace ILRepacking.Steps
             foreach (var assembly in assembliesList)
             {
                 bool isPrimaryAssembly = assembly == _repackContext.PrimaryAssemblyDefinition;
-                var assemblyProcessors = isPrimaryAssembly ? primaryAssemblyProcessors : otherAssemblyProcessors;
+                var assemblyProcessors = isPrimaryAssembly ? primaryAssemblyProcessors : otherAssemblyProcessors;                    
 
                 foreach (var resource in assembly.Modules.SelectMany(x => x.Resources))
                 {
@@ -130,8 +135,12 @@ namespace ILRepacking.Steps
                                         if (shouldWriteCollectedBamlStreams)
                                             areCollectedStreamsWritten = true;
 
-                                        newResource = FixResxResource(assembly, er, assemblyProcessors,
-                                            shouldWriteCollectedBamlStreams ? bamlStreamCollector : null);
+                                        if (shouldWriteCollectedBamlStreams && !embeddedResourceProcessors.Contains(bamlStreamCollector))
+                                        {
+                                            embeddedResourceProcessors.Add(bamlStreamCollector);
+                                        }
+
+                                        newResource = FixResxResource(assembly, er, assemblyProcessors, embeddedResourceProcessors);
                                     }
                                     break;
                             }
@@ -252,7 +261,7 @@ namespace ILRepacking.Steps
             AssemblyDefinition containingAssembly,
             EmbeddedResource er,
             List<IResProcessor> resourcePrcessors,
-            IEmbeddedResourceProcessor embeddedResourceProcessor)
+            List<IEmbeddedResourceProcessor> embeddedResourceProcessors)
         {
             MemoryStream stream = (MemoryStream)er.GetResourceStream();
             var output = new MemoryStream((int)stream.Length);
@@ -271,7 +280,10 @@ namespace ILRepacking.Steps
             }
 
             // do a final processing, if any, on the embeddedResource itself
-            embeddedResourceProcessor?.Process(er, rw);
+            foreach (var processor in embeddedResourceProcessors)
+            {
+                processor?.Process(er, rw);
+            }
 
             rw.Generate();
             output.Position = 0;

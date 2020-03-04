@@ -104,6 +104,7 @@
     <Compile Include="RepackAssemblyResolver.cs" />
     <Compile Include="ResReader.cs" />
     <Compile Include="SerReader.cs" />
+    <Compile Include="Steps\AddCustomResourceManagerStep.cs" />
     <Compile Include="Steps\AttributesRepackStep.cs" />
     <Compile Include="Steps\IRepackStep.cs" />
     <Compile Include="Steps\ReferencesFixStep.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="Steps\ResourceProcessing\GenericResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IEmbeddedResourceProcessor.cs" />
     <Compile Include="Steps\ResourceProcessing\IResProcessor.cs" />
+    <Compile Include="Steps\ResourceProcessing\NameSpaceRenameProcessor.cs" />
     <Compile Include="Steps\ResourcesRepackStep.cs" />
     <Compile Include="Steps\ResourceProcessing\StringResourceProcessor.cs" />
     <Compile Include="Steps\SigningStep.cs" />
