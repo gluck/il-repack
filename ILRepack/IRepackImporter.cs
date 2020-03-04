@@ -29,7 +29,7 @@ namespace ILRepacking
 
         MethodReference Import(MethodReference reference, IGenericParameterProvider context);
 
-        TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize);
+        TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize, bool rename);
 
         void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module);
     }

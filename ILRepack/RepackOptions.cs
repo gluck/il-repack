@@ -50,6 +50,36 @@ namespace ILRepacking
             }
         }
 
+        public string RenameNameSpacesFile
+        {
+            get { return renameNameSpacesFile; }
+            set
+            {
+                renameNameSpacesFile = value;
+                RenameNameSpacesMatches.Clear();
+                if (!string.IsNullOrEmpty(renameNameSpacesFile))
+                {
+                    string[] lines = file.ReadAllLines(renameNameSpacesFile);
+
+                    for (int i = 0; i < lines.Count(); i++)
+                    {
+                        if (lines[i].Count(c => c.Equals('\t')) == 1)
+                        {
+                            var linesplit = lines[i].Split('\t');
+
+                            RenameNameSpacesMatches.Add(new Regex(linesplit[0].Trim()), linesplit[1].Trim());
+                        }
+                        else
+                        {
+                            throw new Exception($"Error in file {renameNameSpacesFile} at line {i}. Tab (\\t) char was not found or more than one was found.");
+                        }
+                    }                       
+                }
+            }
+        }
+
+        public bool UseCustomResourceManager { get; set; }
+
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
         public bool Internalize { get; set; }
@@ -88,6 +118,16 @@ namespace ILRepacking
         {
             get { return excludeInternalizeMatches; }
         }
+
+        /// <summary>
+        /// If switch /renamenamespaces is used, any type which matches a 
+        /// regular expression will be renamed to the target value of that match.
+        /// </summary>
+        public Dictionary<Regex, string> RenameNameSpacesMatches
+        {
+            get { return renameNameSpacesMatches; }
+        }
+
         public Hashtable AllowedDuplicateTypes
         {
             get { return allowedDuplicateTypes; }
@@ -100,12 +140,16 @@ namespace ILRepacking
         public string RepackDropAttribute { get; set; }
         public bool RenameInternalized { get; set; }
 
+        public bool RenameNameSpaces { get; set; }
+
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
         private readonly List<string> allowedDuplicateNameSpaces = new List<string>();
         private readonly List<Regex> excludeInternalizeMatches = new List<Regex>();
+        private readonly Dictionary<Regex, string> renameNameSpacesMatches = new Dictionary<Regex, string>();
         private readonly ICommandLine cmd;
         private readonly IFile file;
         private string excludeFile;
+        private string renameNameSpacesFile;
 
         private void AllowDuplicateType(string typeName)
         {
@@ -168,6 +212,15 @@ namespace ILRepacking
             }
 
             RenameInternalized = cmd.Modifier("renameinternalized");
+            
+            RenameNameSpaces = cmd.HasOption("renamenamespaces");
+            if (RenameNameSpaces)
+            {
+                // this file shall contain one regex per line to compare agains FullName of types NOT to internalize
+                RenameNameSpacesFile = cmd.Option("renamenamespaces");
+            }
+
+            UseCustomResourceManager = cmd.Modifier("usecustomresourcemanager");
             KeyFile = cmd.Option("keyfile");
             KeyContainer = cmd.Option("keycontainer");
             Log = cmd.HasOption("log");

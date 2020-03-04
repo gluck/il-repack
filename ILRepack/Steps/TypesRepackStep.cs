@@ -64,13 +64,13 @@ namespace ILRepacking.Steps
             foreach (var r in _repackContext.PrimaryAssemblyDefinition.Modules.SelectMany(x => x.Types))
             {
                 _logger.Verbose($"- Importing {r} from {r.Module}");
-                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, false);
+                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, false, ShouldRename(r.FullName));
             }
 
             foreach (var r in _repackContext.OtherAssemblies.SelectMany(x => x.Modules).SelectMany(m => m.Types))
             {
                 _logger.Verbose($"- Importing {r} from {r.Module}");
-                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
+                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName), ShouldRename(r.FullName));
             }
         }
 
@@ -139,6 +139,22 @@ namespace ILRepacking.Steps
                     return false;
 
             return true;
+        }
+
+        private bool ShouldRename(string typeFullName)
+        {
+            if (!_repackOptions.RenameNameSpaces)
+                return false;
+
+            if (_repackOptions.RenameNameSpacesMatches.Count == 0)
+                return true;
+
+            string withSquareBrackets = "[" + typeFullName + "]";
+            foreach (Regex r in _repackOptions.RenameNameSpacesMatches.Keys)
+                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
+                    return true;
+
+            return false;
         }
 
         private TypeReference CreateReference(ExportedType type)
