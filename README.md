@@ -43,6 +43,8 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /internalize[:<excludefile>]  sets all types but the ones from the first assembly 'internal'. <excludefile> contains one regex per
                                  line to compare against FullName of types NOT to internalize.
  - /renameInternalized  rename all internalized types
+ - /usecustomresourcemanager  injects a custom resource manager that allows for loading resources from merged satellite assemblies directly from the output assembly. This fallbacks to the original resource manager behavior if no resources are found.
+ - /renameNameSpaces:<namespacestorenamefile> Renames all types (FullName) that match the regular expression by the specified value. The file <namespacestorenamefile> contains one regex per line followed by the new namespace value. Regex and new value must be separated by a tab char ['\t']. Sample line: ^(Microsoft)    MicroSft
  - /delaysign           sets the key, but don't sign the assembly
  - /usefullpublickeyforreferences - NOT IMPLEMENTED
  - /align               - NOT IMPLEMENTED
