@@ -139,7 +139,7 @@ namespace ILRepacking
                         throw new InvalidOperationException(
                             "ILRepack does not support merging non-.NET libraries (e.g.: native libraries)", e);
                     }
-                    Logger.Info("Failed to load debug information for " + assembly);
+                    Logger.Warn("Failed to load debug information for " + assembly);
                 }
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
