@@ -107,7 +107,7 @@ namespace ILRepacking
 
         private AssemblyDefinitionContainer ReadInputAssembly(string assembly, bool isPrimary)
         {
-            Logger.Info("Adding assembly for merge: " + assembly);
+            Logger.Verbose("Adding assembly for merge: " + assembly);
             try
             {
                 ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver };
@@ -214,7 +214,7 @@ namespace ILRepacking
                 .FirstOrDefault(x => Path.GetFileName(x).StartsWith(platformDir) || Path.GetFileName(x).StartsWith($"v{platformDir}"));
             if (targetPlatformDirectory == null)
                 throw new ArgumentException($"Failed to find target platform '{Options.TargetPlatformVersion}' in '{platformBasePath}'");
-            Logger.Info($"Target platform directory resolved to {targetPlatformDirectory}");
+            Logger.Verbose($"Target platform directory resolved to {targetPlatformDirectory}");
             return targetPlatformDirectory;
         }
 
@@ -244,9 +244,9 @@ namespace ILRepacking
         {
             var assemblies = GetRepackAssemblyNames(typeof(ILRepack));
             var ilRepack = GetRepackAssemblyName(assemblies, "ILRepack", typeof(ILRepack));
-            Logger.Info($"IL Repack - Version {ilRepack.Version.ToString(3)}");
+            Logger.Verbose($"IL Repack - Version {ilRepack.Version.ToString(3)}");
             Logger.Verbose($"Runtime: {typeof(ILRepack).Assembly.FullName}");
-            Logger.Info(Options.ToCommandLine());
+            Logger.Verbose(Options.ToCommandLine());
         }
 
         /// <summary>
@@ -346,7 +346,7 @@ namespace ILRepacking
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
                 if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
                 {
-                    Logger.Info("Output directory does not exist. Creating output directory: " + outputDir);
+                    Logger.Verbose("Output directory does not exist. Creating output directory: " + outputDir);
                     Directory.CreateDirectory(outputDir);
                 }
 
@@ -354,13 +354,13 @@ namespace ILRepacking
 
                 sourceServerDataStep.Write();
 
-                Logger.Info("Writing output assembly to disk");
+                Logger.Verbose("Writing output assembly to disk");
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
                 if (isUnixEnvironment)
                 {
                     Stat stat;
-                    Logger.Info("Copying permissions from " + PrimaryAssemblyFile);
+                    Logger.Verbose("Copying permissions from " + PrimaryAssemblyFile);
                     Syscall.stat(PrimaryAssemblyFile, out stat);
                     Syscall.chmod(Options.OutputFile, stat.st_mode);
                 }
@@ -373,7 +373,7 @@ namespace ILRepacking
                     DocumentationMerger.Process(this);
             }
 
-            Logger.Info($"Finished in {timer.Elapsed}");
+            Logger.Verbose($"Finished in {timer.Elapsed}");
         }
 
         private ISourceServerDataRepackStep GetSourceServerDataStep(bool isUnixEnvironment)

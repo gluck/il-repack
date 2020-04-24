@@ -32,7 +32,6 @@ namespace ILRepack.Tests
             logger.Error(message);
             logger.Warn(message);
             logger.Verbose(message);
-            logger.Info(message);
         }
     }
 }

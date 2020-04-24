@@ -143,21 +143,21 @@ namespace ILRepacking
             }
             else if (DuplicateTypeAllowed(type))
             {
-                _logger.Info("Merging " + type);
+                _logger.Verbose("Merging " + type);
             }
             else if (!type.IsPublic || internalize)
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt);
-                _logger.Info("Renaming " + nt.FullName + " into " + other);
+                _logger.Verbose("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
             else if (_options.UnionMerge)
             {
-                _logger.Info("Merging " + type);
+                _logger.Verbose("Merging " + type);
             }
             else
             {
