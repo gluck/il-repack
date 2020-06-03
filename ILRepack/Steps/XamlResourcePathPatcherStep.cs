@@ -129,13 +129,13 @@ namespace ILRepacking.Steps
             string patchedPath = path;
             if (primaryAssembly == sourceAssembly)
             {
-                if (otherAssemblies.Any(assembly => TryPatchPath(path, primaryAssembly, assembly, true, out patchedPath)))
+                if (otherAssemblies.Any(assembly => TryPatchPath(path, primaryAssembly, assembly, otherAssemblies, true, out patchedPath)))
                     return patchedPath;
 
                 return path;
             }
 
-            if (TryPatchPath(path, primaryAssembly, sourceAssembly, false, out patchedPath))
+            if (TryPatchPath(path, primaryAssembly, sourceAssembly, otherAssemblies, false, out patchedPath))
                 return patchedPath;
 
             if (!path.EndsWith(".xaml"))
@@ -148,7 +148,12 @@ namespace ILRepacking.Steps
         }
 
         private static bool TryPatchPath(
-            string path, AssemblyDefinition primaryAssembly, AssemblyDefinition referenceAssembly, bool isPrimarySameAsSource, out string patchedPath)
+            string path, 
+            AssemblyDefinition primaryAssembly,
+            AssemblyDefinition referenceAssembly,
+            IList<AssemblyDefinition> otherAssemblies, 
+            bool isPrimarySameAsSource,
+            out string patchedPath)
         {
             // get rid of potential versions in the path
             // Starting with a new .NET MSBuild version, in case the project is built
@@ -169,7 +174,14 @@ namespace ILRepacking.Steps
                 {
                     if (m.Groups.Count == 2)
                     {
-                        return GetAssemblyPath(primaryAssembly) + "/" + m.Groups[1].Value;
+                        if (otherAssemblies.Any(a => a.Name.Name == m.Groups[1].Value))
+                        {
+                            return GetAssemblyPath(primaryAssembly) + "/" + m.Groups[1].Value;
+                        }
+                        else
+                        {
+                            return m.Value;
+                        }
                     }
                     else
                     {
