@@ -27,6 +27,7 @@ namespace ILRepacking.Steps
         private readonly ILogger _logger;
         private readonly IRepackContext _repackContext;
         private static readonly Regex VersionRegex = new Regex("v(.?\\d)+;", RegexOptions.IgnoreCase);
+        private static readonly Regex AssemblyRegex = new Regex("/([^/]*?);component", RegexOptions.IgnoreCase);
 
         public XamlResourcePathPatcherStep(ILogger logger, IRepackContext repackContext)
         {
@@ -128,13 +129,13 @@ namespace ILRepacking.Steps
             string patchedPath = path;
             if (primaryAssembly == sourceAssembly)
             {
-                if (otherAssemblies.Any(assembly => TryPatchPath(path, primaryAssembly, assembly, out patchedPath)))
+                if (otherAssemblies.Any(assembly => TryPatchPath(path, primaryAssembly, assembly, true, out patchedPath)))
                     return patchedPath;
 
                 return path;
             }
 
-            if (TryPatchPath(path, primaryAssembly, sourceAssembly, out patchedPath))
+            if (TryPatchPath(path, primaryAssembly, sourceAssembly, false, out patchedPath))
                 return patchedPath;
 
             if (!path.EndsWith(".xaml"))
@@ -147,18 +148,35 @@ namespace ILRepacking.Steps
         }
 
         private static bool TryPatchPath(
-            string path, AssemblyDefinition primaryAssembly, AssemblyDefinition referenceAssembly, out string patchedPath)
+            string path, AssemblyDefinition primaryAssembly, AssemblyDefinition referenceAssembly, bool isPrimarySameAsSource, out string patchedPath)
         {
             // get rid of potential versions in the path
             // Starting with a new .NET MSBuild version, in case the project is built
             // via a new-format .csproj, the version is appended
             path = VersionRegex.Replace(path, string.Empty);
 
-            string referenceAssemblyPath = GetAssemblyPath(referenceAssembly);
-            string newPath = GetAssemblyPath(primaryAssembly) + "/" + referenceAssembly.Name.Name;
-
             // /library;component/file.xaml -> /primary;component/library/file.xaml
-            patchedPath = path.Replace(referenceAssemblyPath, newPath);
+            if (isPrimarySameAsSource)
+            {
+                string referenceAssemblyPath = GetAssemblyPath(referenceAssembly);
+                string newPath = GetAssemblyPath(primaryAssembly) + "/" + referenceAssembly.Name.Name;
+
+                patchedPath = path.Replace(referenceAssemblyPath, newPath);
+            }
+            else
+            {
+                patchedPath = AssemblyRegex.Replace(path, m =>
+                {
+                    if (m.Groups.Count == 2)
+                    {
+                        return GetAssemblyPath(primaryAssembly) + "/" + m.Groups[1].Value;
+                    }
+                    else
+                    {
+                        return m.Value;
+                    }
+                });
+            }
 
             // if they're modified, we're good!
             return !ReferenceEquals(patchedPath, path);
