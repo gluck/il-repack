@@ -59,7 +59,9 @@ namespace ILRepacking.Steps
             }
             foreach (var r in targetAssemblyMainModule.Types)
             {
-                if(!_repackContext.PrimaryAssemblyMainModule.Types.Any(x=> x.FullName == r.FullName))
+                //Visibility should not be changed for Methods of Types that are on the Primary Assembly,
+                //when internalize is true
+                if(!_options.Internalize || !_repackContext.PrimaryAssemblyMainModule.Types.Any(x=> x.FullName == r.FullName))
                     fixator.FixMethodVisibility(r);
             }
             fixator.FixReferences(_repackContext.TargetAssemblyDefinition.MainModule.ExportedTypes);
