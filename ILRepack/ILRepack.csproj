@@ -29,33 +29,6 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile />
-
-    <IsPackable>true</IsPackable>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
-    <LangVersion>7.3</LangVersion>
-    <PackageOutputPath>c:\nupkgs</PackageOutputPath>
-    <!-- nuspec -->
-    <PackageId>ILRepack.NETStandard</PackageId>
-    <Title>ILRepack - Open-source alternative to ILMerge</Title>
-    <Description>
-        ILRepack is meant at replacing ILMerge / Mono.Merge.
-        The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
-        ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly.
-    </Description>
-    <Platforms>AnyCPU</Platforms>
-    <Authors>Francois Valdy</Authors>
-    <Owners>Francois Valdy</Owners>
-    <Product>ILRepack</Product>
-    <Copyright>Copyright Francois Valdy 2011-2015</Copyright>
-    <NeutralLanguage>en-US</NeutralLanguage>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/peters/il-repack</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/peters/il-repack.git</RepositoryUrl>
-    <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md#v$(VersionPrefix.Replace('.','')) for release notes.</PackageReleaseNotes>
-    <RepositoryType>git</RepositoryType>
-    <!-- /nuspec -->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
