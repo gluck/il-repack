@@ -55,6 +55,8 @@ namespace ILRepack.IntegrationTests.NuGet
  
         public static IObservable<Tuple<string, Func<Stream>>> GetNupkgContentAsync(Package package)
         {
+            // can't download from  nuget.org without Tls12 anymore, net472 is needed for Tls12
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var o = CreateDownloadObservable(new Uri($"http://nuget.org/api/v2/package/{package.Name}/{package.Version}"));
             return o.SelectMany(input => {
                 return Observable.Create<Tuple<ZipFile, ZipEntry>>(observer => {
