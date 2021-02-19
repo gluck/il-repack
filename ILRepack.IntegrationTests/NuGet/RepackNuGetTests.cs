@@ -170,7 +170,7 @@ namespace ILRepack.IntegrationTests.NuGet
                                   RedirectStandardOutput = true,
                                   FileName = Path.Combine(
                                       Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                          @".nuget\packages\SourceLink.1.1.0\tools\SourceLink.exe"),
+                                          @".nuget\packages\SourceLink\1.1.0\tools\SourceLink.exe"),
                                   Arguments = "srctoolx --pdb " + pdbName
                               };
             using (var sourceLinkProcess = Process.Start(processInfo))
