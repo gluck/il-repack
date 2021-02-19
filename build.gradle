@@ -53,7 +53,7 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
 
 repack {
     doLast {
-	    def isMono = !OperatingSystem.current().windows
+	def isMono = !OperatingSystem.current().windows
         def outputPath = msbuild.mainProject.getProjectPropertyPath('OutputPath')
         def repackExe = new File(outputPath, 'ILRepack.exe')
         def executable = isMono ? ['mono', repackExe] : [repackExe]
