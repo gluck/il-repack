@@ -1,3 +1,5 @@
 language: csharp
+dotnet: 3.1.200
+
 script:
   - ./gradlew -is --console plain nunit repack 
