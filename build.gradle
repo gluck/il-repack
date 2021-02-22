@@ -1,11 +1,11 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-  id 'com.ullink.msbuild' version '3.6'
-  id 'com.ullink.nuget' version '2.18'
-  id 'com.ullink.nunit' version '1.12'
+  id 'com.ullink.msbuild' version '3.12'
+  id 'com.ullink.nuget' version '2.22'
+  id 'com.ullink.nunit' version '2.1'
   id 'com.ullink.opencover' version '1.10'
-  id 'net.researchgate.release' version '2.3.4'
+  id 'net.researchgate.release' version '2.8.1'
 }
 
 archivesBaseName = 'ILRepack'
@@ -25,12 +25,14 @@ msbuild {
 }
 
 nunit {
+    nunitVersion = '2.6.4'
     exclude = 'LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunit.dependsOn msbuild
 
-task nunitLongRunning(type: nunit.class) {
+task nunitLongRunning(type: com.ullink.gradle.nunit.NUnit) {
+    nunitVersion = '2.6.4'
     include = 'LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
@@ -49,19 +51,21 @@ task repack(dependsOn: [msbuild, nunitLongRunning]) {
     outputs.files([ext.repacked, ext.repackedLib, ext.repacked.path.replace('.exe','.pdb')])
 }
 
-repack << {
-    def isMono = !OperatingSystem.current().windows
-    def outputPath = msbuild.mainProject.getProjectPropertyPath('OutputPath')
-    def repackExe = new File(outputPath, 'ILRepack.exe')
-    def executable = isMono ? ['mono', repackExe] : [repackExe]
-    exec {
-        workingDir = outputPath
-        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
-    }
-    exec {
-        workingDir = outputPath
-        commandLine = [*executable, '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
-    }
+repack {
+    doLast {
+	def isMono = !OperatingSystem.current().windows
+        def outputPath = msbuild.mainProject.getProjectPropertyPath('OutputPath')
+        def repackExe = new File(outputPath, 'ILRepack.exe')
+        def executable = isMono ? ['mono', repackExe] : [repackExe]
+        exec {
+            workingDir = outputPath
+            commandLine = [*executable, '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+        }
+        exec {
+            workingDir = outputPath
+            commandLine = [*executable, '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
+        }
+	}
 }
 
 def commonNuspecMetadata = [
