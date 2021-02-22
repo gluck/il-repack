@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using System.Linq;
 using Mono.Cecil;
 
 namespace ILRepacking.Steps
@@ -58,7 +59,10 @@ namespace ILRepacking.Steps
             }
             foreach (var r in targetAssemblyMainModule.Types)
             {
-                fixator.FixMethodVisibility(r);
+                //Visibility should not be changed for Methods of Types that are on the Primary Assembly,
+                //when internalize is true
+                if(!_options.Internalize || !_repackContext.PrimaryAssemblyMainModule.Types.Any(x=> x.FullName == r.FullName))
+                    fixator.FixMethodVisibility(r);
             }
             fixator.FixReferences(_repackContext.TargetAssemblyDefinition.MainModule.ExportedTypes);
             fixator.FixReferences(_repackContext.TargetAssemblyDefinition.CustomAttributes);
