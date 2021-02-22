@@ -92,21 +92,38 @@ namespace ILRepacking.Steps.ResourceProcessing
             }
         }
 
+        private void ProcessRecord(PIMappingRecord record, AssemblyDefinition containingAssembly)
+        {
+            if (FixXmlNamespace(record.XmlNamespace, out string fixedNamespace))
+            {
+                record.XmlNamespace = fixedNamespace;
+            }
+        }
+
         private void ProcessRecord(XmlnsPropertyRecord record, AssemblyDefinition containingAssembly)
         {
-            string xmlNamespace = record.XmlNamespace;
+            if (FixXmlNamespace(record.XmlNamespace, out string fixedNamespace))
+            {
+                record.XmlNamespace = fixedNamespace;
+            }
+        }
+
+        private bool FixXmlNamespace(string xmlNamespace, out string fixedNamespace)
+        {
+            fixedNamespace = xmlNamespace;
             const string AssemblyDef = "assembly=";
             int assemblyStart = xmlNamespace.IndexOf(AssemblyDef, StringComparison.Ordinal);
             if (assemblyStart == -1)
-                return;
+                return false;
 
             // Make sure it is one of the merged assemblies
             string xmlAssembly = xmlNamespace.Substring(assemblyStart + AssemblyDef.Length);
             if (_mainAssembly.Name.Name != xmlAssembly && _otherAssemblies.All(x => x.Name.Name != xmlAssembly))
-                return;
+                return false;
 
             string xmlNsWithoutAssembly = xmlNamespace.Substring(0, assemblyStart);
-            record.XmlNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
+            fixedNamespace = string.Format("{0}{1}{2}", xmlNsWithoutAssembly, AssemblyDef, _mainAssembly.Name.Name);
+            return true;
         }
 
         private void ProcessRecord(TypeInfoRecord record, AssemblyDefinition containingAssembly)
