@@ -11,6 +11,11 @@ namespace ILRepack.IntegrationTests.NuGet
 {
     static class NuGetHelpers
     {
+        static NuGetHelpers()
+        {
+            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+        }
+
         private static IObservable<byte[]> CreateDownloadObservable(Uri uri)
         {
             return Observable.Create<byte[]>(o => {
@@ -30,7 +35,7 @@ namespace ILRepack.IntegrationTests.NuGet
                         result.OnCompleted();
                     } else {
                         if (ep.EventArgs.Error != null) {
-                            result.OnError(ep.EventArgs.Error);
+                            result.OnError(new Exception($"Failed to download from {uri}", ep.EventArgs.Error));
                         } else {
                             result.OnNext(ep.EventArgs.Result);
                             result.OnCompleted();
@@ -57,7 +62,7 @@ namespace ILRepack.IntegrationTests.NuGet
         {
             // can't download from  nuget.org without Tls12 anymore, net472 is needed for Tls12
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            var o = CreateDownloadObservable(new Uri($"http://nuget.org/api/v2/package/{package.Name}/{package.Version}"));
+            var o = CreateDownloadObservable(new Uri($"https://www.nuget.org/api/v2/package/{package.Name}/{package.Version}"));
             return o.SelectMany(input => {
                 return Observable.Create<Tuple<ZipFile, ZipEntry>>(observer => {
                     var z = new ZipFile(new MemoryStream(input)) { IsStreamOwner = true };
