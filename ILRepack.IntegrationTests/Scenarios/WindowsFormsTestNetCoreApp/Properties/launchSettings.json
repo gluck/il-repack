@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "WindowsFormsTestNetApp": {
+      "commandName": "Project"
+    }
+  }
+}

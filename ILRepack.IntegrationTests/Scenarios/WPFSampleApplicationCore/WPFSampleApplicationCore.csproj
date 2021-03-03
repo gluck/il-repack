@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>test_sign_key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClassLibraryCore\ClassLibraryCore.csproj" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="mkdir $(TargetDir)\merged&#xD;&#xA;xcopy /Y $(TargetDir)WPFSampleApplicationCore.exe $(TargetDir)\merged\&#xD;&#xA;xcopy /Y $(TargetDir)WPFSampleApplicationCore.runtimeconfig.json $(TargetDir)\merged\&#xD;&#xA;$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /keyfile:&quot;$(ProjectDir)test_sign_key.snk&quot; /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibraryCore.dll&#xD;&#xA;&#xD;&#xA;set SAVED_ERROR_LEVEL=%25ERRORLEVEL%25&#xD;&#xA;REM Ensure re-build is done every time to use latest built ILRepack version&#xD;&#xA;del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*&#xD;&#xA;exit /b %25SAVED_ERROR_LEVEL%25&#xD;&#xA;" />
+  </Target>
+
+</Project>
