@@ -53,6 +53,18 @@ namespace ILRepack.IntegrationTests
             RunScenario("DotNet462NetStandard2");
         }
 
+        [Test]
+        public void GivenNetCore3WinFormsAppUsesImageResources_MergedCore3WinFormsApplicationRunsSuccessfully()
+        {
+            RunScenario("WindowsFormsTestNetCoreApp");
+        }
+
+        [Test]
+        public void GivenNetCore3WpfAppUsesImageResources_MergedCore3WpfApplicationRunsSuccessfully()
+        {
+            RunScenario("WPFSampleApplicationCore");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);

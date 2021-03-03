@@ -153,7 +153,23 @@ namespace ILRepack.Tests.Utils
 
         private List<BamlRecord> GetRelevantRecords(BamlDocument document)
         {
-            return document.Where(node => !(node is LineNumberAndPositionRecord || node is LinePositionRecord)).ToList();
+            var list = document.Where(node => !(node is LineNumberAndPositionRecord || node is LinePositionRecord)).ToList();
+            return OrderAssemblyInfoRecordsByName(list);
+        }
+
+        private List<BamlRecord> OrderAssemblyInfoRecordsByName(List<BamlRecord> bamlRecords)
+        {
+            var assemblyRecords = bamlRecords
+                .OfType<AssemblyInfoRecord>()
+                .OrderBy(x => x.AssemblyFullName)
+                .ToList();
+
+            bamlRecords = bamlRecords
+                .Except(assemblyRecords)
+                .Concat(assemblyRecords)
+                .ToList();
+
+            return bamlRecords;
         }
 
         public override void WriteActualValueTo(MessageWriter writer)

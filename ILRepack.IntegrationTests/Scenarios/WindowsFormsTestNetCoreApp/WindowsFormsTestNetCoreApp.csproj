@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PackageId>WindowsFormsTestNetCoreApp</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClassLibrary\ClassLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="mkdir $(TargetDir)\merged&#xD;&#xA;xcopy /Y &quot;$(TargetDir)\WindowsFormsTestNetCoreApp.runtimeconfig.json&quot; $(TargetDir)\merged\&#xD;&#xA;xcopy /Y &quot;$(TargetDir)\WindowsFormsTestNetCoreApp.exe&quot; $(TargetDir)\merged\&#xD;&#xA;$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)ClassLibrary.dll&#xD;&#xA; &#xD;&#xA;set SAVED_ERROR_LEVEL=%25ERRORLEVEL%25&#xD;&#xA;REM Ensure re-build is done every time to use latest built ILRepack version&#xD;&#xA;del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*&#xD;&#xA;exit /b %25SAVED_ERROR_LEVEL%25&#xD;&#xA;&#xD;&#xA;" />
+  </Target>
+
+</Project>
