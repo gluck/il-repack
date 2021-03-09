@@ -200,12 +200,15 @@ namespace ILRepack.IntegrationTests.NuGet
         void VerifyTest(IEnumerable<string> mergedLibraries)
         {
             if (XPlat.IsMono) return;
-            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToEnumerable();
+            var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(TestContext.WriteLine).ToEnumerable()
+                .ToList();
             if (errors.Any())
             {
-                var origErrors = mergedLibraries.SelectMany(it => PeverifyHelper.Peverify(tempDirectory, it).ToEnumerable());
-                if (errors.Count() != origErrors.Count())
-                    Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
+                var origErrors = mergedLibraries.SelectMany(it => PeverifyHelper.Peverify(tempDirectory, it).ToEnumerable()).Select(e => e.Replace
+                ("foo.dll", "test.dll")).ToList();
+                var newErrors = errors.Except(origErrors);
+                if (newErrors.Any())
+                    Assert.Fail($"{newErrors.Count()} new errors in peverify, check logs for details");
             }
         }
 

@@ -8,7 +8,7 @@ namespace ILRepack.IntegrationTests.NuGet
 {
     public static class Data
     {
-        private static string[] supportedFwks = { @"lib", @"lib/20", @"lib/net20", @"lib/net35", @"lib/net40", @"lib/net4", @"lib/net45" };
+        private static string[] supportedFwks = { @"lib", @"lib/20", @"lib/net20", @"lib/net35", @"lib/net40", @"lib/net4", @"lib/net45", @"lib/net461", @"lib/net462",@"lib/net471", @"lib/net472" };
         private static readonly IEnumerable<Package> Packages_Win = new[] {
             Package.From("MahApps.Metro", "1.1.2"),
             // Bcl.Async references 4.5, so it only repacks on Windows when 4.5 is installed
@@ -28,6 +28,7 @@ namespace ILRepack.IntegrationTests.NuGet
             Package.From("Newtonsoft.Json", "6.0.8"),
             // Cf #124, NHibernate roundtrip no longer pass the PEVerify test
             //Package.From("NHibernate", "4.0.3.4000"),
+            Package.From("Npgsql", "4.1.5"),
             Package.From("Ninject", "3.2.2"),
             Package.From("RestSharp", "105.0.1"),
             Package.From("Rx-Core", "2.2.5"),
