@@ -1,7 +1,6 @@
 ﻿using ILRepacking;
 using Mono.Cecil;
 using NUnit.Framework;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -25,11 +24,7 @@ namespace ILRepack.IntegrationTests.NuGet
 
         public static void DoRepackForCmd(params string[] args)
         {
-            DoRepackForCmd((IEnumerable<string>)args);
-        }
-
-        public static void DoRepackForCmd(IEnumerable<string> args)
-        {
+            TestContext.WriteLine($"Executing ILRepack with args: {string.Join(" ", args)}");
             var repackOptions = new RepackOptions(args.Concat(new[] { "/log" }));
             var repack = new ILRepacking.ILRepack(repackOptions);
             repack.Repack();

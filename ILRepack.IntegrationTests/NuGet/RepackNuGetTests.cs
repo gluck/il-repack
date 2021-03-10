@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.PlatformServices;
+using System.Reflection;
 using ILRepacking.Steps.SourceServerData;
 
 namespace ILRepack.IntegrationTests.NuGet
@@ -88,12 +89,14 @@ namespace ILRepack.IntegrationTests.NuGet
         [Platform(Include = "win")]
         public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
         {
+            var assemblyLocation = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+            var snkPath = Path.Combine(assemblyLocation, "../../../ILRepack/ILRepack.snk");
             var platform = Platform.From(
                 Package.From("reactiveui-core", "6.5.0")
                     .WithArtifact(@"lib\net45\ReactiveUI.dll"),
                 Package.From("Splat", "1.6.2")
                     .WithArtifact(@"lib\net45\Splat.dll"))
-                .WithExtraArgs("/keyfile:../../../ILRepack/ILRepack.snk");
+                .WithExtraArgs($"/keyfile:{snkPath}");
             platform.Packages.ToObservable()
                 .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
                 .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
@@ -105,7 +108,6 @@ namespace ILRepack.IntegrationTests.NuGet
             Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
         }
 
-
         [Test]
         [Platform(Include = "win")]
         public void VerifiesMergedPdbUnchangedSourceIndexationForTfsIndexation()
@@ -116,13 +118,14 @@ namespace ILRepack.IntegrationTests.NuGet
             var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
             platform.Packages.ToObservable()
                 .SelectMany(NuGetHelpers.GetNupkgContentAsync)
-                .Where(lib => new[] { LibName, PdbName }.Any(lib.Item1.EndsWith))
                 .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
+                // Only filter after we've saved all the dependencies
+                .Where(lib => new[] { LibName, PdbName }.Any(lib.Item1.EndsWith))
                 .ToArray() // to download PDB file as well
                 .SelectMany(_ => _)
                 .Select(lib => Path.GetFileName(lib.Item1))
                 .Where(path => path.EndsWith("dll"))
-                .Do(path => RepackPlatform(platform, new List<string> { path }))
+                .Do(path => RepackPlatform(platform, new List<string> { path, Tmp("FSharp.Core.dll") }))
                 .Single();
 
             var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
@@ -185,10 +188,15 @@ namespace ILRepack.IntegrationTests.NuGet
 
         void RepackPlatform(Platform platform, IList<string> list)
         {
-            Assert.IsTrue(list.Count >= platform.Packages.Count(), 
+            Assert.IsTrue(list.Count >= platform.Packages.Count(),
                 "There should be at least the same number of .dlls as the number of packages");
-            Console.WriteLine("Merging {0}", string.Join(",",list));
-            TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
+            TestContext.WriteLine($"Repacking platform {platform} with {string.Join(",", list)}");
+            TestHelpers
+                .DoRepackForCmd(
+                    new[] { "/out:" + Tmp("test.dll"), "/lib:" + tempDirectory }
+                    .Concat(platform.Args)
+                    .Concat(list.Select(Tmp).OrderBy(x => x))
+                    .ToArray());
             Assert.IsTrue(File.Exists(Tmp("test.dll")));
         }
 

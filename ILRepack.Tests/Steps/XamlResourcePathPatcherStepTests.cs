@@ -10,7 +10,7 @@ namespace ILRepack.Tests.Steps
     [TestFixture]
     public class XamlResourcePathPatcherStepTests
     {
-        private IEnumerable GetReferencedAssemblyPatchPathTestData()
+        private static IEnumerable GetReferencedAssemblyPatchPathTestData()
         {
             return new[]
             {
@@ -53,7 +53,7 @@ namespace ILRepack.Tests.Steps
             Assert.AreEqual(expectedPatchedPath, actualPatchedPath);
         }
 
-        private IEnumerable GetMainAssemblyPatchPathTestData()
+        private static IEnumerable GetMainAssemblyPatchPathTestData()
         {
             return new[]
             {

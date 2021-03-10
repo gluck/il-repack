@@ -16,10 +16,9 @@ namespace ILRepack.Tests.Utils
     /// since we don't care about things like line information (at least for the
     /// current usage which generates a known set of records).
     /// </summary>
-    internal class BamlDocumentMatcher : Constraint
+    internal sealed class BamlDocumentMatcher : Constraint
     {
         private readonly BamlDocument _expectedDocument;
-        private object _actualValue, _expectedValue, _context;
 
         private readonly Dictionary<Type, List<string>> _propertiesToCheck = new Dictionary<Type, List<string>>
         {
@@ -38,28 +37,33 @@ namespace ILRepack.Tests.Utils
         public BamlDocumentMatcher(BamlDocument expectedDocument)
         {
             _expectedDocument = expectedDocument;
+            Description = "The two BamlDocuments match in their signature, version and records";
         }
 
-        public override bool Matches(object actual)
+        public override ConstraintResult ApplyTo<TActual>(TActual actual)
         {
-            var bamlDocument = (BamlDocument)actual;
-
-            if (!AreEqual(bamlDocument.Signature, _expectedDocument.Signature))
+            var bamlDocument = actual as BamlDocument;
+            if (bamlDocument == null)
             {
-                _context = "Document Signature";
-                return false;
+                return new ConstraintResult(this, actual, ConstraintStatus.Failure);
+            }
+
+            if (!Equals(bamlDocument.Signature, _expectedDocument.Signature))
+            {
+                return new ConstraintResult(this, actual, ConstraintStatus.Failure);
             }
 
             if (!HaveSameVersion("ReaderVersion", bamlDocument, _expectedDocument) ||
                 !HaveSameVersion("WriterVersion", bamlDocument, _expectedDocument) ||
                 !HaveSameVersion("UpdaterVersion", bamlDocument, _expectedDocument))
             {
-                return false;
+                return new ConstraintResult(this, actual, ConstraintStatus.Failure);
             }
 
-            return AreRecordsEquivalent(
+            var areRecordsEquivalent = AreRecordsEquivalent(
                 GetRelevantRecords(_expectedDocument),
                 GetRelevantRecords(bamlDocument));
+            return new ConstraintResult(this, actual, areRecordsEquivalent);
         }
 
         private bool HaveSameVersion(
@@ -68,28 +72,15 @@ namespace ILRepack.Tests.Utils
             var actualVersion = (BamlDocument.BamlVersion)actualDocument.GetPropertyValue(versionProperty);
             var expectedVersion = (BamlDocument.BamlVersion)expectedDocument.GetPropertyValue(versionProperty);
 
-            _context = versionProperty + ".Major";
-            if (!AreEqual(actualVersion.Major, actualVersion.Major))
-                return false;
-
-            _context = versionProperty + ".Minor";
-            return AreEqual(actualVersion.Minor, expectedVersion.Minor);
-        }
-
-        private bool AreEqual(object expected, object actual)
-        {
-            _expectedValue = expected;
-            _actualValue = actual;
-
-            return Equals(_expectedValue, _actualValue);
+            return actualVersion.Major == expectedVersion.Major &&
+                   actualVersion.Minor == expectedVersion.Minor;
         }
 
         private bool AreRecordsEquivalent(
             List<BamlRecord> expectedRecords, List<BamlRecord> actualRecords)
         {
-            if (!AreEqual(expectedRecords.Count, actualRecords.Count))
+            if (expectedRecords.Count != actualRecords.Count)
             {
-                _context = "total number of records";
                 return false;
             }
 
@@ -99,9 +90,8 @@ namespace ILRepack.Tests.Utils
 
         private bool AreEquivalent(BamlRecord expectedRecord, BamlRecord actualRecord)
         {
-            _context = actualRecord;
-            if (!AreEqual(expectedRecord.GetType(), actualRecord.GetType()) ||
-                !AreEqual(expectedRecord.Type, actualRecord.Type))
+            if (expectedRecord.GetType() != actualRecord.GetType() ||
+                expectedRecord.Type != actualRecord.Type)
                 return false;
 
             List<string> propertiesToCheck;
@@ -110,14 +100,12 @@ namespace ILRepack.Tests.Utils
 
             foreach (string propertyName in propertiesToCheck)
             {
-                _context = string.Format("Property '{0}' of '{1}'", propertyName, actualRecord);
+                var expectedValue = expectedRecord.GetPropertyValue(propertyName);
+                var actualValue = actualRecord.GetPropertyValue(propertyName);
 
-                _expectedValue = expectedRecord.GetPropertyValue(propertyName);
-                _actualValue = actualRecord.GetPropertyValue(propertyName);
-
-                if (!Equals(_expectedValue, _actualValue))
+                if (!Equals(expectedValue, actualValue))
                 {
-                    if (!Equals(_expectedValue as IEnumerable, _actualValue as IEnumerable))
+                    if (!Equals(expectedValue as IEnumerable, actualValue as IEnumerable))
                         return false;
                 }
             }
@@ -129,7 +117,7 @@ namespace ILRepack.Tests.Utils
         {
             foreach (var pair in _propertiesToCheck)
             {
-                Type type = pair.Key;
+                var type = pair.Key;
                 if (type.IsInstanceOfType(expectedRecord))
                 {
                     propertiesToCheck = pair.Value;
@@ -154,19 +142,6 @@ namespace ILRepack.Tests.Utils
         private List<BamlRecord> GetRelevantRecords(BamlDocument document)
         {
             return document.Where(node => !(node is LineNumberAndPositionRecord || node is LinePositionRecord)).ToList();
-        }
-
-        public override void WriteActualValueTo(MessageWriter writer)
-        {
-            writer.WriteActualValue(_actualValue);
-        }
-
-        public override void WriteDescriptionTo(MessageWriter writer)
-        {
-            writer.WriteExpectedValue(_expectedValue);
-
-            if (_context != null)
-                writer.WriteMessageLine("In " + _context);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using ILRepacking;
+﻿using System.IO;
+using ILRepacking;
 using NUnit.Framework;
 
 namespace ILRepack.Tests
@@ -26,13 +27,15 @@ namespace ILRepack.Tests
         public void GivenOutputFile__OpenFile_CloseFile_LogError__StreamIsOpened_StreamIsClosed_NoErrorIsThrown()
         {
             RepackLogger logger = new RepackLogger();
-            Assert.IsTrue(logger.Open("file.out"));
+            var fileOutput = "file.out";
+            Assert.IsTrue(logger.Open(fileOutput));
             logger.Close();
-            const string message = "Only written to the console. No erorr is thrown.";
+            const string message = "Only written to the console. No error is thrown.";
             logger.Error(message);
             logger.Warn(message);
             logger.Verbose(message);
             logger.Info(message);
+            File.Delete(fileOutput);
         }
     }
 }
