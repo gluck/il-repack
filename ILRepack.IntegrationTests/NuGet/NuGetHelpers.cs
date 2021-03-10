@@ -6,6 +6,7 @@ using System.Net;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using NUnit.Framework;
 
 namespace ILRepack.IntegrationTests.NuGet
 {
@@ -60,7 +61,9 @@ namespace ILRepack.IntegrationTests.NuGet
  
         public static IObservable<Tuple<string, Func<Stream>>> GetNupkgContentAsync(Package package)
         {
-            var o = CreateDownloadObservable(new Uri($"https://www.nuget.org/api/v2/package/{package.Name}/{package.Version}"));
+            var uriString = $"https://www.nuget.org/api/v2/package/{package.Name}/{package.Version}";
+            TestContext.WriteLine($"Downloading package {uriString}...");
+            var o = CreateDownloadObservable(new Uri(uriString));
             return o.SelectMany(input => {
                 return Observable.Create<Tuple<ZipFile, ZipEntry>>(observer => {
                     var z = new ZipFile(new MemoryStream(input)) { IsStreamOwner = true };

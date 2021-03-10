@@ -25,15 +25,15 @@ msbuild {
 }
 
 nunit {
-    nunitVersion = '2.6.4'
-    exclude = 'LongRunning'
+    nunitVersion = '3.11.1'
+    where = 'cat != LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.Tests'].properties.TargetPath, msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunit.dependsOn msbuild
 
 task nunitLongRunning(type: com.ullink.gradle.nunit.NUnit) {
-    nunitVersion = '2.6.4'
-    include = 'LongRunning'
+    nunitVersion = '3.11.1'
+    where = 'cat == LongRunning'
     testAssemblies = [ msbuild.projects['ILRepack.IntegrationTests'].properties.TargetPath ]
 }
 nunitLongRunning.dependsOn msbuild
