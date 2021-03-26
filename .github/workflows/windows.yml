@@ -23,4 +23,4 @@ jobs:
           submodules: 'recursive'
 
       - name: Build
-        run: gradlew.bat -is nunit nugetPack
+        run: .\gradlew.bat -is nunit nugetPack
