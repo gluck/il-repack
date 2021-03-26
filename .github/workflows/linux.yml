@@ -20,6 +20,16 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
+      - name: Setup Mono
+        run: 
+          sudo apt install dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          sudo apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main'
+          sudo apt install mono-complete 
+          
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1.7.2
+      
+      - name: Build
         run: ./gradlew -is --console plain nunit repack
