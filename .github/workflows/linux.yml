@@ -23,5 +23,8 @@ jobs:
       - name: Setup MSBuildSDKsPath
         run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
       
+      - name: Test
+        run: echo $MSBuildSDKsPath
+      
       - name: Build
         run: ./gradlew -is --console plain nunit repack
