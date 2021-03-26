@@ -19,6 +19,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - uses: actions/setup-dotnet@v1
         with:
@@ -26,9 +28,6 @@ jobs:
 
       - name: Setup MSBuildSDKsPath
         run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
-      
-      - name: Test
-        run: echo $MSBuildSDKsPath
-      
+
       - name: Build
         run: ./gradlew -is --console plain nunit repack
