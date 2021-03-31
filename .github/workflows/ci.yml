@@ -31,4 +31,4 @@ jobs:
         if: ${{ matrix.os }} == 'ubuntu-latest'
 
       - name: Build
-        run: .\gradlew.bat -is --console plain nunit
+        run: .\gradlew -is --console plain nunit
