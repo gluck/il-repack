@@ -21,14 +21,14 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '3.1.301'
-        if: ${{ matrix.os }} == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-latest'
+          uses: actions/setup-dotnet@v1
+            with:
+              dotnet-version: '3.1.301'
 
-      - name: Setup MSBuildSDKsPath
-        run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
-        if: ${{ matrix.os }} == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-latest'
+          name: Setup MSBuildSDKsPath
+          run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
 
       - name: Build
-        run: .\gradlew -is --console plain nunit
+        run: ./gradlew -is --console plain nunit
