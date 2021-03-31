@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ 'ubuntu-latest', 'windows-latest' ]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.301'
+        if: ${{ matrix.os }} == 'ubuntu-latest'
+
+      - name: Setup MSBuildSDKsPath
+        run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
+        if: ${{ matrix.os }} == 'ubuntu-latest'
+
+      - name: Build
+        run: .\gradlew.bat -is --console plain nunit
