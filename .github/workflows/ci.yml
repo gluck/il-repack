@@ -31,4 +31,4 @@ jobs:
         run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
 
       - name: Build
-        run: ./gradlew -is --console plain nunit
+        run: gradlew -is --console plain nunit
