@@ -2,7 +2,7 @@ name: Linux
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, nunit3 ]
   pull_request:
     branches: [ master ]
 
