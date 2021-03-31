@@ -21,13 +21,13 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - if: matrix.os == 'ubuntu-latest'
-          uses: actions/setup-dotnet@v1
-            with:
-              dotnet-version: '3.1.301'
+      - uses: actions/setup-dotnet@v1
+        if: matrix.os == 'ubuntu-latest'
+        with:
+            dotnet-version: '3.1.301'
 
-      - if: matrix.os == 'ubuntu-latest'
-          name: Setup MSBuildSDKsPath
+      - name: Setup MSBuildSDKsPath
+        if: matrix.os == 'ubuntu-latest'
           run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
 
       - name: Build
