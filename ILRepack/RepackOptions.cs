@@ -70,6 +70,7 @@ namespace ILRepacking
         public IEnumerable<string> SearchDirectories { get; set; }
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
+        public bool SkipConfigMerge { get; set; }
         public bool XmlDocumentation { get; set; }
 
         // end of ILMerge-similar attributes
@@ -219,6 +220,7 @@ namespace ILRepacking
             var version = cmd.Option("ver");
             if (!string.IsNullOrEmpty(version))
                 Version = new Version(version);
+            SkipConfigMerge = cmd.Modifier("skipconfig");
             XmlDocumentation = cmd.Modifier("xmldocs");
             NoRepackRes = cmd.Modifier("norepackres");
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
