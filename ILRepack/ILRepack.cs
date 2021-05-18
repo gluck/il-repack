@@ -368,7 +368,10 @@ namespace ILRepacking
                     Options.StrongNameLost = true;
 
                 // nice to have, merge .config (assembly configuration file) & .xml (assembly documentation)
-                ConfigMerger.Process(this);
+                if (Options.SkipConfigMerge == false)
+                {
+                    ConfigMerger.Process(this);
+                }
                 if (Options.XmlDocumentation)
                     DocumentationMerger.Process(this);
             }
