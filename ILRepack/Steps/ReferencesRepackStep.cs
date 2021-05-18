@@ -33,7 +33,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.Info("Processing references");
+            _logger.Verbose("Processing references");
 
             // Add all AssemblyReferences to merged assembly (probably not necessary)
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;

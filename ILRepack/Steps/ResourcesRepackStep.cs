@@ -46,7 +46,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.Info("Processing resources");
+            _logger.Verbose("Processing resources");
 
             // merge resources
             IEnumerable<string> repackList = new List<string>();

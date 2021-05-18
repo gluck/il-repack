@@ -44,11 +44,6 @@ namespace ILRepacking
             Log($"WARN: {msg}");
         }
 
-        public void Info(string msg)
-        {
-            Log($"INFO: {msg}");
-        }
-
         public void Verbose(string msg)
         {
             if (ShouldLogVerbose)

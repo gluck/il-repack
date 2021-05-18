@@ -57,7 +57,7 @@ namespace ILRepacking.Steps
 
         private void RepackTypes()
         {
-            _logger.Info("Processing types");
+            _logger.Verbose("Processing types");
 
             // merge types, this differs between 'primary' and 'other' assemblies regarding internalizing
 
@@ -85,7 +85,7 @@ namespace ILRepacking.Steps
         private void RepackExportedTypes()
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
-            _logger.Info("Processing exported types");
+            _logger.Verbose("Processing exported types");
             foreach (var m in _repackContext.MergedAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.ExportedTypes)

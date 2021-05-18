@@ -99,7 +99,7 @@ namespace ILRepacking.Steps.ResourceProcessing
         private void PatchExistingGenericThemesXaml(
             ResourceWriter resourceWriter, BamlDocument bamlDocument, IEnumerable<string> genericThemeResources)
         {
-            _logger.Info("Patching existing themes/generic.xaml");
+            _logger.Verbose("Patching existing themes/generic.xaml");
 
             _bamlGenerator.AddMergedDictionaries(bamlDocument, genericThemeResources);
 
@@ -110,7 +110,7 @@ namespace ILRepacking.Steps.ResourceProcessing
         private void AddNewGenericThemesXaml(
             ResourceWriter resourceWriter, IEnumerable<string> genericThemeResources)
         {
-            _logger.Info("Creating new themes/generic.xaml");
+            _logger.Verbose("Creating new themes/generic.xaml");
             var newBamlDocument = _bamlGenerator.GenerateThemesGenericXaml(genericThemeResources);
 
             resourceWriter.AddResourceData(
