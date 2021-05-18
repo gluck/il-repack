@@ -1,5 +1,7 @@
 # IL Repack changelog
 ## 2.0.18
+### Fixed
+* Fix issue when repacking multiple results of `/renameInternalized`-previously repacked
 
 ## 2.0.17
 ### Fixed

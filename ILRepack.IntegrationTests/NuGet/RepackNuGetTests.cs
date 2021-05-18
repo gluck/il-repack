@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.PlatformServices;
-using System.Text.RegularExpressions;
 using ILRepacking.Steps.SourceServerData;
 
 namespace ILRepack.IntegrationTests.NuGet
@@ -170,8 +169,8 @@ namespace ILRepack.IntegrationTests.NuGet
                                   UseShellExecute = false,
                                   RedirectStandardOutput = true,
                                   FileName = Path.Combine(
-                                          TestContext.CurrentContext.TestDirectory,
-                                          @"..\..\..\packages\SourceLink.1.1.0\tools\SourceLink.exe"),
+                                      Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                                          @".nuget\packages\SourceLink\1.1.0\tools\SourceLink.exe"),
                                   Arguments = "srctoolx --pdb " + pdbName
                               };
             using (var sourceLinkProcess = Process.Start(processInfo))

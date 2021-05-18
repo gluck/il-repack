@@ -40,7 +40,8 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /targetplatform:P    specify target platform (v1, v1.1, v2, v4 supported)
  - /xmldocs             merges XML documentation as well
  - /lib:<path>          adds the path to the search directories for referenced assemblies (can be specified multiple times)
- - /internalize         sets all types but the ones from the first assembly 'internal'
+ - /internalize[:<excludefile>]  sets all types but the ones from the first assembly 'internal'. <excludefile> contains one regex per
+                                 line to compare against FullName of types NOT to internalize.
  - /renameInternalized  rename all internalized types
  - /delaysign           sets the key, but don't sign the assembly
  - /usefullpublickeyforreferences - NOT IMPLEMENTED
@@ -53,7 +54,6 @@ Syntax: ILRepack.exe [options] /out:<path> <path_to_primary> [<other_assemblies>
  - /parallel            use as many CPUs as possible to merge the assemblies
  - /pause               pause execution once completed (good for debugging)
  - /repackdrop:AttributeClass allows dropping specific members during merging (#215)
- - /renameInternalized  forces ILRepack to rename all types from other assemblies during repack (#233)
  - /verbose             shows more logs
  - /out:<path>          target assembly path, symbol/config/doc files will be written here as well
  - <path_to_primary>    primary assembly, gives the name, version to the merged one

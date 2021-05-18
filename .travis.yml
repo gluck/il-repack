@@ -1,3 +1,8 @@
 language: csharp
+dotnet: 3.1.301
+
+env:
+  - MSBuildSDKsPath=/usr/share/dotnet/sdk/3.1.301/Sdks
+
 script:
-  - ./gradlew -is --console plain nunit repack 
+  - ./gradlew -is --console plain nunit repack
