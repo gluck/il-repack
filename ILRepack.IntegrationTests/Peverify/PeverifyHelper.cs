@@ -1,13 +1,9 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using ILRepack.IntegrationTests.Helpers;
 
@@ -53,7 +49,7 @@ namespace ILRepack.IntegrationTests.Peverify
         public static IObservable<string> Peverify(string workingDirectory, params string[] args)
         {
             // TODO use pedump --verify code,metadata on Mono ?
-            var arg = $"\"{verifierPath}\" /NOLOGO /hresult /md /il {String.Join(" ", args)}";
+            var arg = $"\"{verifierPath}\" /NOLOGO /hresult /md /ignore=0x80070002,0x80131252 /il {String.Join(" ", args)}";
             var info = new ProcessStartInfo
             {
                 CreateNoWindow = true,
