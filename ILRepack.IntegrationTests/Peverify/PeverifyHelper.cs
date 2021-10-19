@@ -22,49 +22,37 @@ namespace ILRepack.IntegrationTests.Peverify
 
         static Regex Success = new Regex(@"All Classes and Methods in .* Verified");
         static Regex Failure = new Regex(@"\d+ Error\(s\) Verifying .*");
+        static string verifierPath = FindTool();
 
-        private static string FindVerifier()
+        public static string FindTool()
         {
-            var sdkdir = @"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\";
-            if (!Directory.Exists(sdkdir))
+            var programFilesPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            var windowsSdkDirectory = Path.Combine(programFilesPath, @"Microsoft SDKs\Windows");
+            if (!Directory.Exists(windowsSdkDirectory))
             {
-                throw new Exception("Windows SDK not found");
+                throw new Exception("Could not find peverify.exe.");
             }
 
-            List<Version> versions = new List<Version>();
-
-            foreach(var dir in Directory.EnumerateDirectories(sdkdir, "NETFX *"))
-            {
-                var parts = Path.GetFileName(dir)?.Split(' ');
-
-                if(parts == null || parts.Length != 3) continue;
-
-                if (Version.TryParse(parts[1], out var ver))
+            var path = Directory.EnumerateFiles(windowsSdkDirectory, "peverify.exe", SearchOption.AllDirectories)
+                .Where(x => !x.ToLowerInvariant().Contains("x64"))
+                .OrderByDescending(x =>
                 {
-                    versions.Add(ver);
-                }
-            }
+                    var info = FileVersionInfo.GetVersionInfo(x);
+                    return new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart);
+                })
+                .FirstOrDefault();
 
-            if (versions.Count == 0)
+            if (path == null)
             {
-                throw new Exception(".NET SDK not found");
+                throw new Exception("Could not find peverify.exe.");
             }
 
-            var latest = versions.Max();
-
-            var tools = $"{sdkdir}\\NETFX {latest} Tools\\";
-
-            if (Environment.Is64BitOperatingSystem)
-            {
-                return $"{tools}\\x64\\peverify.exe";
-            }
-            return $"{tools}\\peverify.exe";
+            return path;
         }
 
         public static IObservable<string> Peverify(string workingDirectory, params string[] args)
         {
             // TODO use pedump --verify code,metadata on Mono ?
-            var verifierPath = FindVerifier();
             var arg = $"\"{verifierPath}\" /NOLOGO /hresult /md /il {String.Join(" ", args)}";
             var info = new ProcessStartInfo
             {
