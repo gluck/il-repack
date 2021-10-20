@@ -49,7 +49,7 @@ namespace ILRepack.IntegrationTests.Peverify
         public static IObservable<string> Peverify(string workingDirectory, params string[] args)
         {
             // TODO use pedump --verify code,metadata on Mono ?
-            var arg = $"\"{verifierPath}\" /NOLOGO /hresult /md /ignore=0x80070002,0x80131252,0x80131b18,0x00000002 /il {String.Join(" ", args)}";
+            var arg = $"\"{verifierPath}\" /NOLOGO /hresult /md /ignore=0x80070002,0x80131252,0x80131b18 /il {String.Join(" ", args)}";
             var info = new ProcessStartInfo
             {
                 CreateNoWindow = true,
