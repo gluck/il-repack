@@ -30,6 +30,8 @@ namespace ILRepacking
         private readonly RepackOptions _options;
         private readonly Dictionary<AssemblyDefinition, int> _aspOffsets;
 
+        const string ExcludeInternalizeAttName = "RepackExcludeInternalizeAttribute";
+
         public RepackImporter(
             ILogger logger,
             RepackOptions options,
@@ -590,7 +592,7 @@ namespace ILRepacking
             col.Add(nt);
 
             // only top-level types are internalized
-            if (internalize && (nt.DeclaringType == null) && nt.IsPublic)
+            if (internalize && (nt.DeclaringType == null) && nt.IsPublic && !type.CustomAttributes.Any(x => x.AttributeType.Name == ExcludeInternalizeAttName))
                 nt.IsPublic = false;
 
             CopyGenericParameters(type.GenericParameters, nt.GenericParameters, nt);
@@ -781,6 +783,8 @@ namespace ILRepacking
             var reflectionHelper = _repackContext.ReflectionHelper;
             foreach (CustomAttribute ca in input)
             {
+                if (ca.AttributeType.Name == ExcludeInternalizeAttName) continue;
+
                 var caType = ca.AttributeType;
                 var similarAttributes = output.Where(attr => reflectionHelper.AreSame(attr.AttributeType, caType)).ToList();
                 if (similarAttributes.Count != 0)
