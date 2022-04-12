@@ -79,10 +79,14 @@ def commonNuspecMetadata = [
     dependencies: []
 ]
 
+def commonNuspecMetadataClosures = [
+    {d -> delegate.license(type: 'expression', 'Apache-2.0') }
+]
+
 // nuget package for upload to nuget
 nugetSpec {
     nuspec = [
-        metadata: commonNuspecMetadata + [
+        metadata: commonNuspecMetadataClosures + commonNuspecMetadata + [
             id: archivesBaseName,
             description: '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.''',
@@ -97,7 +101,7 @@ nugetSpec {
 
 task nugetSpecLib(type: com.ullink.NuGetSpec) {
     nuspec = [
-        metadata: commonNuspecMetadata + [
+        metadata: commonNuspecMetadataClosures +  commonNuspecMetadata + [
             id: archivesBaseName+'.Lib',
             description: '''ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
