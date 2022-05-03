@@ -105,7 +105,7 @@ namespace ILRepacking.Steps
         /// <param name="meth">The method.</param>
         private void CheckTypeForResourceNamespaceRenaming(TypeDefinition type, MethodDefinition meth)
         {
-            if (this._options.RenameNameSpaces && type.FullName.EndsWith("Properties.Resources") && meth.Name.Equals("get_ResourceManager"))
+            if (this._options.RenameNameSpaces && type.FullName.EndsWith("Resources") && meth.Name.Equals("get_ResourceManager"))
             {
                 // is there a ResourceManager ctor instruction?
                 var resourceManagerConscrutorIntruction = meth.Body.Instructions.FirstOrDefault(i => i.OpCode.Code == Code.Newobj && ((dynamic)i.Operand).DeclaringType.FullName == typeof(System.Resources.ResourceManager).FullName);
