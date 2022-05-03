@@ -255,6 +255,7 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
+            Debugger.Launch();
             var timer = new Stopwatch();
             timer.Start();
             Options.Validate();
