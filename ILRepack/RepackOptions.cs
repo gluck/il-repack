@@ -92,6 +92,10 @@ namespace ILRepacking
         {
             get { return allowedDuplicateTypes; }
         }
+        public bool AllowDuplicateAll
+        {
+            get { return allowDuplicateAll; }
+        }
         public List<string> AllowedDuplicateNameSpaces
         {
             get { return allowedDuplicateNameSpaces; }
@@ -106,6 +110,7 @@ namespace ILRepacking
         private readonly ICommandLine cmd;
         private readonly IFile file;
         private string excludeFile;
+        private bool allowDuplicateAll;
 
         private void AllowDuplicateType(string typeName)
         {
@@ -147,8 +152,13 @@ namespace ILRepacking
         void Parse()
         {
             AllowDuplicateResources = cmd.Modifier("allowduplicateresources");
+            var allowDup = cmd.Modifier("allowdup");
             foreach (string dupType in cmd.Options("allowdup"))
-                AllowDuplicateType(dupType);
+            {
+                if (!string.IsNullOrEmpty(dupType))
+                    AllowDuplicateType(dupType);
+            }
+            allowDuplicateAll = allowedDuplicateTypes.Count == 0 && allowDup;
             AllowMultipleAssemblyLevelAttributes = cmd.Modifier("allowmultiple");
             AllowWildCards = cmd.Modifier("wildcards");
             AllowZeroPeKind = cmd.Modifier("zeropekind");

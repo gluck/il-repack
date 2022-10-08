@@ -31,13 +31,13 @@ namespace ILRepacking
             }
             catch (RepackOptions.InvalidTargetKindException e)
             {
-                Console.WriteLine(e.Message);
+                Console.Error.WriteLine(e.Message);
                 Usage();
                 Exit(2);
             }
             catch (Exception e)
             {
-                logger.Log(e);
+                logger.LogError(e);
                 returnCode = 1;
             }
             finally

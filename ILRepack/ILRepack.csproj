@@ -4,7 +4,7 @@
     <ProjectGuid>{4A253A60-D998-4CA2-B9D5-46567A2FBF80}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>ILRepacking</RootNamespace>
-    <TargetFramework>net40</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
     <StartupObject>ILRepacking.Application</StartupObject>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -35,10 +35,10 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data.DataSetExtensions" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ILRepack.snk" />
@@ -51,7 +51,7 @@
   <ItemGroup>
     <PackageReference Include="BamlParser" Version="1.0.0" />
     <PackageReference Include="fasterflect" Version="2.1.3" />
-    <PackageReference Include="Mono.Posix" Version="4.0.0" />
+    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" />
     <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>

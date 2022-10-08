@@ -17,6 +17,13 @@ namespace ILRepacking
             _writer?.WriteLine(logStr);
         }
 
+        public void LogError(object str)
+        {
+            string logStr = str.ToString();
+            Console.Error.WriteLine(logStr);
+            _writer?.WriteLine(logStr);
+        }
+
         public bool Open(string file)
         {
             if (string.IsNullOrEmpty(file))
@@ -36,7 +43,7 @@ namespace ILRepacking
 
         public void Error(string msg)
         {
-            Log($"ERROR: {msg}");
+            LogError($"ERROR: {msg}");
         }
 
         public void Warn(string msg)
