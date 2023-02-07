@@ -27,6 +27,8 @@ using ILRepacking.Mixins;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
 using ILRepacking.Steps.SourceServerData;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
 
 namespace ILRepacking
 {
@@ -110,11 +112,13 @@ namespace ILRepacking
             Logger.Info("Adding assembly for merge: " + assembly);
             try
             {
-                ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver };
+                ReaderParameters rp          = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver };
+                string           pdbFilePath = Path.ChangeExtension(assembly, "pdb");
+
                 // read PDB/MDB?
-                if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
+                if (Options.DebugInfo && File.Exists(pdbFilePath))
                 {
-                    rp.ReadSymbols = true;
+                    SetSymbolData(rp, pdbFilePath);
                 }
                 AssemblyDefinition mergeAsm;
                 try
@@ -158,6 +162,41 @@ namespace ILRepacking
                 Logger.Error("Failed to load assembly " + assembly);
                 throw;
             }
+
+            // -- //
+
+            void SetSymbolData(ReaderParameters rp, string pdbFilePath)
+            {
+                rp.ReadSymbols = true;
+
+                switch(Options.ReadDebugSymbolAs)
+                {
+                    case DebugSymbolKind.PortablePDB:
+                        rp.SymbolReaderProvider = new PortablePdbReaderProvider();
+                        break;
+                    case DebugSymbolKind.PDB:
+                        rp.SymbolReaderProvider = new PdbReaderProvider();
+                        break;
+                    default:
+                        rp.ReadSymbols = false;
+                        Logger.Error("Unknown DebugSymbolKing when reading. Set 'ReadSymbols' to false.");
+                        break;
+                }
+
+                if(rp.ReadSymbols)
+                {
+                    using(var fs = new FileStream(pdbFilePath, FileMode.Open, FileAccess.Read))
+                    {
+                        // Copy the file to memory so it can be closed right away and not be used anymore
+                        var ms = new MemoryStream();
+
+                        fs.CopyTo(ms);
+                        ms.Seek(0, SeekOrigin.Begin);
+
+                        rp.SymbolStream = ms;
+                    }
+                }
+            }
         }
 
         IMetadataScope IRepackContext.MergeScope(IMetadataScope scope)
@@ -184,6 +223,11 @@ namespace ILRepacking
             SameAsPrimaryAssembly
         }
 
+        public enum DebugSymbolKind
+        {
+            PortablePDB,
+            PDB
+        }
 
         private TargetRuntime ParseTargetPlatform()
         {
@@ -339,8 +383,10 @@ namespace ILRepacking
                 var parameters = new WriterParameters
                 {
                     StrongNameKeyPair = signingStep.KeyPair,
-                    WriteSymbols = Options.DebugInfo
                 };
+
+                parameters.WriteSymbols = TrySetSymbolData(parameters, out var pdpFileStream);
+
                 // create output directory if it does not exist
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
                 if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
@@ -350,7 +396,6 @@ namespace ILRepacking
                 }
 
                 TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
-
                 sourceServerDataStep.Write();
 
                 Logger.Info("Writing output assembly to disk");
@@ -370,9 +415,51 @@ namespace ILRepacking
                 ConfigMerger.Process(this);
                 if (Options.XmlDocumentation)
                     DocumentationMerger.Process(this);
+
+                pdpFileStream?.Dispose();
             }
 
+            PrimaryAssemblyDefinition?.Dispose();
+
+            foreach(var assemblyDefinition in OtherAssemblies)
+                assemblyDefinition?.Dispose();
+
+            PrimaryAssemblyDefinition = null;
+            OtherAssemblies.Clear();
+
             Logger.Info($"Finished in {timer.Elapsed}");
+
+            // -- //
+
+            bool TrySetSymbolData(WriterParameters wp, out Stream pdpFileStream)
+            {
+                pdpFileStream = null;
+
+                if(!Options.DebugInfo)
+                    return false;
+
+                var filePath = Path.ChangeExtension(Options.OutputFile, "pdb");
+
+                switch(Options.WriteDebugSymbolAs)
+                {
+                    case DebugSymbolKind.PortablePDB:
+                        wp.SymbolWriterProvider = new PortablePdbWriterProvider();
+                        break;
+                    case DebugSymbolKind.PDB:
+                        wp.SymbolWriterProvider = new PdbWriterProvider();
+                        break;
+                    default:
+                        wp.WriteSymbols = false;
+                        Logger.Error("Unknown DebugSymbolKing when writing. Set 'WriteSymbols' to false.");
+                        break;
+                }
+
+                if(wp.WriteSymbols)
+                    wp.SymbolStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+                pdpFileStream = wp.SymbolStream;
+                return wp.WriteSymbols;
+            }
         }
 
         private ISourceServerDataRepackStep GetSourceServerDataStep(bool isUnixEnvironment)

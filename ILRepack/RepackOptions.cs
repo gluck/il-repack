@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,15 +19,17 @@ namespace ILRepacking
         }
 
         // keep ILMerge syntax (both command-line & api) for compatibility (commented out: not implemented yet)
-        public bool AllowDuplicateResources { get; set; }
-        public bool AllowMultipleAssemblyLevelAttributes { get; set; }
-        public bool AllowWildCards { get; set; }
-        public bool AllowZeroPeKind { get; set; }
-        public string AttributeFile { get; set; }
-        public bool Closed { get; set; } // UNIMPL
-        public bool CopyAttributes { get; set; }
-        public bool DebugInfo { get; set; }
-        public bool DelaySign { get; set; }
+        public bool                     AllowDuplicateResources              { get; set; }
+        public bool                     AllowMultipleAssemblyLevelAttributes { get; set; }
+        public bool                     AllowWildCards                       { get; set; }
+        public bool                     AllowZeroPeKind                      { get; set; }
+        public string                   AttributeFile                        { get; set; }
+        public bool                     Closed                               { get; set; } // UNIMPL
+        public bool                     CopyAttributes                       { get; set; }
+        public bool                     DebugInfo                            { get; set; }
+        public ILRepack.DebugSymbolKind ReadDebugSymbolAs                    { get; set; }
+        public ILRepack.DebugSymbolKind WriteDebugSymbolAs                   { get; set; }
+        public bool                     DelaySign                            { get; set; }
 
         /// <summary>
         /// Gets or sets a file that contains one regex per line to compare against 
@@ -195,6 +198,32 @@ namespace ILRepacking
                         throw new InvalidTargetKindException("Invalid target: \"" + targetKind + "\".");
                 }
             }
+
+            var readDebugSymAs  = cmd.Option("readDebugSymbolAs");
+            var writeDebugSymAs = cmd.Option("writeDebugSymbolAs");
+
+            switch(readDebugSymAs)
+            {
+                case "pdb":
+                    ReadDebugSymbolAs = ILRepack.DebugSymbolKind.PDB;
+                    break;
+                case "portable":
+                default:
+                    ReadDebugSymbolAs = ILRepack.DebugSymbolKind.PortablePDB;
+                    break;
+            }
+
+            switch(writeDebugSymAs)
+            {
+                case "pdb":
+                    WriteDebugSymbolAs = ILRepack.DebugSymbolKind.PDB;
+                    break;
+                case "portable":
+                default:
+                    WriteDebugSymbolAs = ILRepack.DebugSymbolKind.PortablePDB;
+                    break;
+            }
+
             // TargetPlatformDirectory -> how does cecil handle that?
             var targetPlatform = cmd.Option("targetplatform");
             if (targetPlatform != null)

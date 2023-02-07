@@ -59,11 +59,11 @@ repack {
         def executable = isMono ? ['mono', repackExe] : [repackExe]
         exec {
             workingDir = outputPath
-            commandLine = [*executable, '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
+            commandLine = [*executable, '/readDebugSymbolAs:pdb', '/writeDebugSymbolAs:portable', '/log', '/wildcards', '/internalize', '/ndebug', '/out:'+ext.repacked] + project.ext.repackList
         }
         exec {
             workingDir = outputPath
-            commandLine = [*executable, '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
+            commandLine = [*executable, '/readDebugSymbolAs:pdb', '/writeDebugSymbolAs:portable', '/log', '/wildcards', '/internalize', '/keyfile:'+file('ILRepack/ILRepack.snk'), '/out:'+ext.repackedLib, '/target:library'] + project.ext.repackList
         }
 	}
 }

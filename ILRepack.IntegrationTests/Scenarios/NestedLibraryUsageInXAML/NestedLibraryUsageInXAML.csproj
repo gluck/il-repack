@@ -116,7 +116,7 @@
 del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*
 
 mkdir $(TargetDir)\merged
-$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)ClassLibrary.dll $(TargetDir)Microsoft.Threading.Tasks.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.Desktop.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.dll $(TargetDir)System.IO.dll $(TargetDir)System.Runtime.dll $(TargetDir)System.Threading.Tasks.dll
+$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /verbose /log /readDebugSymbolAs:pdb /writeDebugSymbolAs:portable /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)AnotherClassLibrary.dll $(TargetDir)ClassLibrary.dll $(TargetDir)Microsoft.Threading.Tasks.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.Desktop.dll $(TargetDir)Microsoft.Threading.Tasks.Extensions.dll $(TargetDir)System.IO.dll $(TargetDir)System.Runtime.dll $(TargetDir)System.Threading.Tasks.dll
 
 exit /b %25ERRORLEVEL%25
 </PostBuildEvent>

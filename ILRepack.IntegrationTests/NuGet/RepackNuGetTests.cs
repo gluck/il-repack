@@ -20,13 +20,24 @@ namespace ILRepack.IntegrationTests.NuGet
         public void GenerateTempFolder()
         {
             PlatformEnlightenmentProvider.Current = new TestsPlatformEnglightenmentProvider();
-            tempDirectory = TestHelpers.GenerateTempFolder();
+            tempDirectory                         = TestHelpers.GenerateTempFolder();
         }
 
         [TearDown]
         public void CleanupTempFolder()
         {
-            TestHelpers.CleanupTempFolder(ref tempDirectory);
+            try
+            {
+                TestHelpers.CleanupTempFolder(ref tempDirectory);
+            }
+            catch(IOException e)
+            {
+                // FIXME : no exception should be thrown or caught
+                //          but it may happens that DLLs are used by another process
+                //          most likely ILRepack, that doesn't close a stream ...
+
+                Console.WriteLine(e);
+            }
         }
 
         [TestCaseSource(typeof(Data), nameof(Data.Packages))]
@@ -64,12 +75,12 @@ namespace ILRepack.IntegrationTests.NuGet
         public void VerifiesMergesBclFine()
         {
             var platform = Platform.From(
-                Package.From("Microsoft.Bcl", "1.1.10")
-                    .WithArtifact(@"lib\net40\System.Runtime.dll"),
-                Package.From("Microsoft.Bcl", "1.1.10")
-                    .WithArtifact(@"lib\net40\System.Threading.Tasks.dll"),
-                Package.From("Microsoft.Bcl.Async", "1.0.168")
-                    .WithArtifact(@"lib\net40\Microsoft.Threading.Tasks.dll"))
+                    Package.From("Microsoft.Bcl", "1.1.10")
+                        .WithArtifact(@"lib\net40\System.Runtime.dll"),
+                    Package.From("Microsoft.Bcl", "1.1.10")
+                        .WithArtifact(@"lib\net40\System.Threading.Tasks.dll"),
+                    Package.From("Microsoft.Bcl.Async", "1.0.168")
+                        .WithArtifact(@"lib\net40\Microsoft.Threading.Tasks.dll"))
                 .WithExtraArgs(@"/targetplatform:v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0");
 
             platform.Packages.ToObservable()
@@ -89,10 +100,10 @@ namespace ILRepack.IntegrationTests.NuGet
         public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
         {
             var platform = Platform.From(
-                Package.From("reactiveui-core", "6.5.0")
-                    .WithArtifact(@"lib\net45\ReactiveUI.dll"),
-                Package.From("Splat", "1.6.2")
-                    .WithArtifact(@"lib\net45\Splat.dll"))
+                    Package.From("reactiveui-core", "6.5.0")
+                        .WithArtifact(@"lib\net45\ReactiveUI.dll"),
+                    Package.From("Splat", "1.6.2")
+                        .WithArtifact(@"lib\net45\Splat.dll"))
                 .WithExtraArgs("/keyfile:../../../ILRepack/ILRepack.snk");
             platform.Packages.ToObservable()
                 .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
@@ -126,7 +137,7 @@ namespace ILRepack.IntegrationTests.NuGet
                 .Single();
 
             var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
-            var actual = GetSrcSrv(Tmp("test.pdb"));
+            var actual   = GetSrcSrv(Tmp("test.pdb"));
             CollectionAssert.AreEqual(expected, actual);
         }
 
@@ -164,31 +175,31 @@ namespace ILRepack.IntegrationTests.NuGet
         private static IEnumerable<string> GetSourceLinks(string pdbName)
         {
             var processInfo = new ProcessStartInfo
-                              {
-                                  CreateNoWindow = true,
-                                  UseShellExecute = false,
-                                  RedirectStandardOutput = true,
-                                  FileName = Path.Combine(
-                                      Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                          @".nuget\packages\SourceLink\1.1.0\tools\SourceLink.exe"),
-                                  Arguments = "srctoolx --pdb " + pdbName
-                              };
-            using (var sourceLinkProcess = Process.Start(processInfo))
-            using (StreamReader reader = sourceLinkProcess.StandardOutput)
+            {
+                CreateNoWindow         = true,
+                UseShellExecute        = false,
+                RedirectStandardOutput = true,
+                FileName = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    @".nuget\packages\SourceLink\1.1.0\tools\SourceLink.exe"),
+                Arguments = "srctoolx --pdb " + pdbName
+            };
+            using(var sourceLinkProcess = Process.Start(processInfo))
+            using(StreamReader reader = sourceLinkProcess.StandardOutput)
             {
                 return reader.ReadToEnd()
-                        .GetLines()
-                        .Take(reader.ReadToEnd().GetLines().ToArray().Length - 1)
-                        .Skip(1);
+                    .GetLines()
+                    .Take(reader.ReadToEnd().GetLines().ToArray().Length - 1)
+                    .Skip(1);
             }
         }
 
         void RepackPlatform(Platform platform, IList<string> list)
         {
-            Assert.IsTrue(list.Count >= platform.Packages.Count(), 
+            Assert.IsTrue(list.Count >= platform.Packages.Count(),
                 "There should be at least the same number of .dlls as the number of packages");
-            Console.WriteLine("Merging {0}", string.Join(",",list));
-            TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
+            Console.WriteLine("Merging {0}", string.Join(",", list));
+            TestHelpers.DoRepackForCmd(new[] { "/out:" + Tmp("test.dll"), "/lib:" + tempDirectory, "/readDebugSymbolAs:pdb", "/writeDebugSymbolAs:portable" }.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
             Assert.IsTrue(File.Exists(Tmp("test.dll")));
         }
 
@@ -199,12 +210,12 @@ namespace ILRepack.IntegrationTests.NuGet
 
         void VerifyTest(IEnumerable<string> mergedLibraries)
         {
-            if (XPlat.IsMono) return;
+            if(XPlat.IsMono) return;
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToEnumerable();
-            if (errors.Any())
+            if(errors.Any())
             {
                 var origErrors = mergedLibraries.SelectMany(it => PeverifyHelper.Peverify(tempDirectory, it).ToEnumerable());
-                if (errors.Count() != origErrors.Count())
+                if(errors.Count() != origErrors.Count())
                     Assert.Fail($"{errors.Count()} errors in peverify, check logs for details");
             }
         }
@@ -212,7 +223,7 @@ namespace ILRepack.IntegrationTests.NuGet
         void RepackFoo(string assemblyName)
         {
             Console.WriteLine("Merging {0}", assemblyName);
-            TestHelpers.DoRepackForCmd("/out:"+Tmp("test.dll"), Tmp("foo.dll"));
+            TestHelpers.DoRepackForCmd("/out:" + Tmp("test.dll"), Tmp("foo.dll"));
             Assert.IsTrue(File.Exists(Tmp("test.dll")));
         }
     }

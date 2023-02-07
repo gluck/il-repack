@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ILRepack.IntegrationTests</RootNamespace>
     <AssemblyName>ILRepack.IntegrationTests</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -22,7 +22,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -51,14 +51,6 @@
     <Compile Include="Scenarios.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
-      <Project>{d68133bd-1e63-496e-9ede-4fbdbf77b486}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
-      <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
-      <Name>Mono.Cecil.Pdb</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ILRepack\ILRepack.csproj">
       <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
       <Name>ILRepack</Name>

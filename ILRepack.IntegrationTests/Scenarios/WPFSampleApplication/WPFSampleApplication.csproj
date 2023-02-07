@@ -143,7 +143,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir $(TargetDir)\merged
-$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /keyfile:"$(ProjectDir)test_sign_key.snk" /verbose /log /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)Microsoft.Expression.Interactions.dll $(TargetDir)MahApps.Metro.dll $(TargetDir)System.Windows.Interactivity.dll $(TargetDir)Xceed.Wpf.Toolkit.dll $(TargetDir)Xceed.Wpf.DataGrid.dll 
+$(SolutionDir)ILRepack\bin\$(ConfigurationName)\ILRepack.exe /keyfile:"$(ProjectDir)test_sign_key.snk" /verbose /log /readDebugSymbolAs:pdb /writeDebugSymbolAs:portable /out:$(TargetDir)\merged\$(TargetFileName) $(TargetPath) $(TargetDir)Microsoft.Expression.Interactions.dll $(TargetDir)MahApps.Metro.dll $(TargetDir)System.Windows.Interactivity.dll $(TargetDir)Xceed.Wpf.Toolkit.dll $(TargetDir)Xceed.Wpf.DataGrid.dll
 set SAVED_ERROR_LEVEL=%25ERRORLEVEL%25
 REM Ensure re-build is done every time to use latest built ILRepack version
 del /q $(ProjectDir)\obj\$(ConfigurationName)\*.*
