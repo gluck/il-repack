@@ -332,7 +332,7 @@ namespace ILRepacking
         {
             if (typeAttribute == null)
                 return false;
-            if (typeAttribute.Interfaces.Any(@interface => @interface.FullName == "java.lang.annotation.Annotation"))
+            if (typeAttribute.Interfaces.Any(@interface => @interface.InterfaceType.FullName == "java.lang.annotation.Annotation"))
                 return true;
             return typeAttribute.BaseType != null && IsAnnotation(typeAttribute.BaseType.Resolve());
         }
@@ -342,6 +342,14 @@ namespace ILRepacking
             for (int i = 0; i < refs.Count; i++)
             {
                 refs[i] = Fix(refs[i]);
+            }
+        }
+
+        private void FixReferences(Collection<InterfaceImplementation> refs)
+        {
+            for (int i = 0; i < refs.Count; i++)
+            {
+                refs[i].InterfaceType = Fix(refs[i].InterfaceType);
             }
         }
 
@@ -360,6 +368,15 @@ namespace ILRepacking
                 FixReferences(parameters[i]);
             }
         }
+
+        private void FixReferences(Collection<GenericParameterConstraint> parameters)
+        {
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                parameters[i].ConstraintType = Fix(parameters[i].ConstraintType);
+            }
+        }
+
 
 #if DEBUG
         private bool AssertIsDefinitionIfNotNull(MethodDefinition mehod)

@@ -309,7 +309,6 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -400,67 +399,6 @@ namespace ILRepacking
                 if (Directory.Exists(facadesDirectory))
                     GlobalAssemblyResolver.AddSearchDirectory(facadesDirectory);
             }
-        }
-
-        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary)
-        {
-            if (primary == null)
-                return null;
-            foreach (var ass in OtherAssemblies)
-            {
-                MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
-            }
-            return primary;
-        }
-
-        private void MergeDirectory(List<ResourceEntry> parents, ResourceDirectory ret, AssemblyDefinition ass, ResourceDirectory directory)
-        {
-            foreach (var entry in directory.Entries)
-            {
-                var exist = ret.Entries.FirstOrDefault(x => entry.Name == null ? entry.Id == x.Id : entry.Name == x.Name);
-                if (exist == null)
-                    ret.Entries.Add(entry);
-                else
-                    MergeEntry(parents, exist, ass, entry);
-            }
-        }
-
-        private void MergeEntry(List<ResourceEntry> parents, ResourceEntry exist, AssemblyDefinition ass, ResourceEntry entry)
-        {
-            if (exist.Data != null && entry.Data != null)
-            {
-                if (IsAspResourceEntry(parents, exist))
-                {
-                    _aspOffsets[ass] = exist.Data.Length;
-                    byte[] newData = new byte[exist.Data.Length + entry.Data.Length];
-                    Array.Copy(exist.Data, 0, newData, 0, exist.Data.Length);
-                    Array.Copy(entry.Data, 0, newData, exist.Data.Length, entry.Data.Length);
-                    exist.Data = newData;
-                }
-                else if (!IsVersionInfoResource(parents, exist))
-                {
-                    Logger.Warn(string.Format("Duplicate Win32 resource with id={0}, parents=[{1}], name={2} in assembly {3}, ignoring", entry.Id, string.Join(",", parents.Select(p => p.Name ?? p.Id.ToString()).ToArray()), entry.Name, ass.Name));
-                }
-                return;
-            }
-            if (exist.Data != null || entry.Data != null)
-            {
-                Logger.Warn("Inconsistent Win32 resources, ignoring");
-                return;
-            }
-            parents.Add(exist);
-            MergeDirectory(parents, exist.Directory, ass, entry.Directory);
-            parents.RemoveAt(parents.Count - 1);
-        }
-
-        private static bool IsAspResourceEntry(List<ResourceEntry> parents, ResourceEntry exist)
-        {
-            return exist.Id == 101 && parents.Count == 1 && parents[0].Id == 3771;
-        }
-
-        private static bool IsVersionInfoResource(List<ResourceEntry> parents, ResourceEntry exist)
-        {
-            return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
 
         string IRepackContext.FixStr(string content)

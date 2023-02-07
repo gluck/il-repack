@@ -66,10 +66,6 @@
     <Compile Include="Utils\BamlDocumentMatcher.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
-      <Project>{d68133bd-1e63-496e-9ede-4fbdbf77b486}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj">
       <Project>{801489b7-46cb-42d0-8581-0120f3566a8f}</Project>
       <Name>ClassLibrary</Name>

@@ -57,12 +57,12 @@ namespace ILRepacking
             }
         }
 
-        public void ProcessMethodBodyInstruction(Instruction instr)
+        public void ProcessMethodBodyInstruction(MethodDefinition method, Instruction instr)
         {
             if (!enabled)
                 return;
 
-            var currentSeqPoint = instr.SequencePoint;
+            var currentSeqPoint = method.DebugInformation.GetSequencePoint(instr);
             if (lineNumberWriter != null && currentSeqPoint != null)
             {
                 if (fileName == null && currentSeqPoint.Document != null)
@@ -155,7 +155,8 @@ namespace ILRepacking
             IMetadataScope ikvmRuntimeReference = repack.TargetAssemblyMainModule.AssemblyReferences.FirstOrDefault(r => r.Name == "IKVM.Runtime");
             if (ikvmRuntimeReference == null)
             {
-                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve("IKVM.Runtime").Name);
+                // TODO not sure about the version of IKVM.Runtime
+                ikvmRuntimeReference = repack.MergeScope(repack.GlobalAssemblyResolver.Resolve(new AssemblyNameReference("IKVM.Runtime", new Version(0,0))).Name);
             }
             if (ikvmRuntimeReference == null)
             {

@@ -423,7 +423,7 @@ namespace ILRepacking
                 CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
 
             if (meth.HasBody)
-                CloneTo(meth.Body, nm);
+                CloneTo(meth, nm);
             meth.Body = null; // frees memory
 
             nm.IsAddOn = meth.IsAddOn;
@@ -433,9 +433,10 @@ namespace ILRepacking
             nm.CallingConvention = meth.CallingConvention;
         }
 
-        private void CloneTo(MethodBody body, MethodDefinition parent)
+        private void CloneTo(MethodDefinition original, MethodDefinition parent)
         {
-            MethodBody nb = new MethodBody(parent);
+            MethodBody body = original.Body;
+            MethodBody nb   = new MethodBody(parent);
             parent.Body = nb;
 
             nb.MaxStackSize = body.MaxStackSize;
@@ -443,14 +444,12 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(var.Name,
-                    Import(var.VariableType, parent)));
+                nb.Variables.Add(new VariableDefinition(Import(var.VariableType, parent)));
 
-            nb.Instructions.SetCapacity(body.Instructions.Count);
             _repackContext.LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
-                _repackContext.LineIndexer.ProcessMethodBodyInstruction(instr);
+                _repackContext.LineIndexer.ProcessMethodBodyInstruction(parent, instr);
 
                 Instruction ni;
 
@@ -540,8 +539,29 @@ namespace ILRepacking
                         default:
                             throw new InvalidOperationException();
                     }
-                ni.SequencePoint = instr.SequencePoint;
+
+                var instrSeqPoint = original.DebugInformation.GetSequencePoint(instr);
+
+                SetSequencePoint(ni, instrSeqPoint);
                 nb.Instructions.Add(ni);
+
+                // -- //
+
+                void SetSequencePoint(Instruction instruction, SequencePoint point)
+                {
+                    if(point == null) return;
+
+                    var allSeqPoints = parent.DebugInformation.SequencePoints;
+                    var seqPoint = new SequencePoint(instruction, point.Document)
+                    {
+                        StartLine   = point.StartLine,
+                        StartColumn = point.StartColumn,
+                        EndLine     = point.EndLine,
+                        EndColumn   = point.EndColumn
+                    };
+
+                    allSeqPoints.Add(seqPoint);
+                }
             }
             _repackContext.LineIndexer.PostMethodBodyRepack(parent);
 
@@ -605,7 +625,7 @@ namespace ILRepacking
             // don't copy these twice if UnionMerge==true
             // TODO: we can move this down if we chek for duplicates when adding
             CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyInterfaceImplementation(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             return nt;
         }
@@ -755,7 +775,7 @@ namespace ILRepacking
                 output.Add(ngp);
             }
             // delay copy to ensure all generics parameters are already present
-            Copy(input, output, (gp, ngp) => CopyTypeReferences(gp.Constraints, ngp.Constraints, nt));
+            Copy(input, output, (gp, ngp) => CopyGenericParameterContraints(gp.Constraints, ngp.Constraints, nt));
             Copy(input, output, (gp, ngp) => CopyCustomAttributes(gp.CustomAttributes, ngp.CustomAttributes, nt));
         }
 
@@ -829,6 +849,34 @@ namespace ILRepacking
             foreach (TypeReference ta in input)
             {
                 output.Add(Import(ta, context));
+            }
+        }
+
+        public void CopyInterfaceImplementation(Collection<InterfaceImplementation> input, Collection<InterfaceImplementation> output, IGenericParameterProvider context)
+        {
+            foreach(InterfaceImplementation impl in input)
+            {
+                var implClone = new InterfaceImplementation(Import(impl.InterfaceType, context))
+                {
+                    MetadataToken = impl.MetadataToken
+                };
+
+                CopyCustomAttributes(impl.CustomAttributes, implClone.CustomAttributes, context);
+                output.Add(implClone);
+            }
+        }
+
+        public void CopyGenericParameterContraints(Collection<GenericParameterConstraint> input, Collection<GenericParameterConstraint> output, IGenericParameterProvider context)
+        {
+            foreach(GenericParameterConstraint gpc in input)
+            {
+                var gpcClone = new GenericParameterConstraint(Import(gpc.ConstraintType, context))
+                {
+                    MetadataToken = gpc.MetadataToken
+                };
+
+                CopyCustomAttributes(gpc.CustomAttributes, gpcClone.CustomAttributes, context);
+                output.Add(gpcClone);
             }
         }
 
