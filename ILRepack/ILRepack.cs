@@ -179,7 +179,7 @@ namespace ILRepacking
                         break;
                     default:
                         rp.ReadSymbols = false;
-                        Logger.Error("Unknown DebugSymbolKing when reading. Set 'ReadSymbols' to false.");
+                        Logger.Error($"Unknown {nameof(DebugSymbolKind)} when reading. Set 'ReadSymbols' to false.");
                         break;
                 }
 
@@ -450,7 +450,7 @@ namespace ILRepacking
                         break;
                     default:
                         wp.WriteSymbols = false;
-                        Logger.Error("Unknown DebugSymbolKing when writing. Set 'WriteSymbols' to false.");
+                        Logger.Error($"Unknown {nameof(DebugSymbolKind)} when writing. Set 'WriteSymbols' to false.");
                         break;
                 }
 
