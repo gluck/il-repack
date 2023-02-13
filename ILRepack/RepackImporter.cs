@@ -422,8 +422,12 @@ namespace ILRepacking
             if (meth.MethodReturnType.HasCustomAttributes)
                 CopyCustomAttributes(meth.MethodReturnType.CustomAttributes, nm.MethodReturnType.CustomAttributes, nm);
 
-            if (meth.HasBody)
+            if(meth.HasBody)
+            {
                 CloneTo(meth, nm);
+                CloneDebugInformationScope(meth, nm);
+            }
+
             meth.Body = null; // frees memory
 
             nm.IsAddOn = meth.IsAddOn;
@@ -540,9 +544,12 @@ namespace ILRepacking
                             throw new InvalidOperationException();
                     }
 
-                var instrSeqPoint = original.DebugInformation.GetSequencePoint(instr);
+                var originalDebugInfo = original.DebugInformation;
+                var parentDebugInfo   = parent.DebugInformation;
 
-                SetSequencePoint(ni, instrSeqPoint);
+                ni.Offset = instr.Offset;
+
+                SetSequencePoint(ni, originalDebugInfo.GetSequencePoint(instr));
                 nb.Instructions.Add(ni);
 
                 // -- //
@@ -551,7 +558,6 @@ namespace ILRepacking
                 {
                     if(point == null) return;
 
-                    var allSeqPoints = parent.DebugInformation.SequencePoints;
                     var seqPoint = new SequencePoint(instruction, point.Document)
                     {
                         StartLine   = point.StartLine,
@@ -560,9 +566,10 @@ namespace ILRepacking
                         EndColumn   = point.EndColumn
                     };
 
-                    allSeqPoints.Add(seqPoint);
+                    parentDebugInfo.SequencePoints.Add(seqPoint);
                 }
             }
+
             _repackContext.LineIndexer.PostMethodBodyRepack(parent);
 
             for (int i = 0; i < body.Instructions.Count; i++)
@@ -601,6 +608,89 @@ namespace ILRepacking
                 }
 
                 nb.ExceptionHandlers.Add(neh);
+            }
+        }
+
+        private void CloneDebugInformationScope(MethodDefinition source, MethodDefinition destination)
+        {
+            var sourceDebugInfo       = source.DebugInformation;
+            var desinationDebugInfo   = destination.DebugInformation;
+            desinationDebugInfo.Scope = _Clone(sourceDebugInfo.Scope);
+
+            // -- //
+
+            ScopeDebugInformation _Clone(ScopeDebugInformation sourceScope)
+            {
+                if(sourceScope == null) return null;
+
+                var module      = destination.Module;
+                var sourceStart = sourceScope.Start;
+                var sourceEnd   = sourceScope.End;
+
+                ScopeDebugInformation destScope;
+                Instruction           destStart = null;
+                Instruction           destEnd   = null;
+
+                try
+                {
+                    destStart = destination.Body.Instructions.FirstOrDefault(i => i.Offset == sourceStart.Offset);
+                    destEnd   = destination.Body.Instructions.FirstOrDefault(i => i.Offset == sourceEnd.Offset);
+                }
+                catch(NotSupportedException)
+                {
+                    // ".Offset" throw an exception because either of its "instruction" or "offset" field is null.
+                    // We can ignore it and use a null "destStart" or "destEnd" value.
+                }
+                finally
+                {
+                    destScope = new ScopeDebugInformation(destStart, destEnd);
+                }
+
+                if(sourceScope.Import != null)
+                {
+                    destScope.Import = new ImportDebugInformation();
+
+                    foreach(var sourceTarget in sourceScope.Import.Targets)
+                    {
+                        var destTarget = new ImportTarget(sourceTarget.Kind)
+                        {
+                            Namespace         = sourceTarget.Namespace,
+                            Alias             = sourceTarget.Alias,
+                            Type              = sourceTarget.Type != null ? module.ImportReference(sourceTarget.Type) : null,
+                            AssemblyReference = module.Assembly.Name // TODO not sure about using this value
+                        };
+
+                        destScope.Import.Targets.Add(destTarget);
+                    }
+                }
+
+                foreach(var sourceNestedScope in sourceScope.Scopes)
+                    destScope.Scopes.Add(_Clone(sourceNestedScope));
+
+                foreach(var sourceVariable in sourceScope.Variables)
+                {
+                    var variableDef  = destination.Body.Variables.First(v => v.Index == sourceVariable.Index);
+                    var destVariable = new VariableDebugInformation(variableDef, sourceVariable.Name)
+                    {
+                        Attributes       = sourceVariable.Attributes,
+                        IsDebuggerHidden = sourceVariable.IsDebuggerHidden
+                    };
+
+                    destScope.Variables.Add(destVariable);
+                }
+
+                foreach(var sourceConstant in sourceScope.Constants)
+                {
+                    var destConstant = new ConstantDebugInformation(
+                        sourceConstant.Name,
+                        module.ImportReference(sourceConstant.ConstantType),
+                        sourceConstant.Value
+                    );
+
+                    destScope.Constants.Add(destConstant);
+                }
+
+                return destScope;
             }
         }
 
