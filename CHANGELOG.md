@@ -1,4 +1,9 @@
 # IL Repack changelog
+## 2.1.0
+### Added
+* Option `/skipconfig` can be now used to skip merging the assemblies config files
+* Update the NuGet package information with structured license information
+
 ## 2.0.18
 ### Fixed
 * Fix issue when repacking multiple results of `/renameInternalized`-previously repacked
