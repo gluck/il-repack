@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 
 namespace ILRepacking
@@ -39,6 +40,8 @@ namespace ILRepacking
 
                 if (validConfigFiles.Count == 0)
                     return;
+
+                repack.Logger.Info($"Merging config files: {string.Join(",", validConfigFiles)}...");
 
                 string firstFile = validConfigFiles[0];
                 var dataset = new System.Data.DataSet();
