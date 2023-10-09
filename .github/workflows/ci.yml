@@ -26,9 +26,11 @@ jobs:
         with:
             dotnet-version: '6.0.x'
 
-      - name: Setup MSBuildSDKsPath
+      - name: Setup Environment
         if: matrix.os == 'ubuntu-latest'
-        run: echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
+        run:
+          echo "MSBuildSDKsPath=/usr/share/dotnet/sdk/$(dotnet --version)/Sdks/" >> $GITHUB_ENV
+          echo "MSBuildEnableWorkloadResolver=false" >> $GITHUB_ENV
 
       - name: Build
         run: ./gradlew -is --console plain nunit
