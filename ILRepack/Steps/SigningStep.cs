@@ -67,9 +67,11 @@ namespace ILRepacking.Steps
                 }
                 _repackContext.TargetAssemblyDefinition.Name.PublicKey = publicKey;
                 _repackContext.TargetAssemblyDefinition.Name.Attributes |= AssemblyAttributes.PublicKey;
-                _repackContext.TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
                 if (!_repackOptions.DelaySign)
+                {
+                    _repackContext.TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
                     KeyPair = snkp;
+                }
             }
             else
             {
