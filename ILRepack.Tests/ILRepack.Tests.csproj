@@ -1,55 +1,19 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{468ED600-2E3B-471C-BB8A-B0D968FD7FA2}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ILRepack.Tests</RootNamespace>
-    <AssemblyName>ILRepack.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug_unix|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug_unix\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TargetFramework>net472</TargetFramework>
+    <DebugType>embedded</DebugType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PresentationCore" Condition=" '$(Configuration)' != 'Debug_unix' " />
-    <Reference Include="PresentationFramework" Condition=" '$(Configuration)' != 'Debug_unix' " />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -66,21 +30,9 @@
     <Compile Include="Utils\BamlDocumentMatcher.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
-      <Project>{d68133bd-1e63-496e-9ede-4fbdbf77b486}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj">
-      <Project>{801489b7-46cb-42d0-8581-0120f3566a8f}</Project>
-      <Name>ClassLibrary</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ILRepack\ILRepack.csproj">
-      <Project>{4a253a60-d998-4ca2-b9d5-46567a2fbf80}</Project>
-      <Name>ILRepack</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj" />
+    <ProjectReference Include="..\ILRepack\ILRepack.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources\BamlGeneration\GenericXaml\EmptyResourceDictionary\End.xaml">
@@ -117,18 +69,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="BamlParser">
-      <Version>1.0.0</Version>
-    </PackageReference>
-    <PackageReference Include="fasterflect">
-      <Version>2.1.3</Version>
-    </PackageReference>
-    <PackageReference Include="Moq">
-      <Version>4.2.1409.1722</Version>
-    </PackageReference>
-    <PackageReference Include="NUnit">
-      <Version>2.6.4</Version>
-    </PackageReference>
+    <PackageReference Include="BamlParser" Version="1.0.0" />
+    <PackageReference Include="fasterflect" Version="2.1.3" />
+    <PackageReference Include="Moq" Version="4.2.1409.1722" />
+    <PackageReference Include="NUnit" Version="2.6.4" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
