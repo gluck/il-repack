@@ -32,3 +32,4 @@ _NCrunch*
 *.DotSettings
 /.vs
 /.idea
+*.binlog
