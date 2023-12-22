@@ -23,6 +23,11 @@ namespace ILRepacking
 
         static MethodDefinition GetBaseMethodInTypeHierarchy(MethodDefinition method)
         {
+            if (method.IsNewSlot)
+            {
+                return null;
+            }
+
             TypeDefinition @base = GetBaseType(method.DeclaringType);
             while (@base != null)
             {
