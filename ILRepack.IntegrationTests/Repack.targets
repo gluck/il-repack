@@ -1,0 +1,28 @@
+<Project>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\ILRepack\ILRepack.csproj" ReferenceOutputAssembly="false" OutputItemType="ILRepackExe" />
+  </ItemGroup>
+
+  <Target Name="GatherInputs">
+    <ItemGroup>
+      <ILRepackInput Include="$(TargetDir)\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="Repack"
+          DependsOnTargets="GatherInputs"
+          AfterTargets="Build"
+          Inputs="@(ILRepackInput);@(ILRepackExe);$(TargetPath);$(MSBuildThisFileFullPath)"
+          Outputs="$(TargetDir)\merged\$(TargetFileName)">
+    <MakeDir Directories="$(TargetDir)merged" />
+    <PropertyGroup>
+      <SpaceSeparatedFiles>@(ILRepackInput->'%(Filename)%(Extension)')</SpaceSeparatedFiles>
+      <SpaceSeparatedFiles>$(SpaceSeparatedFiles.Replace(";", " "))</SpaceSeparatedFiles>
+    </PropertyGroup>
+    <Exec Command="&quot;@(ILRepackExe)&quot; /verbose /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) $(SpaceSeparatedFiles)"
+        WorkingDirectory="$(TargetDir)"
+        ConsoleToMSBuild="True" />
+  </Target>
+
+</Project>

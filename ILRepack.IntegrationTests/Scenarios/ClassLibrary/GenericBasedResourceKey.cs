@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
 using System.Windows;
 
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+
 namespace ClassLibrary
 {
     public enum ThemesResourceKey

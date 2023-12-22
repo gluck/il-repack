@@ -17,7 +17,7 @@ namespace AnotherClassLibrary
                 await stringWriter.WriteAsync("42");
 
                 // TaskEx is in the .NET 4.0 assembly
-                await TaskEx.Delay(TimeSpan.FromMilliseconds(500));
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
 
                 return int.Parse(stringWriter.ToString());
             }
