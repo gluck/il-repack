@@ -4,8 +4,11 @@ install:
 - git submodule update --init --recursive
 build_script:
 - msbuild /r /m /bl
-- gradlew.bat -is nunit nugetPack
-test: off
+test:
+  assemblies:
+    only:
+      - ILRepack.Tests.dll
+      - ILRepack.IntegrationTests.dll
 artifacts:
   - path: 'build\distributions\*.nupkg'
     name: Nuget
