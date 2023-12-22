@@ -93,7 +93,7 @@ namespace ILRepack.IntegrationTests.NuGet
                     .WithArtifact(@"lib\net45\ReactiveUI.dll"),
                 Package.From("Splat", "1.6.2")
                     .WithArtifact(@"lib\net45\Splat.dll"))
-                .WithExtraArgs("/keyfile:../../../ILRepack/ILRepack.snk");
+                .WithExtraArgs("/keyfile:../../../../ILRepack/ILRepack.snk");
             platform.Packages.ToObservable()
                 .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
                 .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
