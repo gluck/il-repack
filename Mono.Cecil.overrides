@@ -1,0 +1,7 @@
+<Project>
+
+  <PropertyGroup>
+    <CustomAfterMicrosoftCSharpTargets>$(MSBuildThisFileDirectory)Mono.Cecil.targets</CustomAfterMicrosoftCSharpTargets>
+  </PropertyGroup>
+
+</Project>

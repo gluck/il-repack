@@ -15,7 +15,6 @@
     <Compile Include="NuGet\TestHelpers.cs" />
     <Compile Include="NuGet\TestsPlatformEnglightenmentProvider.cs" />
     <Compile Include="Peverify\PeverifyHelper.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scenarios.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -27,6 +26,7 @@
     <PackageReference Include="BamlParser" Version="1.0.0" />
     <PackageReference Include="fasterflect" Version="2.1.3" />
     <PackageReference Include="FSharp.Core" Version="4.0.0.1" />
+    <PackageReference Include="SharpZipLib" Version="1.3.3"/>
     <PackageReference Include="Moq" Version="4.2.1409.1722" />
     <PackageReference Include="NUnit" Version="2.6.4" />
     <PackageReference Include="Rx-Main" Version="2.2.5" />
