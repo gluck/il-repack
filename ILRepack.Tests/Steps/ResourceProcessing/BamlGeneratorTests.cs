@@ -50,7 +50,7 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
                                        "This will prevent proper WPF application merging."));
         }
 
-        public IEnumerable GetExistingGenericXamlTestCases()
+        public static IEnumerable GetExistingGenericXamlTestCases()
         {
             string[] testCases =
             {
@@ -64,7 +64,7 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
         }
 
         [Test]
-        [TestCaseSource("GetExistingGenericXamlTestCases")]
+        [TestCaseSource(nameof(GetExistingGenericXamlTestCases))]
         public void AddMergedDictionaries_GivenExistingGenericXaml_CreatesExpectedXaml(
             string startingGenericXaml, string endResultGenericXaml)
         {
