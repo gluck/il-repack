@@ -94,7 +94,9 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
 
         private static BamlDocument GetResourceBamlDocument(string filename)
         {
-            Application.ResourceAssembly = Assembly.GetExecutingAssembly();
+            typeof(Application)
+                .GetField("_resourceAssembly", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, Assembly.GetExecutingAssembly());
 
             var streamInfo = Application.GetResourceStream(new Uri("/Resources/BamlGeneration/GenericXaml/" + filename, UriKind.Relative));
             var expectedBamlDocument = BamlReader.ReadDocument(streamInfo.Stream);
@@ -106,7 +108,7 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
         {
             var mainAssembly = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition("ClassLibrary", Version.Parse("1.0")),
-                "CLassLibrary", ModuleKind.Dll);
+                "ClassLibrary", ModuleKind.Dll);
 
             var references = new Mono.Collections.Generic.Collection<AssemblyNameReference>
             {

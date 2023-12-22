@@ -40,26 +40,27 @@ namespace ILRepack.Tests.Utils
             _expectedDocument = expectedDocument;
         }
 
-        public override bool Matches(object actual)
+        public override ConstraintResult ApplyTo<TActual>(TActual actual)
         {
-            var bamlDocument = (BamlDocument)actual;
+            var bamlDocument = (BamlDocument)(object)actual;
 
             if (!AreEqual(bamlDocument.Signature, _expectedDocument.Signature))
             {
                 _context = "Document Signature";
-                return false;
+                return new ConstraintResult(this, actual, isSuccess: false);
             }
 
             if (!HaveSameVersion("ReaderVersion", bamlDocument, _expectedDocument) ||
                 !HaveSameVersion("WriterVersion", bamlDocument, _expectedDocument) ||
                 !HaveSameVersion("UpdaterVersion", bamlDocument, _expectedDocument))
             {
-                return false;
+                return new ConstraintResult(this, actual, isSuccess: false);
             }
 
-            return AreRecordsEquivalent(
+            bool success = AreRecordsEquivalent(
                 GetRelevantRecords(_expectedDocument),
                 GetRelevantRecords(bamlDocument));
+            return new ConstraintResult(this, actual, success);
         }
 
         private bool HaveSameVersion(
@@ -154,19 +155,6 @@ namespace ILRepack.Tests.Utils
         private List<BamlRecord> GetRelevantRecords(BamlDocument document)
         {
             return document.Where(node => !(node is LineNumberAndPositionRecord || node is LinePositionRecord)).ToList();
-        }
-
-        public override void WriteActualValueTo(MessageWriter writer)
-        {
-            writer.WriteActualValue(_actualValue);
-        }
-
-        public override void WriteDescriptionTo(MessageWriter writer)
-        {
-            writer.WriteExpectedValue(_expectedValue);
-
-            if (_context != null)
-                writer.WriteMessageLine("In " + _context);
         }
     }
 }

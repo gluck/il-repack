@@ -4,7 +4,7 @@
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DevExpressMvvm" Version="17.1.6" />
+    <PackageReference Include="DevExpressMvvm" Version="17.1.6" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
