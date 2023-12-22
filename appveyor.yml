@@ -11,3 +11,5 @@ artifacts:
     name: Nuget
   - path: 'msbuild.binlog'
     name: 'MSBuild binlog'
+on_failure:
+- appveyor PushArtifact msbuild.binlog
