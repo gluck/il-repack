@@ -20,7 +20,7 @@
       <SpaceSeparatedFiles>@(ILRepackInput->'%(Filename)%(Extension)')</SpaceSeparatedFiles>
       <SpaceSeparatedFiles>$(SpaceSeparatedFiles.Replace(";", " "))</SpaceSeparatedFiles>
     </PropertyGroup>
-    <Exec Command="&quot;@(ILRepackExe)&quot; /verbose /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) $(SpaceSeparatedFiles)"
+    <Exec Command="&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs) /verbose /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) $(SpaceSeparatedFiles)"
         WorkingDirectory="$(TargetDir)"
         ConsoleToMSBuild="True" />
   </Target>
