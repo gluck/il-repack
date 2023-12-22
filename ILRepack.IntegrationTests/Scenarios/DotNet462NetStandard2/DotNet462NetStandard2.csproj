@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
