@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Windows;
 
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+
 namespace WPFSampleApplication
 {
     public partial class MainWindow
