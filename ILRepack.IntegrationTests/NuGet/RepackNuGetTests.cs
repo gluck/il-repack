@@ -62,12 +62,12 @@ namespace ILRepack.IntegrationTests.NuGet
 
         private IList<string> DownloadPackages(IEnumerable<Package> packages, Predicate<string> fileFilter = null)
         {
-            var assemblyNames = new List<string>();
+            var assemblyNames = new HashSet<string>();
 
             foreach (var package in packages)
             {
                 var assemblies = NuGetHelpers.GetNupkgAssembliesAsync(package, fileFilter);
-                foreach (var assembly in assemblies)
+                foreach (var assembly in assemblies.OrderBy(s => s))
                 {
                     string fileName = Path.GetFileName(assembly.name);
                     if (fileFilter != null && !fileFilter(fileName))
@@ -75,12 +75,16 @@ namespace ILRepack.IntegrationTests.NuGet
                         continue;
                     }
 
+                    if (!assemblyNames.Add(fileName))
+                    {
+                        continue;
+                    }
+
                     TestHelpers.SaveAs(assembly.stream, tempDirectory, fileName);
-                    assemblyNames.Add(fileName);
                 }
             }
 
-            return assemblyNames;
+            return assemblyNames.ToArray();
         }
 
         [Test]
@@ -151,7 +155,8 @@ namespace ILRepack.IntegrationTests.NuGet
         {
             var platform = Platform.From(
                 Package.From("SourceLink.Core", "1.1.0"),
-                Package.From("sourcelink.symbolstore", "1.1.0"));
+                Package.From("sourcelink.symbolstore", "1.1.0"),
+                Package.From("FSharp.Core", "4.0.0.1"));
 
             var assemblyNames = DownloadPackages(platform.Packages);
             RepackPlatform(platform, assemblyNames);
