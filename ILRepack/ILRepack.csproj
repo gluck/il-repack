@@ -35,8 +35,9 @@
 
   <Target Name="PrepareNupkgInfo">
     <PropertyGroup>
-      <NuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</NuspecPath>
-      <NupkgPath>$(OutDir)ILRepack.nupkg</NupkgPath>
+      <Version>2.19.0</Version>
+      <ILRepackNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</ILRepackNuspecPath>
+      <ILRepackNupkgPath>$(OutDir)ILRepack.$(Version).nupkg</ILRepackNupkgPath>
       <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
       <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
       <DependencyDllList>BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll</DependencyDllList>
@@ -65,11 +66,11 @@
       AfterTargets="Build"
       DependsOnTargets="MakeStandaloneILRepack"
       Condition="$(Configuration) == 'Release'"
-      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(NuspecPath);$(MSBuildThisFileFullPath)"
-      Outputs="$(NupkgPath)">
+      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(ILRepackNuspecPath);$(MSBuildThisFileFullPath)"
+      Outputs="$(ILRepackNupkgPath)">
     <PackTask
-        PackItem="$(NuspecPath)"
-        NuspecFile="$(NuspecPath)"
+        PackItem="$(ILRepackNuspecPath)"
+        NuspecFile="$(ILRepackNuspecPath)"
         NuspecBasePath="$(OutDir)"
         NuspecOutputPath="$(NuspecOutputPath)"
         PackageOutputPath="$(OutDir)"
