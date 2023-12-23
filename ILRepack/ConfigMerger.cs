@@ -16,7 +16,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace ILRepacking
 {
@@ -26,15 +27,14 @@ namespace ILRepacking
         {
             try
             {
-                var validConfigFiles = new List<string>();
+                var validConfigFiles = new List<XDocument>();
                 foreach (string assembly in repack.MergedAssemblyFiles)
                 {
                     string assemblyConfig = assembly + ".config";
                     if (!File.Exists(assemblyConfig))
                         continue;
-                    var doc = new XmlDocument();
-                    doc.Load(assemblyConfig);
-                    validConfigFiles.Add(assemblyConfig);
+                    var doc = XDocument.Load(assemblyConfig);
+                    validConfigFiles.Add(doc);
                 }
 
                 if (validConfigFiles.Count == 0)
@@ -42,22 +42,58 @@ namespace ILRepacking
 
                 repack.Logger.Info($"Merging config files: {string.Join(",", validConfigFiles)}...");
 
-                string firstFile = validConfigFiles[0];
-                var dataset = new System.Data.DataSet();
-                dataset.ReadXml(firstFile);
-                validConfigFiles.Remove(firstFile);
-
-                foreach (string configFile in validConfigFiles)
+                var firstFile = validConfigFiles[0];
+                validConfigFiles.RemoveAt(0);
+                foreach (var configFile in validConfigFiles)
                 {
-                    var nextDataset = new System.Data.DataSet();
-                    nextDataset.ReadXml(configFile);
-                    dataset.Merge(nextDataset);
+                    MergeElements(firstFile.Root, configFile.Root);
                 }
-                dataset.WriteXml(repack.Options.OutputFile + ".config");
+                firstFile.Save(repack.Options.OutputFile + ".config");
             }
             catch (Exception e)
             {
                 repack.Logger.Error("Failed to merge configuration files: " + e);
+            }
+        }
+
+        // determine which elements we consider the same
+        private static bool AreEquivalent(XElement a, XElement b)
+        {
+            if (a.Name != b.Name) return false;
+            if (!a.HasAttributes && !b.HasAttributes) return true;
+            if (!a.HasAttributes || !b.HasAttributes) return false;
+            if (a.Attributes().Count() != b.Attributes().Count()) return false;
+
+            return a.Attributes().All(attA => b.Attributes(attA.Name)
+                .Count(attB => attB.Value == attA.Value) != 0);
+        }
+
+        // Merge "merged" document B into "source" A
+        private static void MergeElements(XElement parentA, XElement parentB)
+        {
+            // merge per-element content from parentB into parentA
+            //
+            foreach (XNode childB in parentB.DescendantNodes())
+            {
+                if (childB is XText) continue;
+
+                // merge childB with first equivalent childA
+                // equivalent childB1, childB2,.. will be combined
+                //
+                bool isMatchFound = false;
+                foreach (XElement childA in parentA.Descendants())
+                {
+                    if (AreEquivalent(childA, (XElement)childB))
+                    {
+                        MergeElements(childA, (XElement)childB);
+                        isMatchFound = true;
+                        break;
+                    }
+                }
+
+                // if there is no equivalent childA, add childB into parentA
+                //
+                if (!isMatchFound) parentA.Add(childB);
             }
         }
     }
