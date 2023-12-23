@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="ILRepack.snk" />
+    <None Include="$(MSBuildThisFileDirectory)..\ILRepack.props" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -31,4 +32,32 @@
   <ItemGroup>
     <EmbeddedResource Include="$(PkgSourceLink)\tools\pdbstr.exe" />
   </ItemGroup>
+
+  <Target Name="PrepareNupkgInfo">
+    <PropertyGroup>
+      <NuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</NuspecPath>
+      <NupkgPath>$(OutDir)ILRepack.nupkg</NupkgPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="PackNuGet"
+      AfterTargets="Build"
+      DependsOnTargets="PrepareNupkgInfo"
+      Condition="$(Configuration) == 'Release'">
+    <MakeDir Directories="Repacked" />
+    <Exec
+        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /out:Repacked\ILRepack.exe BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll" 
+        WorkingDirectory="$(OutDir)"
+        ConsoleToMSBuild="True" />
+    <PackTask
+        PackItem="$(NuspecPath)"
+        NuspecFile="$(NuspecPath)"
+        NuspecBasePath="$(OutDir)"
+        NuspecOutputPath="$(NuspecOutputPath)"
+        PackageOutputPath="$(OutDir)"
+        RestoreOutputPath="$(RestoreOutputPath)"
+        SymbolPackageFormat="snupkg"
+        />
+  </Target>
+
 </Project>
