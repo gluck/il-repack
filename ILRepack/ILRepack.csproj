@@ -12,7 +12,7 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="ILRepack.snk" />
+    <None Include="ILRepack.snk" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(MSBuildThisFileDirectory)..\ILRepack.props" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
@@ -37,18 +37,36 @@
     <PropertyGroup>
       <NuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</NuspecPath>
       <NupkgPath>$(OutDir)ILRepack.nupkg</NupkgPath>
+      <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
+      <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
+      <DependencyDllList>BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll</DependencyDllList>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="MakeStandaloneILRepack"
+      DependsOnTargets="PrepareNupkgInfo"
+      Inputs="$(TargetPath);$(OutDir)Mono.Cecil.dll;$(MSBuildThisFileFullPath)"
+      Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
+    <MakeDir Directories="$(OutDir)Repacked" />
+    <Exec
+        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
+        WorkingDirectory="$(OutDir)"
+        ConsoleToMSBuild="True" />
+    <Exec
+        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /keyfile:ILRepack.snk /out:Repacked\ILRepack.dll /target:library $(DependencyDllList)" 
+        WorkingDirectory="$(OutDir)"
+        ConsoleToMSBuild="True" />
+    <PropertyGroup>
+      
     </PropertyGroup>
   </Target>
 
   <Target Name="PackNuGet"
       AfterTargets="Build"
-      DependsOnTargets="PrepareNupkgInfo"
-      Condition="$(Configuration) == 'Release'">
-    <MakeDir Directories="Repacked" />
-    <Exec
-        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /out:Repacked\ILRepack.exe BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll" 
-        WorkingDirectory="$(OutDir)"
-        ConsoleToMSBuild="True" />
+      DependsOnTargets="MakeStandaloneILRepack"
+      Condition="$(Configuration) == 'Release'"
+      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(NuspecPath);$(MSBuildThisFileFullPath)"
+      Outputs="$(NupkgPath)">
     <PackTask
         PackItem="$(NuspecPath)"
         NuspecFile="$(NuspecPath)"
@@ -56,8 +74,7 @@
         NuspecOutputPath="$(NuspecOutputPath)"
         PackageOutputPath="$(OutDir)"
         RestoreOutputPath="$(RestoreOutputPath)"
-        SymbolPackageFormat="snupkg"
-        />
+        SymbolPackageFormat="snupkg" />
   </Target>
 
 </Project>
