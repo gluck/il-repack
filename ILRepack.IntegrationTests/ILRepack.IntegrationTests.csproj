@@ -31,5 +31,6 @@
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="Rx-Main" Version="2.2.5" />
     <PackageReference Include="SourceLink" Version="1.1.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 </Project>

@@ -24,9 +24,14 @@ namespace ILRepack.IntegrationTests.NuGet
             return new Package { Name = this.Name, Version = this.Version, AssembliesMatcher = matcher };
         }
 
-        public bool Matches<T>(Tuple<string, T> item)
+        public bool Matches(string text)
         {
-            return AssembliesMatcher(item.Item1);
+            if (AssembliesMatcher == null)
+            {
+                return true;
+            }
+
+            return AssembliesMatcher(text);
         }
 
         public static Package From(string name, string version)

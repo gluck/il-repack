@@ -32,12 +32,15 @@ namespace ILRepack.IntegrationTests.NuGet
         [TestCaseSource(typeof(Data), nameof(Data.Packages))]
         public void RoundtripNupkg(Package p)
         {
-            var count = NuGetHelpers.GetNupkgAssembliesAsync(p)
-                .Do(t => TestHelpers.SaveAs(t.Item2(), tempDirectory, "foo.dll"))
-                .Do(file => RepackFoo(file.Item1))
-                .Do(_ => VerifyTest(new[] { "foo.dll" }))
-                .ToEnumerable().Count();
-            Assert.IsTrue(count > 0);
+            var list = NuGetHelpers.GetNupkgAssembliesAsync(p);
+            Assert.IsTrue(list.Count() > 0);
+
+            foreach (var item in list)
+            {
+                TestHelpers.SaveAs(item.stream, tempDirectory, "foo.dll");
+                RepackFoo(item.name);
+                VerifyTest(new[] { "foo.dll" });
+            }
         }
 
         [Category("LongRunning")]
@@ -45,18 +48,38 @@ namespace ILRepack.IntegrationTests.NuGet
         [TestCaseSource(typeof(Data), nameof(Data.Platforms), Category = "ComplexTests")]
         public void NupkgPlatform(Platform platform)
         {
-            platform.Packages.ToObservable()
-                .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
-                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
-                .Select(lib => Path.GetFileName(lib.Item1))
-                .ToList()
-                .Do(list => RepackPlatform(platform, list))
-                .Wait();
+            var assemblyNames = DownloadPackages(platform.Packages);
+            RepackPlatform(platform, assemblyNames);
+
             var errors = PeverifyHelper
                 .Peverify(tempDirectory, "test.dll")
                 .Do(Console.WriteLine)
                 .ToErrorCodes().ToEnumerable();
+
             Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_STACK_OVERFLOW));
+        }
+
+        private IList<string> DownloadPackages(IEnumerable<Package> packages, Predicate<string> fileFilter = null)
+        {
+            var assemblyNames = new List<string>();
+
+            foreach (var package in packages)
+            {
+                var assemblies = NuGetHelpers.GetNupkgAssembliesAsync(package, fileFilter);
+                foreach (var assembly in assemblies)
+                {
+                    string fileName = Path.GetFileName(assembly.name);
+                    if (fileFilter != null && !fileFilter(fileName))
+                    {
+                        continue;
+                    }
+
+                    TestHelpers.SaveAs(assembly.stream, tempDirectory, fileName);
+                    assemblyNames.Add(fileName);
+                }
+            }
+
+            return assemblyNames;
         }
 
         [Test]
@@ -72,13 +95,9 @@ namespace ILRepack.IntegrationTests.NuGet
                     .WithArtifact(@"lib\net40\Microsoft.Threading.Tasks.dll"))
                 .WithExtraArgs(@"/targetplatform:v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0");
 
-            platform.Packages.ToObservable()
-                .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
-                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
-                .Select(lib => Path.GetFileName(lib.Item1))
-                .ToList()
-                .Do(list => RepackPlatform(platform, list))
-                .First();
+            var assemblyNames = DownloadPackages(platform.Packages);
+            RepackPlatform(platform, assemblyNames);
+
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
             Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TOKEN_RESOLVE));
             Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TYPELOAD));
@@ -94,36 +113,22 @@ namespace ILRepack.IntegrationTests.NuGet
                 Package.From("Splat", "1.6.2")
                     .WithArtifact(@"lib\net45\Splat.dll"))
                 .WithExtraArgs("/keyfile:../../../../ILRepack/ILRepack.snk");
-            platform.Packages.ToObservable()
-                .SelectMany(NuGetHelpers.GetNupkgAssembliesAsync)
-                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
-                .Select(lib => Path.GetFileName(lib.Item1))
-                .ToList()
-                .Do(list => RepackPlatform(platform, list))
-                .Wait();
+
+            var assemblyNames = DownloadPackages(platform.Packages);
+            RepackPlatform(platform, assemblyNames);
+
             var errors = PeverifyHelper.Peverify(tempDirectory, "test.dll").Do(Console.WriteLine).ToErrorCodes().ToEnumerable();
             Assert.IsFalse(errors.Contains(PeverifyHelper.META_E_CA_FRIENDS_SN_REQUIRED));
         }
-
 
         [Test]
         [Platform(Include = "win")]
         public void VerifiesMergedPdbUnchangedSourceIndexationForTfsIndexation()
         {
-            const string LibName = "TfsEngine.dll";
-            const string PdbName = "TfsEngine.pdb";
-
             var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
-            platform.Packages.ToObservable()
-                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
-                .Where(lib => new[] { LibName, PdbName }.Any(lib.Item1.EndsWith))
-                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
-                .ToArray() // to download PDB file as well
-                .SelectMany(_ => _)
-                .Select(lib => Path.GetFileName(lib.Item1))
-                .Where(path => path.EndsWith("dll"))
-                .Do(path => RepackPlatform(platform, new List<string> { path }))
-                .Single();
+
+            var assemblyNames = DownloadPackages(platform.Packages, s => Path.GetFileName(s).StartsWith("TfsEngine.", StringComparison.OrdinalIgnoreCase));
+            RepackPlatform(platform, new[] { "TfsEngine.dll" });
 
             var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
             var actual = GetSrcSrv(Tmp("test.pdb"));
@@ -142,14 +147,9 @@ namespace ILRepack.IntegrationTests.NuGet
             var platform = Platform.From(
                 Package.From("SourceLink.Core", "1.1.0"),
                 Package.From("sourcelink.symbolstore", "1.1.0"));
-            platform.Packages.ToObservable()
-                .SelectMany(NuGetHelpers.GetNupkgContentAsync)
-                .Do(lib => TestHelpers.SaveAs(lib.Item2(), tempDirectory, lib.Item1))
-                .Select(lib => Path.GetFileName(lib.Item1))
-                .Where(path => path.EndsWith("dll"))
-                .ToArray()
-                .Do(path => RepackPlatform(platform, path))
-                .Single();
+
+            var assemblyNames = DownloadPackages(platform.Packages);
+            RepackPlatform(platform, assemblyNames);
 
             AssertSourceLinksAreEquivalent(
                 new[] { "SourceLink.Core.pdb", "SourceLink.SymbolStore.pdb", "SourceLink.SymbolStore.CorSym.pdb" }.Select(Tmp),
