@@ -1,14 +1,15 @@
-﻿using ILRepack.IntegrationTests.Helpers;
-using ILRepack.IntegrationTests.Peverify;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.PlatformServices;
+using System.Reflection;
+using ILRepack.IntegrationTests.Helpers;
+using ILRepack.IntegrationTests.Peverify;
 using ILRepacking.Steps.SourceServerData;
+using NUnit.Framework;
 
 namespace ILRepack.IntegrationTests.NuGet
 {
@@ -107,12 +108,16 @@ namespace ILRepack.IntegrationTests.NuGet
         [Platform(Include = "win")]
         public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
         {
+            var snkPath = Path.GetFullPath(
+                Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    "ILRepack.snk"));
             var platform = Platform.From(
                 Package.From("reactiveui-core", "6.5.0")
                     .WithArtifact(@"lib\net45\ReactiveUI.dll"),
                 Package.From("Splat", "1.6.2")
                     .WithArtifact(@"lib\net45\Splat.dll"))
-                .WithExtraArgs("/keyfile:../../../../ILRepack/ILRepack.snk");
+                .WithExtraArgs($"/keyfile:{snkPath}");
 
             var assemblyNames = DownloadPackages(platform.Packages);
             RepackPlatform(platform, assemblyNames);
