@@ -22,7 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
-    <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
     <ProjectReference Include="..\ILRepack\ILRepack.csproj" />
   </ItemGroup>
   <ItemGroup>
