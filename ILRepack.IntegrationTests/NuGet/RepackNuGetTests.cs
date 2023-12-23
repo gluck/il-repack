@@ -136,7 +136,15 @@ namespace ILRepack.IntegrationTests.NuGet
         {
             var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
 
-            var assemblyNames = DownloadPackages(platform.Packages, s => Path.GetFileName(s).StartsWith("TfsEngine.", StringComparison.OrdinalIgnoreCase));
+            var assemblyNames = DownloadPackages(
+                platform.Packages,
+                s =>
+                {
+                    string name = Path.GetFileName(s);
+                    return 
+                        name.StartsWith("TfsEngine.", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("FSharp.Core.dll", StringComparison.OrdinalIgnoreCase);
+                });
             RepackPlatform(platform, new[] { "TfsEngine.dll" });
 
             var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
