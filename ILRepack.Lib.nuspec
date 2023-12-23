@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
-    <id>ILRepack</id>
+    <id>ILRepack.Lib</id>
     <version>2.0.19</version>
     <title>ILRepack - Open-source alternative to ILMerge</title>
     <authors>Francois Valdy</authors>
@@ -17,7 +17,6 @@
     <copyright>Copyright Francois Valdy 2011-2015</copyright>
   </metadata>
   <files>
-    <file src="ILRepack.props" target="build" />
-    <file src="Repacked\ILRepack.exe" target="tools" />
+    <file src="Repacked\ILRepack.dll" target="lib\net472" />
   </files>
 </package>

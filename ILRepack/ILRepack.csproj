@@ -35,9 +35,11 @@
 
   <Target Name="PrepareNupkgInfo">
     <PropertyGroup>
-      <Version>2.19.0</Version>
+      <Version>2.0.19</Version>
       <ILRepackNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</ILRepackNuspecPath>
+      <ILRepackLibNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.Lib.nuspec</ILRepackLibNuspecPath>
       <ILRepackNupkgPath>$(OutDir)ILRepack.$(Version).nupkg</ILRepackNupkgPath>
+      <ILRepackLibNupkgPath>$(OutDir)ILRepack.Lib.$(Version).nupkg</ILRepackLibNupkgPath>
       <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
       <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
       <DependencyDllList>BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll</DependencyDllList>
@@ -57,20 +59,27 @@
         Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /keyfile:ILRepack.snk /out:Repacked\ILRepack.dll /target:library $(DependencyDllList)" 
         WorkingDirectory="$(OutDir)"
         ConsoleToMSBuild="True" />
-    <PropertyGroup>
-      
-    </PropertyGroup>
   </Target>
 
   <Target Name="PackNuGet"
       AfterTargets="Build"
       DependsOnTargets="MakeStandaloneILRepack"
       Condition="$(Configuration) == 'Release'"
-      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(ILRepackNuspecPath);$(MSBuildThisFileFullPath)"
-      Outputs="$(ILRepackNupkgPath)">
+      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(ILRepackNuspecPath);$(ILRepackLibNuspecPath);$(MSBuildThisFileFullPath)"
+      Outputs="$(ILRepackNupkgPath);$(ILRepackLibNupkgPath)">
     <PackTask
         PackItem="$(ILRepackNuspecPath)"
         NuspecFile="$(ILRepackNuspecPath)"
+        NuspecProperties="version=$(Version)"
+        NuspecBasePath="$(OutDir)"
+        NuspecOutputPath="$(NuspecOutputPath)"
+        PackageOutputPath="$(OutDir)"
+        RestoreOutputPath="$(RestoreOutputPath)"
+        SymbolPackageFormat="snupkg" />
+    <PackTask
+        PackItem="$(ILRepackLibNuspecPath)"
+        NuspecProperties="version=$(Version)"
+        NuspecFile="$(ILRepackLibNuspecPath)"
         NuspecBasePath="$(OutDir)"
         NuspecOutputPath="$(NuspecOutputPath)"
         PackageOutputPath="$(OutDir)"
