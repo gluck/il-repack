@@ -30,8 +30,9 @@ namespace ILRepack.IntegrationTests.NuGet
             var predicate = fileFilter;
             if (predicate == null)
             {
-                predicate = n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                                 n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+                predicate = n => package.Matches(n) &&
+                    (n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                    n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
             }
 
             return GetNupkgContentAsync(package, predicate);

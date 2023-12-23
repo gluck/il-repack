@@ -30,7 +30,7 @@ namespace ILRepack.IntegrationTests.NuGet
             //Package.From("NHibernate", "4.0.3.4000"),
             Package.From("Ninject", "3.2.2"),
             Package.From("RestSharp", "105.0.1"),
-            Package.From("Rx-Core", "2.2.5"),
+            //Package.From("Rx-Core", "2.2.5"),
             Package.From("Rx_Experimental-Main", "1.1.11111"),
             Package.From("SharpZipLib", "0.86.0"),
             Package.From("System.Spatial", "5.6.4"),
