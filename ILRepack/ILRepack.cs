@@ -357,7 +357,7 @@ namespace ILRepacking
                 Logger.Info("Writing output assembly to disk");
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
-                if (isUnixEnvironment)
+                if (isUnixEnvironment && (kind == ModuleKind.Console || kind == ModuleKind.Windows))
                 {
                     Stat stat;
                     Logger.Info("Copying permissions from " + PrimaryAssemblyFile);
