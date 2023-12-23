@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Resources;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 
 namespace ILRepacking.Steps
 {
@@ -278,19 +278,20 @@ namespace ILRepacking.Steps
             return new EmbeddedResource(er.Name, er.Attributes, output);
         }
 
+        private static DataContractSerializer stringArraySerializer = new DataContractSerializer(typeof(string[]));
+
         private static string[] GetRepackListFromResource(EmbeddedResource resource)
         {
-            return (string[])new BinaryFormatter().Deserialize(resource.GetResourceStream());
+            return (string[])stringArraySerializer.ReadObject(resource.GetResourceStream());
         }
 
         private static EmbeddedResource GenerateRepackListResource(List<string> repackList)
         {
             repackList.Sort();
-            using (var stream = new MemoryStream())
-            {
-                new BinaryFormatter().Serialize(stream, repackList.ToArray());
-                return new EmbeddedResource(ILRepackListResourceName, ManifestResourceAttributes.Public, stream.ToArray());
-            }
+
+            var stream = new MemoryStream();
+            stringArraySerializer.WriteObject(stream, repackList.ToArray());
+            return new EmbeddedResource(ILRepackListResourceName, ManifestResourceAttributes.Public, stream.ToArray());
         }
     }
 }
