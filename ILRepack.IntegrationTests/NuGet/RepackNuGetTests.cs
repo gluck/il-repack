@@ -134,7 +134,9 @@ namespace ILRepack.IntegrationTests.NuGet
         [Platform(Include = "win")]
         public void VerifiesMergedPdbUnchangedSourceIndexationForTfsIndexation()
         {
-            var platform = Platform.From(Package.From("TfsIndexer", "1.2.4"));
+            var platform = Platform.From(
+                Package.From("TfsIndexer", "1.2.4"),
+                Package.From("FSharp.Core", "3.0.2"));
 
             var assemblyNames = DownloadPackages(
                 platform.Packages,
@@ -145,7 +147,7 @@ namespace ILRepack.IntegrationTests.NuGet
                         name.StartsWith("TfsEngine.", StringComparison.OrdinalIgnoreCase) ||
                         name.Equals("FSharp.Core.dll", StringComparison.OrdinalIgnoreCase);
                 });
-            RepackPlatform(platform, new[] { "TfsEngine.dll" });
+            RepackPlatform(platform, new[] { "TfsEngine.dll", "FSharp.Core.dll" });
 
             var expected = GetSrcSrv(Tmp("TfsEngine.pdb"));
             var actual = GetSrcSrv(Tmp("test.pdb"));
