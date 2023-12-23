@@ -10,7 +10,7 @@ test:
       - ILRepack.Tests.dll
       - ILRepack.IntegrationTests.dll
 artifacts:
-  - path: 'build\distributions\*.nupkg'
+  - path: 'ILRepack\bin\Release\*.nupkg'
     name: Nuget
   - path: 'msbuild.binlog'
     name: 'MSBuild binlog'
