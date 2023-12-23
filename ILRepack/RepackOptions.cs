@@ -98,6 +98,8 @@ namespace ILRepacking
             get { return allowedDuplicateNameSpaces; }
         }
 
+        public bool AllowAllDuplicateTypes { get; private set; }
+
         public string RepackDropAttribute { get; set; }
         public bool RenameInternalized { get; set; }
 
@@ -148,8 +150,22 @@ namespace ILRepacking
         void Parse()
         {
             AllowDuplicateResources = cmd.Modifier("allowduplicateresources");
+
+            bool allowDupModifier = cmd.Modifier("allowdup");
+
             foreach (string dupType in cmd.Options("allowdup"))
-                AllowDuplicateType(dupType);
+            {
+                if (!string.IsNullOrEmpty(dupType))
+                {
+                    AllowDuplicateType(dupType);
+                }
+            }
+
+            if (allowedDuplicateTypes.Count == 0 && allowDupModifier)
+            {
+                AllowAllDuplicateTypes = true;
+            }
+
             AllowMultipleAssemblyLevelAttributes = cmd.Modifier("allowmultiple");
             AllowWildCards = cmd.Modifier("wildcards");
             AllowZeroPeKind = cmd.Modifier("zeropekind");

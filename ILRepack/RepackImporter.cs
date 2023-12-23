@@ -682,7 +682,7 @@ namespace ILRepacking
             if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
                 return true;
 
-            if (_options.AllowedDuplicateTypes.Contains(fullName))
+            if (_options.AllowAllDuplicateTypes || _options.AllowedDuplicateTypes.Contains(fullName))
                 return true;
 
             var top = type;
