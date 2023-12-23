@@ -684,6 +684,12 @@ namespace ILRepacking
             if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
                 return true;
 
+            // This attribute marks a "struct" as a "ref struct",
+            // so it shouldn't be renamed otherwise all "ref struct"
+            // in the final assembly will turn into simple "struct"
+            if (fullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+                return true;
+
             if (_options.AllowAllDuplicateTypes || _options.AllowedDuplicateTypes.Contains(fullName))
                 return true;
 
