@@ -5,11 +5,14 @@
     <TargetFramework>net472</TargetFramework>
     <Product>ILRepack</Product>
     <Copyright>Copyright © Francois Valdy 2011</Copyright>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
-    <FileVersion>2.1.0.0</FileVersion>
+    <Version>2.0.19</Version>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <FileVersion>$(Version).0</FileVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <DebugType>embedded</DebugType>
+    <!-- Generated NuGet package doesn't have the target framework dependency, and we're OK with that -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <None Include="ILRepack.snk" CopyToOutputDirectory="PreserveNewest" />
@@ -33,7 +36,6 @@
 
   <Target Name="PrepareNupkgInfo">
     <PropertyGroup>
-      <Version>2.0.19</Version>
       <ILRepackNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</ILRepackNuspecPath>
       <ILRepackLibNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.Lib.nuspec</ILRepackLibNuspecPath>
       <ILRepackNupkgPath>$(OutDir)ILRepack.$(Version).nupkg</ILRepackNupkgPath>
@@ -50,13 +52,13 @@
       Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
     <MakeDir Directories="$(OutDir)Repacked" />
     <Exec
-        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
+        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /ver:$(AssemblyVersion) /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
         WorkingDirectory="$(OutDir)"
         ConsoleToMSBuild="True" />
-    <Exec
-        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /keyfile:ILRepack.snk /out:Repacked\ILRepack.dll /target:library $(DependencyDllList)" 
-        WorkingDirectory="$(OutDir)"
-        ConsoleToMSBuild="True" />
+    <Copy 
+        SourceFiles="$(OutDir)Repacked\ILRepack.exe" 
+        DestinationFiles="$(OutDir)Repacked\ILRepack.dll"
+        SkipUnchangedFiles="True" />
   </Target>
 
   <Target Name="PackNuGet"
