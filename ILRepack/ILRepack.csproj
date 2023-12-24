@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BamlParser" Version="1.0.0" />
@@ -42,7 +44,7 @@
       <ILRepackLibNupkgPath>$(OutDir)ILRepack.Lib.$(Version).nupkg</ILRepackLibNupkgPath>
       <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
       <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
-      <DependencyDllList>BamlParser.dll Fasterflect.dll Mono.Cecil.dll Mono.Posix.dll</DependencyDllList>
+      <DependencyDllList>ILRepack.exe Fasterflect.dll BamlParser.dll Mono.Cecil.dll Mono.Cecil.Mdb.dll Mono.Cecil.Pdb.dll Mono.Posix.dll</DependencyDllList>
     </PropertyGroup>
   </Target>
 
