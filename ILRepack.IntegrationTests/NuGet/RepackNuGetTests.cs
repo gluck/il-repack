@@ -134,6 +134,10 @@ namespace ILRepack.IntegrationTests.NuGet
         [Platform(Include = "win")]
         public void VerifiesMergedPdbUnchangedSourceIndexationForTfsIndexation()
         {
+            // This test requires Mono.Cecil.Pdb.dll. Indicate a dependency such that
+            // the reference is not accidentally removed.
+            _ = typeof(Mono.Cecil.Pdb.PdbReader);
+
             var platform = Platform.From(
                 Package.From("TfsIndexer", "1.2.4"),
                 Package.From("FSharp.Core", "3.0.2"));
