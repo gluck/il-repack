@@ -225,7 +225,7 @@ namespace ILRepacking
                 using (Stream stream = typeInRepackedAssembly.Assembly.GetManifestResourceStream(ResourcesRepackStep.ILRepackListResourceName))
                     if (stream != null)
                     {
-                        string[] list = (string[])new BinaryFormatter().Deserialize(stream);
+                        string[] list = ResourcesRepackStep.GetRepackListFromStream(stream);
                         return list.Select(x => new AssemblyName(x));
                     }
             }

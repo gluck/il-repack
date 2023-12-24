@@ -147,7 +147,7 @@ namespace ILRepacking.Steps
 
             if (!_options.NoRepackRes)
                 _targetAssemblyMainModule.Resources.Add(
-                    GenerateRepackListResource(repackList.ToList()));
+                    GenerateRepackListResource(repackList));
 
             CreateNewBamlResourceIfNeeded(areCollectedStreamsWritten, bamlStreamCollector);
         }
@@ -280,17 +280,21 @@ namespace ILRepacking.Steps
 
         private static DataContractSerializer stringArraySerializer = new DataContractSerializer(typeof(string[]));
 
-        private static string[] GetRepackListFromResource(EmbeddedResource resource)
+        public static string[] GetRepackListFromResource(EmbeddedResource resource)
         {
-            return (string[])stringArraySerializer.ReadObject(resource.GetResourceStream());
+            return GetRepackListFromStream(resource.GetResourceStream());
         }
 
-        private static EmbeddedResource GenerateRepackListResource(List<string> repackList)
+        public static string[] GetRepackListFromStream(Stream stream)
         {
-            repackList.Sort();
+            return (string[])stringArraySerializer.ReadObject(stream);
+        }
 
+        public static EmbeddedResource GenerateRepackListResource(IEnumerable<string> repackList)
+        {
+            var sorted = repackList.OrderBy(s => s).ToArray();
             var stream = new MemoryStream();
-            stringArraySerializer.WriteObject(stream, repackList.ToArray());
+            stringArraySerializer.WriteObject(stream, sorted);
             return new EmbeddedResource(ILRepackListResourceName, ManifestResourceAttributes.Public, stream.ToArray());
         }
     }
