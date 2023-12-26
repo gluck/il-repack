@@ -27,7 +27,7 @@
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="BamlParser" Version="1.0.0" />
+    <PackageReference Include="BamlParser" Version="1.0.1" />
     <PackageReference Include="fasterflect" Version="2.1.3" />
     <PackageReference Include="Mono.Posix" Version="4.0.0" />
     <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
