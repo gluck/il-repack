@@ -36,35 +36,27 @@
   <ItemGroup>
     <Page Include="Resources\BamlGeneration\GenericXaml\EmptyResourceDictionary\End.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionaries\Start.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\ExistingMergedDictionaries\End.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionaries\End.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\NonExistingMergedDictionaries\Start.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\EmptyResourceDictionary\Start.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\Sample.xaml">
-      <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Resources\BamlGeneration\GenericXaml\NonResourceDictionary.xaml">
       <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
