@@ -344,6 +344,7 @@ namespace ILRepacking
                     StrongNameKeyPair = signingStep.KeyPair,
                     WriteSymbols = Options.DebugInfo && PrimaryAssemblyMainModule.SymbolReader != null,
                     SymbolWriterProvider = PrimaryAssemblyMainModule.SymbolReader?.GetWriterProvider(),
+                    DeterministicMvid = true
                 };
                 // create output directory if it does not exist
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
