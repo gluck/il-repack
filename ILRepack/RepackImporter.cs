@@ -30,6 +30,8 @@ namespace ILRepacking
         private readonly IRepackContext _repackContext;
         private readonly RepackOptions _options;
         private readonly Dictionary<AssemblyDefinition, int> _aspOffsets;
+        private readonly Dictionary<ImportDebugInformation, ImportDebugInformation> _importDebugInformations = new();
+        private readonly static Instruction _dummyInstruction = Instruction.Create(OpCodes.Nop);
 
         const string ExcludeInternalizeAttName = "RepackExcludeInternalizeAttribute";
 
@@ -431,6 +433,9 @@ namespace ILRepacking
 
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
+
+            nm.DebugInformation.Scope = CopyScope(meth.DebugInformation.Scope, nm, out _);
+
             meth.Body = null; // frees memory
 
             nm.IsAddOn = meth.IsAddOn;
@@ -438,6 +443,72 @@ namespace ILRepacking
             nm.IsGetter = meth.IsGetter;
             nm.IsSetter = meth.IsSetter;
             nm.CallingConvention = meth.CallingConvention;
+        }
+
+        private ScopeDebugInformation CopyScope(ScopeDebugInformation scope, MethodDefinition nm, out bool copied)
+        {
+            copied = false;
+            if (scope is null || scope.Import is null && !scope.HasConstants && !scope.HasScopes)
+                return scope;
+
+            var ns = new ScopeDebugInformation(_dummyInstruction, null);
+            ns.Start = new InstructionOffset(scope.Start.Offset);
+            ns.End = scope.End.IsEndOfMethod ? default : new InstructionOffset(scope.End.Offset);
+            if (scope.HasCustomDebugInformations)
+                ns.CustomDebugInformations.AddRange(scope.CustomDebugInformations);
+            if (scope.HasVariables)
+                ns.Variables.AddRange(scope.Variables);
+            if (scope.HasScopes)
+                foreach (var ps in scope.Scopes)
+                {
+                    ns.Scopes.Add(CopyScope(ps, nm, out var nc));
+                    copied |= nc;
+                }
+            if (scope.HasConstants)
+            {
+                copied = true;
+                foreach (var pc in scope.Constants)
+                {
+                    var nc = new ConstantDebugInformation(pc.Name, Import(pc.ConstantType, nm), pc.Value);
+                    if (pc.HasCustomDebugInformations)
+                        nc.CustomDebugInformations.AddRange(pc.CustomDebugInformations);
+                    ns.Constants.Add(nc);
+                }
+            }
+            if (scope.Import is not null)
+            {
+                copied = true;
+                ns.Import = CopyImport(scope.Import, nm);
+            }
+
+            return copied ? ns : scope;
+        }
+
+        private ImportDebugInformation CopyImport(ImportDebugInformation import, MethodDefinition nm)
+        {
+            if (import is null)
+                return null;
+            if (_importDebugInformations.TryGetValue(import, out var ni))
+                return ni;
+
+            ni = new ImportDebugInformation();
+            ni.Parent = CopyImport(import.Parent, nm);
+            if (import.HasCustomDebugInformations)
+                ni.CustomDebugInformations.AddRange(import.CustomDebugInformations);
+            if (import.HasTargets)
+                foreach (var pt in import.Targets)
+                {
+                    var nt = new ImportTarget(pt.Kind);
+                    nt.Alias = pt.Alias;
+                    nt.Namespace = pt.Namespace;
+                    if (pt.Type is not null)
+                        nt.Type = Import(pt.Type, nm);
+                    if (pt.AssemblyReference is not null)
+                        nt.AssemblyReference = _repackContext.PlatformFixer.FixPlatformVersion(pt.AssemblyReference) as AssemblyNameReference;
+                    ni.Targets.Add(nt);
+                }
+            _importDebugInformations.Add(import, ni);
+            return ni;
         }
 
         private void CloneTo(MethodBody body, MethodDefinition parent)
