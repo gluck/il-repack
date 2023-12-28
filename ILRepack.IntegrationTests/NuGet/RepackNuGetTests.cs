@@ -136,7 +136,7 @@ namespace ILRepack.IntegrationTests.NuGet
         {
             // This test requires Mono.Cecil.Pdb.dll. Indicate a dependency such that
             // the reference is not accidentally removed.
-            _ = typeof(Mono.Cecil.Pdb.PdbReader);
+            _ = typeof(Mono.Cecil.Pdb.PdbReaderProvider);
 
             var platform = Platform.From(
                 Package.From("TfsIndexer", "1.2.4"),

@@ -1,16 +1,12 @@
 using Mono.Cecil;
-using System.Collections.Generic;
 
 namespace ILRepacking
 {
     public class RepackAssemblyResolver : DefaultAssemblyResolver
     {
-        public void RegisterAssemblies(IList<AssemblyDefinition> mergedAssemblies)
+        public new void RegisterAssembly(AssemblyDefinition assembly)
         {
-            foreach (var assemblyDefinition in mergedAssemblies)
-            {
-                RegisterAssembly(assemblyDefinition);
-            }
+            base.RegisterAssembly(assembly);
         }
     }
 }

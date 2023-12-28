@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using ILRepacking.Steps;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
 using Mono.Unix.Native;
 using ILRepacking.Mixins;
@@ -115,6 +116,7 @@ namespace ILRepacking
                 if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
                 {
                     rp.ReadSymbols = true;
+                    rp.SymbolReaderProvider = new DefaultSymbolReaderProvider(throwIfNoSymbol: false);
                 }
                 AssemblyDefinition mergeAsm;
                 try
@@ -144,6 +146,7 @@ namespace ILRepacking
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                     throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                GlobalAssemblyResolver.RegisterAssembly(mergeAsm);
 
                 return new AssemblyDefinitionContainer
                 {
@@ -264,7 +267,6 @@ namespace ILRepacking
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
-            GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             _platformFixer = new PlatformFixer(this, PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
@@ -309,7 +311,7 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
+            //TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -340,7 +342,8 @@ namespace ILRepacking
                 var parameters = new WriterParameters
                 {
                     StrongNameKeyPair = signingStep.KeyPair,
-                    WriteSymbols = Options.DebugInfo
+                    WriteSymbols = Options.DebugInfo && PrimaryAssemblyMainModule.SymbolReader != null,
+                    SymbolWriterProvider = PrimaryAssemblyMainModule.SymbolReader?.GetWriterProvider(),
                 };
                 // create output directory if it does not exist
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
@@ -350,11 +353,19 @@ namespace ILRepacking
                     Directory.CreateDirectory(outputDir);
                 }
 
+                Logger.Info("Writing output assembly to disk");
                 TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
 
                 sourceServerDataStep.Write();
 
-                Logger.Info("Writing output assembly to disk");
+                foreach (var assembly in MergedAssemblies)
+                {
+                    assembly.Dispose();
+                }
+
+                TargetAssemblyDefinition.Dispose();
+                GlobalAssemblyResolver.Dispose();
+
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
                 if (isUnixEnvironment && (kind == ModuleKind.Console || kind == ModuleKind.Windows))
@@ -404,6 +415,8 @@ namespace ILRepacking
                     GlobalAssemblyResolver.AddSearchDirectory(facadesDirectory);
             }
         }
+
+#if false
 
         private ResourceDirectory MergeWin32Resources(ResourceDirectory primary)
         {
@@ -465,6 +478,8 @@ namespace ILRepacking
         {
             return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
+
+#endif
 
         string IRepackContext.FixStr(string content)
         {
