@@ -39,10 +39,10 @@ namespace ILRepack.IntegrationTests.NuGet
         private static void ReloadAndCheckReferences(RepackOptions repackOptions)
         {
             using var ar = new DefaultAssemblyResolver();
-            using var outputFile = AssemblyDefinition.ReadAssembly(repackOptions.OutputFile, new ReaderParameters(ReadingMode.Immediate));
+            using var outputFile = AssemblyDefinition.ReadAssembly(repackOptions.OutputFile, new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = ar });
             var mergedFiles = repackOptions
                 .ResolveFiles()
-                .Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred)))
+                .Select(f => AssemblyDefinition.ReadAssembly(f, new ReaderParameters(ReadingMode.Deferred) { AssemblyResolver = ar }))
                 .ToArray();
             foreach (var a in outputFile.MainModule.AssemblyReferences.Where(x => mergedFiles.Any(y => repackOptions.KeepOtherVersionReferences ? x.FullName == y.FullName : x.Name == y.Name.Name)))
             {
