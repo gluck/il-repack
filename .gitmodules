@@ -1,3 +1,4 @@
 [submodule "cecil"]
 	path = cecil
-	url = https://github.com/gluck/cecil.git
+	url = https://github.com/KirillOsenkov/cecil
+	branch = ilrepack

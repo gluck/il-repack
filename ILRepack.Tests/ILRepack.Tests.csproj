@@ -29,6 +29,7 @@
     <Compile Include="Utils\BamlDocumentMatcher.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
     <ProjectReference Include="..\ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj" />
     <ProjectReference Include="..\ILRepack\ILRepack.csproj" />
   </ItemGroup>

@@ -311,7 +311,7 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            //TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
+            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources();
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -339,11 +339,15 @@ namespace ILRepacking
                     step.Perform();
                 }
 
+                var anySymbolReader = MergedAssemblies
+                    .Select(m => m.MainModule.SymbolReader)
+                    .Where(r => r != null)
+                    .FirstOrDefault();
                 var parameters = new WriterParameters
                 {
                     StrongNameKeyPair = signingStep.KeyPair,
-                    WriteSymbols = Options.DebugInfo && PrimaryAssemblyMainModule.SymbolReader != null,
-                    SymbolWriterProvider = PrimaryAssemblyMainModule.SymbolReader?.GetWriterProvider(),
+                    WriteSymbols = Options.DebugInfo,
+                    SymbolWriterProvider = anySymbolReader?.GetWriterProvider(),
                     DeterministicMvid = true
                 };
                 // create output directory if it does not exist
@@ -417,15 +421,17 @@ namespace ILRepacking
             }
         }
 
-#if false
-
-        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary)
+        private ResourceDirectory MergeWin32Resources()
         {
-            if (primary == null)
-                return null;
+            var primary = PrimaryAssemblyMainModule.ReadWin32ResourceDirectory() ?? new ResourceDirectory();
+
             foreach (var ass in OtherAssemblies)
             {
-                MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
+                var directory = ass.MainModule.ReadWin32ResourceDirectory();
+                if (directory != null)
+                {
+                    MergeDirectory(new List<ResourceEntry>(), primary, ass, directory);
+                }
             }
             return primary;
         }
@@ -479,8 +485,6 @@ namespace ILRepacking
         {
             return exist.Id == 0 && parents.Count == 2 && parents[0].Id == 16 && parents[1].Id == 1;
         }
-
-#endif
 
         string IRepackContext.FixStr(string content)
         {

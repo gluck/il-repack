@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet462NetStandard2", "IL
 		{4A253A60-D998-4CA2-B9D5-46567A2FBF80} = {4A253A60-D998-4CA2-B9D5-46567A2FBF80}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "cecil\Mono.Cecil.csproj", "{0ABCD8BF-8839-51BE-B369-638F1387405F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_unix|Any CPU = Debug_unix|Any CPU
@@ -112,6 +114,12 @@ Global
 		{90F1C943-3C23-4091-B07F-0B34748AE056}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90F1C943-3C23-4091-B07F-0B34748AE056}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90F1C943-3C23-4091-B07F-0B34748AE056}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Debug_unix|Any CPU.ActiveCfg = Debug_unix|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Debug_unix|Any CPU.Build.0 = Debug_unix|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ABCD8BF-8839-51BE-B369-638F1387405F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

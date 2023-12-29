@@ -22,9 +22,13 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="BamlParser" Version="1.0.1" />
     <PackageReference Include="fasterflect" Version="2.1.3" />
-    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
     <PackageReference Include="Mono.Posix" Version="4.0.0" />
     <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
   </ItemGroup>
