@@ -19,6 +19,11 @@ namespace ILRepacking.Steps.SourceServerData
 
         public string Read(string pdb)
         {
+            if (!File.Exists(pdb))
+            {
+                return $"File doesn't exist: {pdb}";
+            }
+
             return Execute($"-r -p:{pdb} -s:srcsrv");
         }
 
