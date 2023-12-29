@@ -241,7 +241,11 @@ namespace ILRepacking
             NoRepackRes = cmd.Modifier("norepackres");
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
 
-            SearchDirectories = cmd.Options("lib");
+            SearchDirectories = cmd
+                .Options("lib")
+                .Concat(new[] { Environment.CurrentDirectory })
+                .Distinct()
+                .ToArray();
 
             // private cmdline-Options:
             LogVerbose = cmd.Modifier("verbose");
