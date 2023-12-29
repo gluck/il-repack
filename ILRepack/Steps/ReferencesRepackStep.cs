@@ -24,11 +24,13 @@ namespace ILRepacking.Steps
     {
         private readonly ILogger _logger;
         private readonly IRepackContext _repackContext;
+        private readonly bool _keepOtherVersionReferences;
 
-        public ReferencesRepackStep(ILogger logger, IRepackContext repackContext)
+        public ReferencesRepackStep(ILogger logger, IRepackContext repackContext, RepackOptions options)
         {
             _logger = logger;
             _repackContext = repackContext;
+            _keepOtherVersionReferences = options.KeepOtherVersionReferences;
         }
 
         public void Perform()
@@ -37,6 +39,10 @@ namespace ILRepacking.Steps
 
             // Add all AssemblyReferences to merged assembly (probably not necessary)
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
+            if (!_keepOtherVersionReferences)
+            {
+                ProcessAssemblies(targetAssemblyMainModule);
+            }
 
             _repackContext.LineIndexer.PostRepackReferences();
 
@@ -44,9 +50,28 @@ namespace ILRepacking.Steps
             foreach (var z in _repackContext.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.ModuleReferences))
             {
                 string name = z.Name;
-                if (!targetAssemblyMainModule.ModuleReferences.Any(y => y.Name == name))
+                if (targetAssemblyMainModule.ModuleReferences.All(y => y.Name != name))
                 {
                     targetAssemblyMainModule.ModuleReferences.Add(z);
+                }
+            }
+        }
+
+        private void ProcessAssemblies(ModuleDefinition targetAssemblyMainModule)
+        {
+            var dict = targetAssemblyMainModule.AssemblyReferences.ToDictionary(a => a.Name, a => a);
+            foreach (var z in _repackContext.MergedAssemblies.SelectMany(x => x.Modules).SelectMany(x => x.AssemblyReferences))
+            {
+                string name = z.Name;
+                if (!dict.TryGetValue(name, out var asm) || asm.Version < z.Version)
+                {
+                    if (asm != null)
+                    {
+                        targetAssemblyMainModule.AssemblyReferences.Remove(asm);
+                    }
+
+                    targetAssemblyMainModule.AssemblyReferences.Add(z);
+                    dict[name] = z;
                 }
             }
         }

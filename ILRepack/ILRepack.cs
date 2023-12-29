@@ -325,7 +325,7 @@ namespace ILRepacking
                 List<IRepackStep> repackSteps = new List<IRepackStep>
                 {
                     signingStep,
-                    new ReferencesRepackStep(Logger, this),
+                    new ReferencesRepackStep(Logger, this, Options),
                     new TypesRepackStep(Logger, this, _repackImporter, Options),
                     new ResourcesRepackStep(Logger, this, Options),
                     new AttributesRepackStep(Logger, this, _repackImporter, Options),
