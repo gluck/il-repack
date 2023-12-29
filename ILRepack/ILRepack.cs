@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using ILRepacking.Steps;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
 using Mono.Unix.Native;
 using ILRepacking.Mixins;
@@ -112,9 +113,10 @@ namespace ILRepacking
             {
                 ReaderParameters rp = new ReaderParameters(ReadingMode.Immediate) { AssemblyResolver = GlobalAssemblyResolver };
                 // read PDB/MDB?
-                if (Options.DebugInfo && (File.Exists(Path.ChangeExtension(assembly, "pdb")) || File.Exists(assembly + ".mdb")))
+                if (Options.DebugInfo)
                 {
                     rp.ReadSymbols = true;
+                    rp.SymbolReaderProvider = new DefaultSymbolReaderProvider(throwIfNoSymbol: false);
                 }
                 AssemblyDefinition mergeAsm;
                 try
@@ -144,6 +146,7 @@ namespace ILRepacking
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
                     throw new ArgumentException("Failed to load assembly with Zero PeKind: " + assembly);
+                GlobalAssemblyResolver.RegisterAssembly(mergeAsm);
 
                 return new AssemblyDefinitionContainer
                 {
@@ -264,7 +267,6 @@ namespace ILRepacking
 
             // Read input assemblies only after all properties are set.
             ReadInputAssemblies();
-            GlobalAssemblyResolver.RegisterAssemblies(MergedAssemblies);
 
             _platformFixer = new PlatformFixer(this, PrimaryAssemblyMainModule.Runtime);
             _mappingHandler = new MappingHandler();
@@ -309,7 +311,7 @@ namespace ILRepacking
             }
             // set the main module attributes
             TargetAssemblyMainModule.Attributes = PrimaryAssemblyMainModule.Attributes;
-            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources(PrimaryAssemblyMainModule.Win32ResourceDirectory);
+            TargetAssemblyMainModule.Win32ResourceDirectory = MergeWin32Resources();
 
             if (Options.Version != null)
                 TargetAssemblyDefinition.Name.Version = Options.Version;
@@ -337,10 +339,17 @@ namespace ILRepacking
                     step.Perform();
                 }
 
+                var anySymbolReader = MergedAssemblies
+                    .Select(m => m.MainModule.SymbolReader)
+                    .Where(r => r != null)
+                    .FirstOrDefault();
+                var symbolWriterProvider = anySymbolReader?.GetWriterProvider();
                 var parameters = new WriterParameters
                 {
                     StrongNameKeyPair = signingStep.KeyPair,
-                    WriteSymbols = Options.DebugInfo
+                    WriteSymbols = Options.DebugInfo && symbolWriterProvider != null,
+                    SymbolWriterProvider = symbolWriterProvider,
+                    DeterministicMvid = true
                 };
                 // create output directory if it does not exist
                 var outputDir = Path.GetDirectoryName(Options.OutputFile);
@@ -350,11 +359,19 @@ namespace ILRepacking
                     Directory.CreateDirectory(outputDir);
                 }
 
+                Logger.Info("Writing output assembly to disk");
                 TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
 
                 sourceServerDataStep.Write();
 
-                Logger.Info("Writing output assembly to disk");
+                foreach (var assembly in MergedAssemblies)
+                {
+                    assembly.Dispose();
+                }
+
+                TargetAssemblyDefinition.Dispose();
+                GlobalAssemblyResolver.Dispose();
+
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
                 if (isUnixEnvironment && (kind == ModuleKind.Console || kind == ModuleKind.Windows))
@@ -405,13 +422,17 @@ namespace ILRepacking
             }
         }
 
-        private ResourceDirectory MergeWin32Resources(ResourceDirectory primary)
+        private ResourceDirectory MergeWin32Resources()
         {
-            if (primary == null)
-                return null;
+            var primary = PrimaryAssemblyMainModule.ReadWin32ResourceDirectory() ?? new ResourceDirectory();
+
             foreach (var ass in OtherAssemblies)
             {
-                MergeDirectory(new List<ResourceEntry>(), primary, ass, ass.MainModule.Win32ResourceDirectory);
+                var directory = ass.MainModule.ReadWin32ResourceDirectory();
+                if (directory != null)
+                {
+                    MergeDirectory(new List<ResourceEntry>(), primary, ass, directory);
+                }
             }
             return primary;
         }

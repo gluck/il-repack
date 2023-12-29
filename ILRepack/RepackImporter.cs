@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using ILRepacking.Mixins;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -29,6 +30,8 @@ namespace ILRepacking
         private readonly IRepackContext _repackContext;
         private readonly RepackOptions _options;
         private readonly Dictionary<AssemblyDefinition, int> _aspOffsets;
+        private readonly Dictionary<ImportDebugInformation, ImportDebugInformation> _importDebugInformations = new();
+        private readonly static Instruction _dummyInstruction = Instruction.Create(OpCodes.Nop);
 
         const string ExcludeInternalizeAttName = "RepackExcludeInternalizeAttribute";
 
@@ -388,6 +391,10 @@ namespace ILRepacking
             // use void placeholder as we'll do the return type import later on (after generic parameters)
             MethodDefinition nm = new MethodDefinition(meth.Name, meth.Attributes, _repackContext.TargetAssemblyMainModule.TypeSystem.Void);
             nm.ImplAttributes = meth.ImplAttributes;
+            if (meth.DebugInformation.HasCustomDebugInformations)
+                nm.DebugInformation.CustomDebugInformations.AddRange(meth.DebugInformation.CustomDebugInformations);
+            if (meth.DebugInformation.HasSequencePoints)
+                nm.DebugInformation.SequencePoints.AddRange(meth.DebugInformation.SequencePoints);
 
             type.Methods.Add(nm);
 
@@ -426,6 +433,9 @@ namespace ILRepacking
 
             if (meth.HasBody)
                 CloneTo(meth.Body, nm);
+
+            nm.DebugInformation.Scope = CopyScope(meth.DebugInformation.Scope, nm, out _);
+
             meth.Body = null; // frees memory
 
             nm.IsAddOn = meth.IsAddOn;
@@ -433,6 +443,72 @@ namespace ILRepacking
             nm.IsGetter = meth.IsGetter;
             nm.IsSetter = meth.IsSetter;
             nm.CallingConvention = meth.CallingConvention;
+        }
+
+        private ScopeDebugInformation CopyScope(ScopeDebugInformation scope, MethodDefinition nm, out bool copied)
+        {
+            copied = false;
+            if (scope is null || scope.Import is null && !scope.HasConstants && !scope.HasScopes)
+                return scope;
+
+            var ns = new ScopeDebugInformation(_dummyInstruction, null);
+            ns.Start = new InstructionOffset(scope.Start.Offset);
+            ns.End = scope.End.IsEndOfMethod ? default : new InstructionOffset(scope.End.Offset);
+            if (scope.HasCustomDebugInformations)
+                ns.CustomDebugInformations.AddRange(scope.CustomDebugInformations);
+            if (scope.HasVariables)
+                ns.Variables.AddRange(scope.Variables);
+            if (scope.HasScopes)
+                foreach (var ps in scope.Scopes)
+                {
+                    ns.Scopes.Add(CopyScope(ps, nm, out var nc));
+                    copied |= nc;
+                }
+            if (scope.HasConstants)
+            {
+                copied = true;
+                foreach (var pc in scope.Constants)
+                {
+                    var nc = new ConstantDebugInformation(pc.Name, Import(pc.ConstantType, nm), pc.Value);
+                    if (pc.HasCustomDebugInformations)
+                        nc.CustomDebugInformations.AddRange(pc.CustomDebugInformations);
+                    ns.Constants.Add(nc);
+                }
+            }
+            if (scope.Import is not null)
+            {
+                copied = true;
+                ns.Import = CopyImport(scope.Import, nm);
+            }
+
+            return copied ? ns : scope;
+        }
+
+        private ImportDebugInformation CopyImport(ImportDebugInformation import, MethodDefinition nm)
+        {
+            if (import is null)
+                return null;
+            if (_importDebugInformations.TryGetValue(import, out var ni))
+                return ni;
+
+            ni = new ImportDebugInformation();
+            ni.Parent = CopyImport(import.Parent, nm);
+            if (import.HasCustomDebugInformations)
+                ni.CustomDebugInformations.AddRange(import.CustomDebugInformations);
+            if (import.HasTargets)
+                foreach (var pt in import.Targets)
+                {
+                    var nt = new ImportTarget(pt.Kind);
+                    nt.Alias = pt.Alias;
+                    nt.Namespace = pt.Namespace;
+                    if (pt.Type is not null)
+                        nt.Type = Import(pt.Type, nm);
+                    if (pt.AssemblyReference is not null)
+                        nt.AssemblyReference = _repackContext.PlatformFixer.FixPlatformVersion(pt.AssemblyReference) as AssemblyNameReference;
+                    ni.Targets.Add(nt);
+                }
+            _importDebugInformations.Add(import, ni);
+            return ni;
         }
 
         private void CloneTo(MethodBody body, MethodDefinition parent)
@@ -445,15 +521,13 @@ namespace ILRepacking
             nb.LocalVarToken = body.LocalVarToken;
 
             foreach (VariableDefinition var in body.Variables)
-                nb.Variables.Add(new VariableDefinition(var.Name,
+                nb.Variables.Add(new VariableDefinition(
                     Import(var.VariableType, parent)));
 
-            nb.Instructions.SetCapacity(body.Instructions.Count);
+            nb.Instructions.Capacity = Math.Max(nb.Instructions.Capacity, body.Instructions.Count);
             _repackContext.LineIndexer.PreMethodBodyRepack(body, parent);
             foreach (Instruction instr in body.Instructions)
             {
-                _repackContext.LineIndexer.ProcessMethodBodyInstruction(instr);
-
                 Instruction ni;
 
                 if (instr.OpCode.Code == Code.Calli)
@@ -542,10 +616,8 @@ namespace ILRepacking
                         default:
                             throw new InvalidOperationException();
                     }
-                ni.SequencePoint = instr.SequencePoint;
                 nb.Instructions.Add(ni);
             }
-            _repackContext.LineIndexer.PostMethodBodyRepack(parent);
 
             for (int i = 0; i < body.Instructions.Count; i++)
             {
@@ -607,9 +679,19 @@ namespace ILRepacking
             // don't copy these twice if UnionMerge==true
             // TODO: we can move this down if we chek for duplicates when adding
             CopySecurityDeclarations(type.SecurityDeclarations, nt.SecurityDeclarations, nt);
-            CopyTypeReferences(type.Interfaces, nt.Interfaces, nt);
+            CopyInterfaces(type.Interfaces, nt.Interfaces, nt);
             CopyCustomAttributes(type.CustomAttributes, nt.CustomAttributes, nt);
             return nt;
+        }
+
+        private void CopyInterfaces(Collection<InterfaceImplementation> interfaces1, Collection<InterfaceImplementation> interfaces2, TypeDefinition nt)
+        {
+            foreach (var iface in interfaces1)
+            {
+                var newIface = new InterfaceImplementation(Import(iface.InterfaceType, nt));
+                CopyCustomAttributes(iface.CustomAttributes, newIface.CustomAttributes, nt);
+                interfaces2.Add(newIface);
+            }
         }
 
         private MethodDefinition FindMethodInNewType(TypeDefinition nt, MethodDefinition methodDefinition)
@@ -839,6 +921,16 @@ namespace ILRepacking
             foreach (TypeReference ta in input)
             {
                 output.Add(Import(ta, context));
+            }
+        }
+
+        public void CopyTypeReferences(Collection<GenericParameterConstraint> input, Collection<GenericParameterConstraint> output, IGenericParameterProvider context)
+        {
+            foreach (var gpc in input)
+            {
+                var result = new GenericParameterConstraint(Import(gpc.ConstraintType, context));
+                CopyCustomAttributes(gpc.CustomAttributes, result.CustomAttributes, context);
+                output.Add(result);
             }
         }
 
