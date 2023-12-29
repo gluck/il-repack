@@ -70,7 +70,7 @@ namespace ILRepacking.Steps
             foreach (var r in _repackContext.OtherAssemblies.SelectMany(x => x.Modules).SelectMany(m => m.Types))
             {
                 _logger.Verbose($"- Importing {r} from {r.Module}");
-                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r.FullName));
+                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r));
             }
         }
 
@@ -139,6 +139,46 @@ namespace ILRepacking.Steps
                     return false;
 
             return true;
+        }
+
+        private bool ShouldInternalize(TypeDefinition type)
+        {
+            if (!_repackOptions.Internalize)
+                return false;
+
+            if (_repackOptions.ExcludeInternalizeAssemblies.Contains(type.Module.Assembly.Name.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (IsSerializableAndPublic(type))
+                return false;
+
+            return ShouldInternalize(type.FullName);
+        }
+
+        private bool IsSerializableAndPublic(TypeDefinition type)
+        {
+            if (!type.IsPublic && !type.IsNestedPublic) return false;
+
+            if (type.Attributes.HasFlag(TypeAttributes.Serializable))
+                return true;
+
+            if (type.HasCustomAttributes && type.CustomAttributes.Any(IsSerializable))
+            {
+                return true;
+            }
+
+            return type.HasNestedTypes && type.NestedTypes.Any(IsSerializableAndPublic);
+        }
+
+        private bool IsSerializable(CustomAttribute attribute)
+        {
+            var name = attribute.AttributeType.FullName;
+            return name == "System.Runtime.Serialization.DataContractAttribute" ||
+                   name == "System.ServiceModel.ServiceContractAttribute" ||
+                   name == "System.Xml.Serialization.XmlRootAttribute" ||
+                   name == "System.Xml.Serialization.XmlTypeAttribute";
         }
 
         private TypeReference CreateReference(ExportedType type)
