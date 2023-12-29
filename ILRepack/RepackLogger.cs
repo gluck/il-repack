@@ -10,9 +10,8 @@ namespace ILRepacking
 
         public bool ShouldLogVerbose { get; set; }
 
-        public void Log(object str)
+        private void Log(string logStr)
         {
-            string logStr = str.ToString();
             Console.WriteLine(logStr);
             _writer?.WriteLine(logStr);
         }
@@ -48,24 +47,18 @@ namespace ILRepacking
 
         public void Warn(string msg)
         {
-            Log($"WARN: {msg}");
+            Log($"WARNING: {msg}");
         }
 
         public void Info(string msg)
         {
-            Log($"INFO: {msg}");
+            Log($"{msg}");
         }
 
         public void Verbose(string msg)
         {
             if (ShouldLogVerbose)
-                Log($"VERBOSE: {msg}");
-        }
-
-        public void DuplicateIgnored(string ignoredType, object ignoredObject)
-        {
-            // TODO: put on a list and log a summary
-            //INFO("Ignoring duplicate " + ignoredType + " " + ignoredObject);
+                Log($"{msg}");
         }
     }
 }

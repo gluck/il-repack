@@ -21,7 +21,7 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            _logger.Info("Processing public types tree");
+            _logger.Verbose("Processing public types tree");
 
             var publicTypes = _repackContext.TargetAssemblyMainModule.Types.Where(t => t.IsPublic);
 

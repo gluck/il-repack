@@ -40,7 +40,7 @@ namespace ILRepacking
                 if (validConfigFiles.Count == 0)
                     return;
 
-                repack.Logger.Info($"Merging config files: {string.Join(",", validConfigFiles)}...");
+                repack.Logger.Verbose($"Merging config files: {string.Join(",", validConfigFiles)}...");
 
                 var firstFile = validConfigFiles[0];
                 validConfigFiles.RemoveAt(0);

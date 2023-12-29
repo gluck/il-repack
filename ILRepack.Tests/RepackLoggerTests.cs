@@ -11,7 +11,7 @@ namespace ILRepack.Tests
         {
             RepackLogger logger = new RepackLogger();
             Assert.IsFalse(logger.Open(""));
-            logger.Log("Hello");
+            logger.Info("Hello");
         }
 
         [Test]
@@ -28,11 +28,11 @@ namespace ILRepack.Tests
             RepackLogger logger = new RepackLogger();
             Assert.IsTrue(logger.Open("file.out"));
             logger.Close();
-            const string message = "Only written to the console. No erorr is thrown.";
+            const string message = "Only written to the console. No error is thrown.";
             logger.Error(message);
             logger.Warn(message);
-            logger.Verbose(message);
             logger.Info(message);
+            logger.Verbose(message);
         }
     }
 }

@@ -148,21 +148,21 @@ namespace ILRepacking
             }
             else if (DuplicateTypeAllowed(type))
             {
-                _logger.Info("Merging " + type);
+                _logger.Verbose("Merging " + type);
             }
             else if (!type.IsPublic || internalize)
             {
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt);
-                _logger.Info("Renaming " + nt.FullName + " into " + other);
+                _logger.Verbose("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
             }
             else if (_options.UnionMerge)
             {
-                _logger.Info("Merging " + type);
+                _logger.Verbose("Merging " + type);
             }
             else
             {
@@ -242,7 +242,7 @@ namespace ILRepacking
                 && member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
             if (shouldDrop)
             {
-                _logger.Log("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + _options.RepackDropAttribute);
+                _logger.Verbose("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + _options.RepackDropAttribute);
             }
             return shouldDrop;
         }
@@ -259,7 +259,6 @@ namespace ILRepacking
         {
             if (nt.Fields.Any(x => x.Name == field.Name))
             {
-                _logger.DuplicateIgnored("field", field);
                 return;
             }
             FieldDefinition nf = new FieldDefinition(field.Name, field.Attributes, Import(field.FieldType, nt));
@@ -300,7 +299,6 @@ namespace ILRepacking
             // ignore duplicate event
             if (nt.Events.Any(x => x.Name == evt.Name))
             {
-                _logger.DuplicateIgnored("event", evt);
                 return;
             }
 
@@ -351,7 +349,6 @@ namespace ILRepacking
                 }
                 if (skip)
                 {
-                    _logger.DuplicateIgnored("property", prop);
                     return;
                 }
             }
@@ -385,7 +382,6 @@ namespace ILRepacking
                   (x.Parameters.Count == meth.Parameters.Count) &&
                   (x.ToString() == meth.ToString()))) // TODO: better/faster comparation of parameter types?
             {
-                _logger.DuplicateIgnored("method", meth);
                 return;
             }
             // use void placeholder as we'll do the return type import later on (after generic parameters)
