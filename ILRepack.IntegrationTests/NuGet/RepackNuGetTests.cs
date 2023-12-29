@@ -108,6 +108,23 @@ namespace ILRepack.IntegrationTests.NuGet
             Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TYPELOAD));
         }
 
+        //[Test]
+        //[Platform(Include = "win")]
+        public void VerifiesMergesFineWhenOutPathIsOneOfInputs()
+        {
+            var platform = Platform.From(
+                Package.From("Microsoft.Bcl", "1.1.10")
+                    .WithArtifact(@"lib\net40\System.Runtime.dll"),
+                Package.From("Microsoft.Bcl", "1.1.10")
+                    .WithArtifact(@"lib\net40\System.Threading.Tasks.dll"),
+                Package.From("Microsoft.Bcl.Async", "1.0.168")
+                    .WithArtifact(@"lib\net40\Microsoft.Threading.Tasks.dll"))
+                .WithExtraArgs(@"/targetplatform:v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0");
+
+            var assemblyNames = DownloadPackages(platform.Packages);
+            RepackPlatformIntoPrimary(platform, assemblyNames);
+        }
+
         [Test]
         [Platform(Include = "win")]
         public void VerifiesMergedSignedAssemblyHasNoUnsignedFriend()
@@ -214,6 +231,14 @@ namespace ILRepack.IntegrationTests.NuGet
             Console.WriteLine("Merging {0}", string.Join(",",list));
             TestHelpers.DoRepackForCmd(new []{"/out:"+Tmp("test.dll"), "/lib:"+tempDirectory}.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
             Assert.IsTrue(File.Exists(Tmp("test.dll")));
+        }
+
+        void RepackPlatformIntoPrimary(Platform platform, IList<string> list)
+        {
+            list = list.OrderBy(f => f).ToList();
+            var first = list.First();
+            Console.WriteLine("Merging {0} into {1}", string.Join(",", list), first);
+            TestHelpers.DoRepackForCmd(new[] { "/out:" + Tmp(first), "/lib:" + tempDirectory }.Concat(platform.Args).Concat(list.Select(Tmp).OrderBy(x => x)));
         }
 
         string Tmp(string file)
