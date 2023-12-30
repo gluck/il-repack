@@ -5,7 +5,7 @@
     <TargetFramework>net472</TargetFramework>
     <Product>ILRepack</Product>
     <Copyright>Copyright © Francois Valdy 2011</Copyright>
-    <Version>2.0.21</Version>
+    <Version>2.0.22</Version>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
     <DebugType>embedded</DebugType>
@@ -52,7 +52,7 @@
       Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
     <MakeDir Directories="$(OutDir)Repacked" />
     <Exec
-        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ndebug /ver:$(AssemblyVersion) /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
+        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
         WorkingDirectory="$(OutDir)"
         ConsoleToMSBuild="True" />
     <Copy 
