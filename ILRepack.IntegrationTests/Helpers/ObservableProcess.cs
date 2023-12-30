@@ -58,7 +58,9 @@ namespace ILRepack.IntegrationTests.Helpers
 
                 if (exitCode != 0 && throwOnNonZeroExitCode)
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     var error = string.Join("\n", output.ToArray().First());
+#pragma warning restore CS0618 // Type or member is obsolete
                     exit.OnError(new Exception(error));
                 }
                 else
