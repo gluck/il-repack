@@ -65,12 +65,12 @@ Note: for compatibility purposes, all options can be specified using '/', '-' or
 How to build
 ------
 
-Builds directly from within Visual Studio 2015, or using gradle:
+Builds directly from within Visual Studio 2022, or using msbuild:
 
 ```
 git clone --recursive https://github.com/gluck/il-repack.git
 cd il-repack
-gradlew.bat msbuild
+msbuild
 ```
 
 (Mono.Posix 3.5-compatible dependency was grabbed from a non-standard nuget repo, it has been commited to git to avoid the dependency on this repo)
