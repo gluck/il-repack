@@ -1,8 +1,12 @@
 # IL Repack changelog
-## 2.1.0
+## 2.0.20
 ### Added
 * Option `/skipconfig` can be now used to skip merging the assemblies config files
+* Recognize `RepackExcludeInternalizeAttribute` to exclude a type from internalizing (#307)
 * Update the NuGet package information with structured license information
+
+### Fixed
+* Don't strong name sign for delay signing (#330)
 
 ## 2.0.18
 ### Fixed
