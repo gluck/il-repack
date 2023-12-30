@@ -17,11 +17,9 @@
           Outputs="$(TargetDir)\merged\$(TargetFileName)">
     <MakeDir Directories="$(TargetDir)merged" />
     <PropertyGroup>
-      <SpaceSeparatedFiles>@(ILRepackInput->'%(Filename)%(Extension)')</SpaceSeparatedFiles>
-      <SpaceSeparatedFiles>$(SpaceSeparatedFiles.Replace(";", " "))</SpaceSeparatedFiles>
       <ILRepackVerboseArgument Condition="$(ILRepackVerbose) == true"> /verbose</ILRepackVerboseArgument>
     </PropertyGroup>
-    <Exec Command="&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs)$(ILRepackVerboseArgument) /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) $(SpaceSeparatedFiles)"
+    <Exec Command="&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs)$(ILRepackVerboseArgument) /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) @(ILRepackInput->'%(Filename)%(Extension)', ' ')"
         WorkingDirectory="$(TargetDir)"
         ConsoleToMSBuild="True" />
   </Target>
