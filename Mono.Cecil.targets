@@ -1,6 +1,3 @@
 <Project>
 
-  <Target Name="GetReferenceAssemblyPaths" />
-  <Target Name="ResolveNuGetPackageAssets" />
-
 </Project>
