@@ -1,0 +1,12 @@
+﻿<UserControl x:Class="ClassLibraryCore.DummyUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="150" Height="50" Background="Red">
+    <UserControl.Resources>
+        <ImageSource x:Key="ImageSource">/ClassLibraryCore;component/Resources/image.png</ImageSource>
+    </UserControl.Resources>
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock Text="Library User Control" />
+        <Image x:Name="TheImage" Source="{StaticResource ImageSource}" Height="10" Width="10" />
+    </StackPanel>
+</UserControl>

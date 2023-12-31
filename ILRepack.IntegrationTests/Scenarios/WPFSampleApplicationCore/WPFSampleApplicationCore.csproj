@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>test_sign_key.snk</AssemblyOriginatorKeyFile>
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClassLibraryCore\ClassLibraryCore.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ILRepackExtraArgs>/keyfile:"$(MSBuildThisFileDirectory)test_sign_key.snk"</ILRepackExtraArgs>
+  </PropertyGroup>
+
+  <!--<Import Project="..\..\Repack.targets" />-->
+
+</Project>

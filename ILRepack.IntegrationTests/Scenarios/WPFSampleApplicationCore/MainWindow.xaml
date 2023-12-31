@@ -1,0 +1,13 @@
+﻿<Window x:Class="WPFSampleApplicationCore.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:WPFSampleApplicationCore" 
+        xmlns:classlibrarycore="clr-namespace:ClassLibraryCore;assembly=ClassLibraryCore"
+        Title="MainWindow" Height="268" Width="800"
+        Loaded="MainWindow_Loaded">
+    <StackPanel Background="AliceBlue">
+        <Button Content="Button" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Text="TextBox" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <classlibrarycore:DummyUserControl />
+    </StackPanel>
+</Window>
