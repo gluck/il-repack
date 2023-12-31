@@ -262,6 +262,14 @@ namespace ILRepacking
             timer.Start();
             Options.Validate();
             PrintRepackHeader();
+
+            string outputFilePath = Options.OutputFile;
+            var outputDir = Path.GetDirectoryName(outputFilePath);
+            var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
+            EnsureDirectoryExists(tempOutputDirectory);
+            string tempOutputFilePath = Path.Combine(tempOutputDirectory, Path.GetFileName(outputFilePath));
+            Options.OutputFile = tempOutputFilePath;
+
             _reflectionHelper = new ReflectionHelper(this);
             ResolveSearchDirectories();
 
@@ -361,18 +369,6 @@ namespace ILRepacking
                     DeterministicMvid = true
                 };
 
-                string outputFilePath = Options.OutputFile;
-                string outputPdbFilePath = Path.ChangeExtension(outputFilePath, ".pdb");
-
-                var outputDir = Path.GetDirectoryName(outputFilePath);
-                EnsureDirectoryExists(outputDir);
-
-                var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
-                EnsureDirectoryExists(tempOutputDirectory);
-
-                string tempOutputFilePath = Path.Combine(tempOutputDirectory, Path.GetFileName(outputFilePath));
-                string tempOutputPdbFilePath = Path.ChangeExtension(tempOutputFilePath, ".pdb");
-
                 Logger.Verbose($"Writing temporary assembly: {tempOutputFilePath}");
                 TargetAssemblyDefinition.Write(tempOutputFilePath, parameters);
 
@@ -386,28 +382,9 @@ namespace ILRepacking
                 TargetAssemblyDefinition.Dispose();
                 GlobalAssemblyResolver.Dispose();
 
-                // delete the destination first if it's a hardlink, otherwise 
-                // we'll accidentally overwrite the original of the hardlink
-                if (File.Exists(outputFilePath))
-                {
-                    File.Delete(outputFilePath);
-                }
+                MoveTempFile(tempOutputDirectory, outputDir);
 
-                File.Copy(tempOutputFilePath, outputFilePath);
-
-                if (File.Exists(tempOutputPdbFilePath))
-                {
-                    // delete the destination first if it's a hardlink, otherwise 
-                    // we'll accidentally overwrite the original of the hardlink
-                    if (File.Exists(outputPdbFilePath))
-                    {
-                        File.Delete(outputPdbFilePath);
-                    }
-
-                    File.Copy(tempOutputPdbFilePath, outputPdbFilePath);
-                }
-
-                Directory.Delete(tempOutputDirectory, recursive: true);
+                Options.OutputFile = outputFilePath;
 
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
@@ -440,6 +417,26 @@ namespace ILRepacking
             }
 
             Logger.Verbose($"Finished in {timer.Elapsed}");
+        }
+
+        private void MoveTempFile(string tempDirectory, string finalDirectory)
+        {
+            foreach (var sourceFilePath in Directory.GetFiles(tempDirectory))
+            {
+                var fileName = Path.GetFileName(sourceFilePath);
+                var targetFilePath = Path.Combine(finalDirectory, fileName);
+
+                // delete the destination first if it's a hardlink, otherwise 
+                // we'll accidentally overwrite the original of the hardlink
+                if (File.Exists(targetFilePath))
+                {
+                    File.Delete(targetFilePath);
+                }
+
+                File.Move(sourceFilePath, targetFilePath);
+            }
+
+            Directory.Delete(tempDirectory, recursive: true);
         }
 
         private void EnsureDirectoryExists(string directory)
