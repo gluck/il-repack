@@ -360,16 +360,21 @@ namespace ILRepacking
                     SymbolWriterProvider = symbolWriterProvider,
                     DeterministicMvid = true
                 };
-                // create output directory if it does not exist
-                var outputDir = Path.GetDirectoryName(Options.OutputFile);
-                if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-                {
-                    Logger.Verbose("Output directory does not exist. Creating output directory: " + outputDir);
-                    Directory.CreateDirectory(outputDir);
-                }
 
-                Logger.Verbose("Writing output assembly to disk");
-                TargetAssemblyDefinition.Write(Options.OutputFile, parameters);
+                string outputFilePath = Options.OutputFile;
+                string outputPdbFilePath = Path.ChangeExtension(outputFilePath, ".pdb");
+
+                var outputDir = Path.GetDirectoryName(outputFilePath);
+                EnsureDirectoryExists(outputDir);
+
+                var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
+                EnsureDirectoryExists(tempOutputDirectory);
+
+                string tempOutputFilePath = Path.Combine(tempOutputDirectory, Path.GetFileName(outputFilePath));
+                string tempOutputPdbFilePath = Path.ChangeExtension(tempOutputFilePath, ".pdb");
+
+                Logger.Verbose($"Writing temporary assembly: {tempOutputFilePath}");
+                TargetAssemblyDefinition.Write(tempOutputFilePath, parameters);
 
                 sourceServerDataStep.Write();
 
@@ -380,6 +385,29 @@ namespace ILRepacking
 
                 TargetAssemblyDefinition.Dispose();
                 GlobalAssemblyResolver.Dispose();
+
+                // delete the destination first if it's a hardlink, otherwise 
+                // we'll accidentally overwrite the original of the hardlink
+                if (File.Exists(outputFilePath))
+                {
+                    File.Delete(outputFilePath);
+                }
+
+                File.Copy(tempOutputFilePath, outputFilePath);
+
+                if (File.Exists(tempOutputPdbFilePath))
+                {
+                    // delete the destination first if it's a hardlink, otherwise 
+                    // we'll accidentally overwrite the original of the hardlink
+                    if (File.Exists(outputPdbFilePath))
+                    {
+                        File.Delete(outputPdbFilePath);
+                    }
+
+                    File.Copy(tempOutputPdbFilePath, outputPdbFilePath);
+                }
+
+                Directory.Delete(tempOutputDirectory, recursive: true);
 
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
@@ -412,6 +440,11 @@ namespace ILRepacking
             }
 
             Logger.Verbose($"Finished in {timer.Elapsed}");
+        }
+
+        private void EnsureDirectoryExists(string directory)
+        {
+            Directory.CreateDirectory(directory);
         }
 
         private ISourceServerDataRepackStep GetSourceServerDataStep(bool isUnixEnvironment)

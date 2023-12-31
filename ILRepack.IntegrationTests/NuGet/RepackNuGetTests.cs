@@ -108,8 +108,8 @@ namespace ILRepack.IntegrationTests.NuGet
             Assert.IsFalse(errors.Contains(PeverifyHelper.VER_E_TYPELOAD));
         }
 
-        //[Test]
-        //[Platform(Include = "win")]
+        [Test]
+        [Platform(Include = "win")]
         public void VerifiesMergesFineWhenOutPathIsOneOfInputs()
         {
             var platform = Platform.From(

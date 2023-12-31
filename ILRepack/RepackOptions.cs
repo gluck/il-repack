@@ -199,7 +199,13 @@ namespace ILRepacking
             Log = cmd.HasOption("log");
             if (Log)
                 LogFile = cmd.Option("log");
-            OutputFile = cmd.Option("out");
+            string outputFilePath = cmd.Option("out");
+            if (!string.IsNullOrEmpty(outputFilePath))
+            {
+                outputFilePath = Path.GetFullPath(outputFilePath);
+            }
+
+            OutputFile = outputFilePath;
             PublicKeyTokens = cmd.Modifier("usefullpublickeyforreferences");
             var targetKind = cmd.Option("target");
             if (string.IsNullOrEmpty(targetKind))
