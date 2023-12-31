@@ -23,6 +23,7 @@
     <Compile Include="RepackOptionsTests.cs" />
     <Compile Include="Steps\ResourceProcessing\BamlGeneratorTests.cs" Condition=" '$(Configuration)' != 'Debug_unix' " />
     <Compile Include="Steps\ResourceProcessing\BamlResourcePatcherTests.cs" />
+    <Compile Include="Steps\ResourceProcessing\StringArrayBinaryFormatterTests.cs" />
     <Compile Include="Steps\SourceServerData\HttpSourceServerDescriptorTest.cs" />
     <Compile Include="Steps\SourceServerData\SourceFileDescriptorTest.cs" />
     <Compile Include="Steps\XamlResourcePathPatcherStepTests.cs" />

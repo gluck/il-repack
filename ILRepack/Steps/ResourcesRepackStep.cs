@@ -278,8 +278,6 @@ namespace ILRepacking.Steps
             return new EmbeddedResource(er.Name, er.Attributes, output);
         }
 
-        private static DataContractSerializer stringArraySerializer = new DataContractSerializer(typeof(string[]));
-
         public static string[] GetRepackListFromResource(EmbeddedResource resource)
         {
             return GetRepackListFromStream(resource.GetResourceStream());
@@ -287,14 +285,14 @@ namespace ILRepacking.Steps
 
         public static string[] GetRepackListFromStream(Stream stream)
         {
-            return (string[])stringArraySerializer.ReadObject(stream);
+            return StringArrayBinaryFormatter.Deserialize(stream);
         }
 
         public static EmbeddedResource GenerateRepackListResource(IEnumerable<string> repackList)
         {
             var sorted = repackList.OrderBy(s => s).ToArray();
             var stream = new MemoryStream();
-            stringArraySerializer.WriteObject(stream, sorted);
+            StringArrayBinaryFormatter.Serialize(stream, sorted);
             return new EmbeddedResource(ILRepackListResourceName, ManifestResourceAttributes.Public, stream.ToArray());
         }
     }
