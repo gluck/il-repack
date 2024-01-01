@@ -27,59 +27,30 @@ namespace ILRepacking
             return RunAsync(processStartInfo);
         }
 
-        public static Task<ProcessRunResult> RunAsync(ProcessStartInfo processStartInfo)
+        public static async Task<ProcessRunResult> RunAsync(ProcessStartInfo processStartInfo)
         {
-            var output = new StringBuilder();
-            var error = new StringBuilder();
-
             Process process = Process.Start(processStartInfo);
-            process.EnableRaisingEvents = true;
-            process.OutputDataReceived += (s, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    output.AppendLine(e.Data);
-                }
-            };
-            process.ErrorDataReceived += (s, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    error.AppendLine(e.Data);
-                }
-            };
+
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
 
             var result = new ProcessRunResult()
             {
                 Process = process
             };
 
-            var taskCompletionSource = new TaskCompletionSource<ProcessRunResult>();
+            await Task.WhenAll(outputTask, errorTask);
 
-            void Complete()
+            if (!process.HasExited)
             {
-                result.Output = output.ToString();
-                result.ErrorOutput = error.ToString();
-                result.ExitCode = process.ExitCode;
-                taskCompletionSource.TrySetResult(result);
+                process.WaitForExit();
             }
 
-            process.Exited += (s, e) =>
-            {
-                Complete();
-            };
+            result.Output = outputTask.Result;
+            result.ErrorOutput = errorTask.Result;
+            result.ExitCode = process.ExitCode;
 
-            if (process.HasExited)
-            {
-                Complete();
-            }
-            else
-            {
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-            }
-
-            return taskCompletionSource.Task;
+            return result;
         }
 
         private static ProcessStartInfo CreateProcessStartInfo(string filePath, string arguments = null, string workingDirectory = null)
