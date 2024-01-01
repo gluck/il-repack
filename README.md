@@ -9,8 +9,7 @@ ILRepack is meant at replacing [ILMerge](http://www.microsoft.com/downloads/deta
 The former being ~~closed-source~~ ([now open-sourced](https://github.com/Microsoft/ILMerge)), impossible to customize, slow, resource consuming and many more.
 The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
 
-Here we're using latest (slightly modified) Cecil sources (0.9), you can find the fork [here](https://github.com/gluck/cecil).
-Mono.Posix is also required (build only, it gets merged afterwards) for executable bit set on target file.
+Here we're using latest (slightly modified) Cecil sources (0.11.5), you can find the fork [here](https://github.com/KirillOsenkov/cecil/tree/ilrepack).
 
 Downloads
 ------
@@ -72,8 +71,6 @@ git clone --recursive https://github.com/gluck/il-repack.git
 cd il-repack
 msbuild
 ```
-
-(Mono.Posix 3.5-compatible dependency was grabbed from a non-standard nuget repo, it has been commited to git to avoid the dependency on this repo)
 
 TODO
 ------

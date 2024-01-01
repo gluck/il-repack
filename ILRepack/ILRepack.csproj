@@ -28,7 +28,6 @@
   <ItemGroup>
     <PackageReference Include="BamlParser" Version="1.0.1" />
     <PackageReference Include="fasterflect" Version="2.1.3" />
-    <PackageReference Include="Mono.Posix" Version="4.0.0" />
     <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
@@ -43,7 +42,7 @@
       <ILRepackLibNupkgPath>$(OutDir)ILRepack.Lib.$(Version).nupkg</ILRepackLibNupkgPath>
       <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
       <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
-      <DependencyDllList>ILRepack.exe Fasterflect.dll BamlParser.dll Mono.Cecil.dll Mono.Cecil.Mdb.dll Mono.Cecil.Pdb.dll Mono.Posix.dll</DependencyDllList>
+      <DependencyDllList>ILRepack.exe Fasterflect.dll BamlParser.dll Mono.Cecil.dll Mono.Cecil.Mdb.dll Mono.Cecil.Pdb.dll</DependencyDllList>
     </PropertyGroup>
   </Target>
 
