@@ -72,20 +72,15 @@ namespace ILRepacking
 
             runtimeDirectoriesInitialized = true;
 
-            var info = new ProcessStartInfo("dotnet", "--list-runtimes");
-            info.RedirectStandardOutput = true;
-            info.UseShellExecute = false;
-            info.CreateNoWindow = true;
-
-            using var ps = Process.Start(info);
-            var reader = new StringReader(ps.StandardOutput.ReadToEnd());
-            ps.WaitForExit();
-            if (ps.ExitCode != 0)
+            var process = ProcessRunner.Run("dotnet", "--list-runtimes");
+            if (process.ExitCode != 0)
             {
-                throw new Exception(".NET Core SDK list query failed with code " + ps.ExitCode);
+                throw new Exception(".NET Core SDK list query failed with code " + process.ExitCode);
             }
 
-            List<string> allRuntimes = new List<string>();
+            var allRuntimes = new List<string>();
+
+            var reader = new StringReader(process.Output);
 
             string line;
             while ((line = reader.ReadLine()) != null)

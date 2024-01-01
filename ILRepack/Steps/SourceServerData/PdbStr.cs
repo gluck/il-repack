@@ -37,19 +37,8 @@ namespace ILRepacking.Steps.SourceServerData
 
         private string Execute(string arguments)
         {
-            var processInfo = new ProcessStartInfo
-                              {
-                                  RedirectStandardOutput = true,
-                                  CreateNoWindow = true,
-                                  UseShellExecute = false,
-                                  FileName = _pdbStrPath,
-                                  Arguments = arguments
-                              };
-            using (var process = Process.Start(processInfo))
-            using (StreamReader reader = process.StandardOutput)
-            {
-                return reader.ReadToEnd();
-            }
+            var process = ProcessRunner.Run(_pdbStrPath, arguments);
+            return process.Output;
         }
 
         public void Dispose()

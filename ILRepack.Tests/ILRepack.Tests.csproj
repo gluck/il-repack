@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLineTests.cs" />
+    <Compile Include="MiscTests.cs" />
     <Compile Include="PdbStrTest.cs" />
     <Compile Include="RepackLoggerTests.cs" />
     <Compile Include="RepackOptionsTests.cs" />
