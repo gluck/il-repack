@@ -53,8 +53,8 @@
       Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
     <MakeDir Directories="$(OutDir)Repacked" />
     <PropertyGroup>
-      <DotnetExePrefix Condition="$(OS) != 'Windows'">mono </DotnetExePrefix>
-      <UseKeyFile Condition="$(OS) == 'Windows'">/keyfile:ILRepack.snk </UseKeyFile>
+      <DotnetExePrefix Condition="!$([MSBuild]::IsOSPlatform('windows'))">mono </DotnetExePrefix>
+      <UseKeyFile Condition="$([MSBuild]::IsOSPlatform('windows'))">/keyfile:ILRepack.snk </UseKeyFile>
     </PropertyGroup>
     <Exec
         Command="$(DotnetExePrefix)&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) $(UseKeyFile)/out:Repacked/ILRepack.exe $(DependencyDllList)" 
