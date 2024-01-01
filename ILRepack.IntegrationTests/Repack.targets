@@ -23,6 +23,10 @@
     <Exec Command="&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs)$(ILRepackVerboseArgument) /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) @(ILRepackInput->'%(Filename)%(Extension)', ' ')"
         WorkingDirectory="$(TargetDir)"
         ConsoleToMSBuild="True" />
+    <Copy Condition="Exists('$(ProjectRuntimeConfigFilePath)')"
+          SourceFiles="$(ProjectRuntimeConfigFilePath)"
+          DestinationFiles="$(TargetDir)\merged\$(ProjectRuntimeConfigFileName)"
+          SkipUnchangedFiles="True" />
   </Target>
 
 </Project>
