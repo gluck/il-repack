@@ -23,7 +23,6 @@ using ILRepacking.Steps;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
-using Mono.Unix.Native;
 using ILRepacking.Mixins;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
@@ -334,7 +333,25 @@ namespace ILRepacking
 
             _lineIndexer = new IKVMLineIndexer(this, Options.LineIndexation);
             var signingStep = new SigningStep(this, Options);
-            var isUnixEnvironment = Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix;
+
+            bool isUnixEnvironment = Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix;
+            bool needToCopyPermissions = isUnixEnvironment && (kind == ModuleKind.Console || kind == ModuleKind.Windows);
+            string permissionsText = null;
+
+            string primaryFilePath = Path.GetFullPath(PrimaryAssemblyFile);
+            string primaryDirectory = Path.GetDirectoryName(primaryFilePath);
+
+            if (needToCopyPermissions)
+            {
+                var process = ProcessRunner.Run("stat", $"-f \"%Lp\" \"{primaryFilePath}\"", primaryDirectory);
+                var output = process.Output.Trim('\r', '\n', ' ');
+                if (int.TryParse(output, out int permissions))
+                {
+                    permissionsText = output;
+                }
+
+                Logger.Verbose($"stat \"{primaryFilePath}\" returned {output} (error: {process.ErrorOutput}, exit code: {process.ExitCode})");
+            }
 
             using (var sourceServerDataStep = GetSourceServerDataStep(isUnixEnvironment))
             {
@@ -388,13 +405,19 @@ namespace ILRepacking
 
                 // If this is an executable and we are on linux/osx we should copy file permissions from
                 // the primary assembly
-                if (isUnixEnvironment && (kind == ModuleKind.Console || kind == ModuleKind.Windows))
+                if (permissionsText != null)
                 {
-                    Stat stat;
-                    Logger.Verbose("Copying permissions from " + PrimaryAssemblyFile);
-                    Syscall.stat(PrimaryAssemblyFile, out stat);
-                    Syscall.chmod(Options.OutputFile, stat.st_mode);
+                    var process = ProcessRunner.Run("chmod", $"{permissionsText} \"{Options.OutputFile}\"");
+                    if (process.ExitCode < 0)
+                    {
+                        Logger.Warn($"Call to chmod {permissionsText} \"{Options.OutputFile}\" returned {process.ExitCode}");
+                    }
+                    else
+                    {
+                        Logger.Verbose($"chmod {permissionsText} \"{Options.OutputFile}\"");
+                    }
                 }
+
                 if (hadStrongName && !TargetAssemblyDefinition.Name.HasPublicKey)
                     Options.StrongNameLost = true;
 
