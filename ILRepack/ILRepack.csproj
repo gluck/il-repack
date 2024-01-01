@@ -52,8 +52,12 @@
       Inputs="$(TargetPath);$(OutDir)Mono.Cecil.dll;$(MSBuildThisFileFullPath)"
       Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
     <MakeDir Directories="$(OutDir)Repacked" />
+    <PropertyGroup>
+      <DotnetExePrefix Condition="$(OS) != 'Windows'">mono </DotnetExePrefix>
+      <UseKeyFile Condition="$(OS) == 'Windows'">/keyfile:ILRepack.snk </UseKeyFile>
+    </PropertyGroup>
     <Exec
-        Command="&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) /keyfile:ILRepack.snk /out:Repacked\ILRepack.exe $(DependencyDllList)" 
+        Command="$(DotnetExePrefix)&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) $(UseKeyFile)/out:Repacked/ILRepack.exe $(DependencyDllList)" 
         WorkingDirectory="$(OutDir)"
         ConsoleToMSBuild="True" />
     <Copy 
