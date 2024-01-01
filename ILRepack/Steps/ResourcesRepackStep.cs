@@ -257,9 +257,12 @@ namespace ILRepacking.Steps
             MemoryStream stream = (MemoryStream)er.GetResourceStream();
             var output = new MemoryStream((int)stream.Length);
             var rw = new ResourceWriter(output);
+            var resourceBytes = stream.ToArray();
+            string readerType;
 
             using (var rr = new ResReader(stream))
             {
+                readerType = rr.ReaderType;
                 foreach (var res in rr)
                 {
                     foreach (var processor in resourcePrcessors)
@@ -275,6 +278,17 @@ namespace ILRepacking.Steps
 
             rw.Generate();
             output.Position = 0;
+
+            if (readerType.StartsWith("System.Resources.Extensions.DeserializingResourceReader"))
+            {
+                // Bugfix#277 
+                // Default ResourceWriter creates incompatible resourses for NET Core WindowsForms applications 
+                // because the new deserializer of type "System.Resources.Extensions.DeserializingResourceReader" is used there.
+                // Therefore unchanged original resourceBytes must be passed in EmbeddedResource constructor for an NET Core WindowsForms applications
+                // if the readerType is the new type "System.Resources.Extensions.DeserializingResourceReader"
+                return new EmbeddedResource(er.Name, er.Attributes, new MemoryStream(resourceBytes));
+            }
+
             return new EmbeddedResource(er.Name, er.Attributes, output);
         }
 

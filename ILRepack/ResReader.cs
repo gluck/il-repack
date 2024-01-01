@@ -187,6 +187,7 @@ namespace ILRepacking
 
     internal sealed class ResReader : IEnumerable<Res>, IDisposable
     {
+        public string ReaderType { get; private set; }
         private BinaryReader _store;    // backing store we're reading from.
         private readonly long _nameSectionOffset;  // Offset to name section of file.
         private readonly long _dataSectionOffset;  // Offset to Data section of file.
@@ -226,7 +227,7 @@ namespace ILRepacking
 
                     // Read in type name for a suitable ResourceReader
                     // Note ResourceWriter & InternalResGen use different Strings.
-                    String readerType = _store.ReadString();
+                    ReaderType = _store.ReadString();
 
                     // Skip over type name for a suitable ResourceSet
                     SkipString();
