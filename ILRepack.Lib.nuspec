@@ -10,6 +10,7 @@
     <license type="expression">Apache-2.0</license>
     <projectUrl>https://github.com/gluck/il-repack</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <readme>README.md</readme>
     <description>ILRepack is meant at replacing ILMerge / Mono.Merge.
             The former being closed-source, impossible to customize, slow, resource consuming and many more. The later being deprecated, unsupported, and based on an old version of Mono.Cecil.</description>
     <summary>ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly</summary>
@@ -18,5 +19,6 @@
   </metadata>
   <files>
     <file src="Repacked\ILRepack.dll" target="lib\net472" />
+    <file src="README.md" />
   </files>
 </package>
