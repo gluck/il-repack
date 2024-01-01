@@ -152,6 +152,13 @@ namespace ILRepacking
             }
             else if (!type.IsPublic || internalize)
             {
+                string fullName = type.FullName;
+                if (fullName == "System.Runtime.CompilerServices.RefSafetyRulesAttribute" ||
+                    fullName == "Microsoft.CodeAnalysis.EmbeddedAttribute")
+                {
+                    return null;
+                }
+
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt);
