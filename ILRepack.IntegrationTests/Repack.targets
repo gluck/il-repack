@@ -7,6 +7,7 @@
   <Target Name="GatherInputs">
     <ItemGroup>
       <ILRepackInput Include="$(TargetDir)\*.dll" />
+      <ILRepackInput Remove="$(TargetDir)$(TargetFileName)" />
     </ItemGroup>
   </Target>
 
