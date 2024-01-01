@@ -19,5 +19,6 @@
   <files>
     <file src="ILRepack.props" target="build" />
     <file src="Repacked\ILRepack.exe" target="tools" />
+    <file src="ILRepack.runtimeconfig.json" target="tools" />
   </files>
 </package>
