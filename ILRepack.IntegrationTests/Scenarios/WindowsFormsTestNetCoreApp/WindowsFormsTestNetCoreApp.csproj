@@ -4,7 +4,6 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <PackageId>WindowsFormsTestNetCoreApp</PackageId>
     <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
@@ -27,6 +26,6 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <!--<Import Project="..\..\Repack.targets" />-->
+  <Import Project="..\..\Repack.targets" />
 
 </Project>

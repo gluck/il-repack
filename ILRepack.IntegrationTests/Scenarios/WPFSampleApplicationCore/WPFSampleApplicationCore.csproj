@@ -18,6 +18,6 @@
     <ILRepackExtraArgs>/keyfile:"$(MSBuildThisFileDirectory)test_sign_key.snk"</ILRepackExtraArgs>
   </PropertyGroup>
 
-  <!--<Import Project="..\..\Repack.targets" />-->
+  <Import Project="..\..\Repack.targets" />
 
 </Project>
