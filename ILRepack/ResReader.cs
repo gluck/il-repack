@@ -192,7 +192,6 @@ namespace ILRepacking
         private readonly long _nameSectionOffset;  // Offset to name section of file.
         private readonly long _dataSectionOffset;  // Offset to Data section of file.
         private readonly int _numResources;    // Num of resources files, in case arrays aren't allocated.
-        private readonly BinaryFormatter _bf;
 
         // Version number of .resources file, for compatibility
         private readonly int _version;
@@ -204,7 +203,6 @@ namespace ILRepacking
         public ResReader(Stream stream)
         {
             _store = new BinaryReader(stream, Encoding.UTF8);
-            _bf = new BinaryFormatter(null, new StreamingContext(StreamingContextStates.File | StreamingContextStates.Persistence));
             try
             {
                 // Read ResourceManager header
@@ -437,8 +435,7 @@ namespace ILRepacking
                         }
                 }
 
-                // Normal serialized objects
-                return _bf.Deserialize(_store.BaseStream);
+                throw new NotSupportedException($"Reading resources of type {typeCode} is not supported.");
             }
         }
 
@@ -502,7 +499,7 @@ namespace ILRepacking
                 }
 
                 // Normal serialized objects
-                return _bf.Deserialize(_store.BaseStream);
+                throw new NotSupportedException($"Reading resources of type {type} is not supported.");
             }
         }
 
