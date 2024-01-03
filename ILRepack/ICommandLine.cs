@@ -3,7 +3,7 @@ namespace ILRepacking
 {
     internal interface ICommandLine
     {
-        string[] OtherAguments { get; }
+        string[] OtherArguments { get; }
 
         bool Modifier(string modifier);
 

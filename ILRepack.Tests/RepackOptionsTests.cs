@@ -232,7 +232,7 @@ namespace ILRepack.Tests
         public void WithOptionKeyContainerSet_WithDelaySign__Parse__NoException()
         {
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-            commandLine.Setup(cmd => cmd.OtherAguments).Returns(new[] { "A", "B", "C" });
+            commandLine.Setup(cmd => cmd.OtherArguments).Returns(new[] { "A", "B", "C" });
             commandLine.Setup(cmd => cmd.Option("keycontainer")).Returns("containername");
             commandLine.Setup(cmd => cmd.Modifier("delaysign")).Returns(true);
             Parse();
@@ -275,7 +275,7 @@ namespace ILRepack.Tests
             {
                 var inputAssemblies = new List<string> { "A", "B", "C" };
                 commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-                commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+                commandLine.Setup(cmd => cmd.OtherArguments).Returns(inputAssemblies.ToArray());
                 commandLine.Setup(cmd => cmd.Option("keyfile")).Returns("filename");
                 Parse();
                 options.Validate();
@@ -289,7 +289,7 @@ namespace ILRepack.Tests
             {
                 var inputAssemblies = new List<string> { "A", "B", "C" };
                 commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-                commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+                commandLine.Setup(cmd => cmd.OtherArguments).Returns(inputAssemblies.ToArray());
                 commandLine.Setup(cmd => cmd.Option("keyfile")).Returns("filename");
                 commandLine.Setup(cmd => cmd.Option("keycontainer")).Returns("containername");
                 Parse();
@@ -304,7 +304,7 @@ namespace ILRepack.Tests
             const string keyFile = "keyfilepath";
             var keyFileLines = new List<string> { "key1" };
             commandLine.Setup(cmd => cmd.Option("out")).Returns("outfilepath");
-            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            commandLine.Setup(cmd => cmd.OtherArguments).Returns(inputAssemblies.ToArray());
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(keyFile);
             file.Setup(_ => _.Exists(keyFile)).Returns(true);
@@ -353,7 +353,7 @@ namespace ILRepack.Tests
         {
             var inputAssemblies = new List<string> { "A", "B", "C" };
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            commandLine.Setup(cmd => cmd.OtherArguments).Returns(inputAssemblies.ToArray());
             
             commandLine.Setup(cmd => cmd.HasOption("internalize")).Returns(true);
             commandLine.Setup(cmd => cmd.Option("internalize")).Returns(string.Empty);
@@ -368,7 +368,7 @@ namespace ILRepack.Tests
         {
             var inputAssemblies = new List<string> { "A", "B", "C" };
             commandLine.Setup(cmd => cmd.Option("out")).Returns("filename");
-            commandLine.Setup(cmd => cmd.OtherAguments).Returns(inputAssemblies.ToArray());
+            commandLine.Setup(cmd => cmd.OtherArguments).Returns(inputAssemblies.ToArray());
             
             commandLine.Setup(cmd => cmd.Modifier("renameinternalized")).Returns(true);
             Parse();

@@ -276,7 +276,7 @@ namespace ILRepacking
             }
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)
-            InputAssemblies = cmd.OtherAguments;
+            InputAssemblies = cmd.OtherArguments;
         }
 
         /// <summary>
@@ -324,19 +324,10 @@ namespace ILRepacking
 
         public string ToCommandLine()
         {
-            StringBuilder commandLine = new StringBuilder();
-
-            var assembliesArgument = InputAssemblies.Aggregate(
-                string.Empty,
-                (previous, item) => previous + ' ' + item);
-
+            var commandLine = new StringBuilder();
             commandLine.AppendLine("------------- IL Repack Arguments -------------");
-            commandLine.Append($"/out:{OutputFile} ");
-            commandLine.Append(!string.IsNullOrEmpty(KeyFile) ? $"/keyfile:{KeyFile} " : string.Empty);
-            commandLine.Append(Internalize ? "/internalize" : string.Empty);
-            commandLine.AppendLine(assembliesArgument);
+            commandLine.Append(cmd.ToString());
             commandLine.Append("-----------------------------------------------");
-
             return commandLine.ToString();
         }
     }

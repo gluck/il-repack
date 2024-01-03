@@ -15,8 +15,8 @@
 //
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace ILRepacking
 {
@@ -27,9 +27,35 @@ namespace ILRepacking
         public CommandLine(IEnumerable<string> args)
         {
             parameters = new List<string>(args);
+            InlineResponseFiles();
         }
 
-        public string[] OtherAguments
+        private void InlineResponseFiles()
+        {
+            var responseFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            while (parameters.FirstOrDefault(a => a.StartsWith("@")) is string responseFile)
+            {
+                parameters.Remove(responseFile);
+                responseFile = responseFile.Substring(1);
+                var filePath = Path.GetFullPath(responseFile);
+                if (File.Exists(filePath) && responseFiles.Add(filePath))
+                {
+                    var lines = File.ReadAllLines(filePath);
+                    foreach (var line in lines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                        {
+                            continue;
+                        }
+
+                        parameters.Add(line.Trim());
+                    }
+                }
+            }
+        }
+
+        public string[] OtherArguments
         {
             get
             {
@@ -101,5 +127,9 @@ namespace ILRepacking
             return ret.Substring(1).Trim('"').Trim();
         }
 
+        public override string ToString()
+        {
+            return string.Join(" ", parameters);
+        }
     }
 }

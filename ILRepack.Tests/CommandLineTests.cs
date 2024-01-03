@@ -1,6 +1,7 @@
 ﻿using System;
-using NUnit.Framework;
+using System.IO;
 using ILRepacking;
+using NUnit.Framework;
 
 namespace ILRepack.Tests
 {
@@ -11,7 +12,7 @@ namespace ILRepack.Tests
         {
             string[] arguments = { };
             var commandLine = new CommandLine(arguments);
-            Assert.IsEmpty(commandLine.OtherAguments);
+            Assert.IsEmpty(commandLine.OtherArguments);
         }
 
         [Test]
@@ -77,7 +78,7 @@ namespace ILRepack.Tests
             Assert.IsFalse(commandLine.HasOption("var"));
             Assert.IsTrue(commandLine.Modifier("log"));
             Assert.IsFalse(commandLine.HasOption("log"));
-            Assert.IsEmpty(commandLine.OtherAguments);
+            Assert.IsEmpty(commandLine.OtherArguments);
         }
 
         [Test]
@@ -144,6 +145,16 @@ namespace ILRepack.Tests
             string[] arguments = { "/lib:\"path\\in\\quotes\"" };
             var commandLine = new CommandLine(arguments);
             CollectionAssert.AreEqual(new[] { "path\\in\\quotes" }, commandLine.Options("lib"));
+        }
+
+        [Test]
+        public void ResponseFile()
+        {
+            string[] arguments = { "/out:\"foo.dll\"", "@response.rsp" };
+            File.WriteAllLines("response.rsp", new[] { "/log", "/internalize", "#comment" });
+            var commandLine = new CommandLine(arguments);
+            Assert.AreEqual("/out:\"foo.dll\" /log /internalize", commandLine.ToString());
+            File.Delete("response.rsp");
         }
     }
 }

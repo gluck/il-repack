@@ -9,10 +9,11 @@ namespace ILRepacking
         static int Main(string[] args)
         {
             RepackLogger logger = new RepackLogger();
-            RepackOptions options = new RepackOptions(args);
+            RepackOptions options = null;
             int returnCode = -1;
             try
             {
+                options = new RepackOptions(args);
                 if (options.ShouldShowUsage)
                 {
                     Usage();
@@ -43,7 +44,7 @@ namespace ILRepacking
             finally
             {
                 logger.Close();
-                if (options.PauseBeforeExit)
+                if (options != null && options.PauseBeforeExit)
                 {
                     Console.WriteLine("Press Any Key To Continue");
                     Console.ReadKey(true);
@@ -57,11 +58,12 @@ namespace ILRepacking
             Console.WriteLine($"IL Repack - assembly merging using Mono.Cecil - Version {typeof(ILRepack).Assembly.GetName().Version.ToString(3)}");
             Console.WriteLine(@"Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies> ...]");
             Console.WriteLine(@" - /help              displays this usage");
+            Console.WriteLine(@" - @<path>.rsp        response file containing additional arguments, one per line");
             Console.WriteLine(@" - /keyfile:<path>    specifies a keyfile to sign the output assembly");
             Console.WriteLine(@" - /log:<logfile>     enable logging (to a file, if given) (default is disabled)");
             Console.WriteLine(@" - /ver:M.X.Y.Z       target assembly version");
             Console.WriteLine(@" - /union             merges types with identical names into one");
-            Console.WriteLine(@" - /ndebug            disables symbol file generation");
+            Console.WriteLine(@" - /ndebug            disables symbol file generation (omit this if you want symbols and debug information)");
             Console.WriteLine(@" - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)");
             Console.WriteLine(@" - /attr:<path>       take assembly attributes from the given assembly file");
             Console.WriteLine(@" - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)");
