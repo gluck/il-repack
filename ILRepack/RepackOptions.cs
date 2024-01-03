@@ -326,7 +326,7 @@ namespace ILRepacking
         {
             var commandLine = new StringBuilder();
             commandLine.AppendLine("------------- IL Repack Arguments -------------");
-            commandLine.Append(cmd.ToString());
+            commandLine.AppendLine(cmd.ToString());
             commandLine.Append("-----------------------------------------------");
             return commandLine.ToString();
         }

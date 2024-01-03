@@ -23,11 +23,13 @@ namespace ILRepacking
     public class CommandLine : ICommandLine
     {
         private readonly List<string> parameters;
+        private readonly IReadOnlyList<string> originalCommandLine;
 
         public CommandLine(IEnumerable<string> args)
         {
             parameters = new List<string>(args);
             InlineResponseFiles();
+            originalCommandLine = parameters.ToArray();
         }
 
         private void InlineResponseFiles()
@@ -129,7 +131,7 @@ namespace ILRepacking
 
         public override string ToString()
         {
-            return string.Join(" ", parameters);
+            return string.Join(" ", originalCommandLine);
         }
     }
 }
