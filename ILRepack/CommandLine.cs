@@ -98,7 +98,7 @@ namespace ILRepacking
                 return string.Empty;
             if (ret[0] != ':' && ret[0] != '=')
                 return null;
-            return ret.Substring(1).Trim();
+            return ret.Substring(1).Trim('"').Trim();
         }
 
     }

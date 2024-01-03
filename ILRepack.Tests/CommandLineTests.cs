@@ -137,5 +137,13 @@ namespace ILRepack.Tests
             var commandLine = new CommandLine(arguments);
             Assert.IsTrue(commandLine.HasNoOptions);
         }
+
+        [Test]
+        public void TrimQuotes()
+        {
+            string[] arguments = { "/lib:\"path\\in\\quotes\"" };
+            var commandLine = new CommandLine(arguments);
+            CollectionAssert.AreEqual(new[] { "path\\in\\quotes" }, commandLine.Options("lib"));
+        }
     }
 }
