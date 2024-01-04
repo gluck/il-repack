@@ -744,17 +744,19 @@ namespace ILRepacking
             return null /*newBody.Instructions.Outside*/;
         }
 
+        // https://github.com/dotnet/roslyn/blob/ee2526876b7bff3380bc110d819dda23cac668a5/src/Compilers/CSharp/Portable/Symbols/EmbeddableAttributes.cs#L10
         private static readonly HashSet<string> allowUnifyTypeNames = new HashSet<string>
         {
-            "System.Runtime.CompilerServices.IsByRefLikeAttribute",
-            "System.Runtime.CompilerServices.IsExternalInitAttribute",
             "System.Runtime.CompilerServices.IsReadOnlyAttribute",
-            "System.Runtime.CompilerServices.NativeInteger",
+            "System.Runtime.CompilerServices.IsByRefLikeAttribute",
+            "System.Runtime.CompilerServices.IsUnmanagedAttribute",
             "System.Runtime.CompilerServices.NullableAttribute",
             "System.Runtime.CompilerServices.NullableContextAttribute",
             "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+            "System.Runtime.CompilerServices.NativeIntegerAttribute",
+            "System.Runtime.CompilerServices.ScopedRefAttribute",
             "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
-            "System.Runtime.CompilerServices.SkipLocalsInitAttribute",
+            "System.Runtime.CompilerServices.RequiresLocationAttribute",
             "Microsoft.CodeAnalysis.EmbeddedAttribute"
         };
 
