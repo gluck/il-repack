@@ -75,6 +75,7 @@ namespace ILRepacking
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
         public bool SkipConfigMerge { get; set; }
+        public bool MergeIlLinkerFiles { get; set; }
         public bool XmlDocumentation { get; set; }
 
         // end of ILMerge-similar attributes
@@ -252,6 +253,7 @@ namespace ILRepacking
             if (!string.IsNullOrEmpty(version))
                 Version = new Version(version);
             SkipConfigMerge = cmd.Modifier("skipconfig");
+            MergeIlLinkerFiles = cmd.Modifier("illink");
             XmlDocumentation = cmd.Modifier("xmldocs");
             NoRepackRes = cmd.Modifier("norepackres");
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");

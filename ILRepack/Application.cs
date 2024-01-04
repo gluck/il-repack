@@ -70,6 +70,7 @@ namespace ILRepacking
             Console.WriteLine(@" - /target:kind       specify target assembly kind (library, exe, winexe supported, default is same as first assembly)");
             Console.WriteLine(@" - /targetplatform:P  specify target platform (v1, v1.1, v2, v4 supported)");
             Console.WriteLine(@" - /skipconfig        skips merging config files");
+            Console.WriteLine(@" - /illink            merge IL Linker files");
             Console.WriteLine(@" - /xmldocs           merges XML documentation as well");
             Console.WriteLine(@" - /lib:<path>        adds the path to the search directories for referenced assemblies (can be specified multiple times)");
             Console.WriteLine(@" - /internalize       sets all types but the ones from the first assembly 'internal'");
