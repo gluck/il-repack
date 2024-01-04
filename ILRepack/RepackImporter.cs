@@ -152,13 +152,6 @@ namespace ILRepacking
             }
             else if (!type.IsPublic || internalize)
             {
-                string fullName = type.FullName;
-                if (fullName == "System.Runtime.CompilerServices.RefSafetyRulesAttribute" ||
-                    fullName == "Microsoft.CodeAnalysis.EmbeddedAttribute")
-                {
-                    return null;
-                }
-
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt);
@@ -751,6 +744,20 @@ namespace ILRepacking
             return null /*newBody.Instructions.Outside*/;
         }
 
+        private static readonly HashSet<string> allowUnifyTypeNames = new HashSet<string>
+        {
+            "System.Runtime.CompilerServices.IsByRefLikeAttribute",
+            "System.Runtime.CompilerServices.IsExternalInitAttribute",
+            "System.Runtime.CompilerServices.IsReadOnlyAttribute",
+            "System.Runtime.CompilerServices.NativeInteger",
+            "System.Runtime.CompilerServices.NullableAttribute",
+            "System.Runtime.CompilerServices.NullableContextAttribute",
+            "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+            "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+            "System.Runtime.CompilerServices.SkipLocalsInitAttribute",
+            "Microsoft.CodeAnalysis.EmbeddedAttribute"
+        };
+
         private bool DuplicateTypeAllowed(TypeDefinition type)
         {
             string fullName = type.FullName;
@@ -769,11 +776,10 @@ namespace ILRepacking
             if (fullName == "<PrivateImplementationDetails>" && type.IsPublic)
                 return true;
 
-            // This attribute marks a "struct" as a "ref struct",
-            // so it shouldn't be renamed otherwise all "ref struct"
-            // in the final assembly will turn into simple "struct"
-            if (fullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+            if (allowUnifyTypeNames.Contains(fullName))
+            {
                 return true;
+            }
 
             if (_options.AllowAllDuplicateTypes || _options.AllowedDuplicateTypes.Contains(fullName))
                 return true;
