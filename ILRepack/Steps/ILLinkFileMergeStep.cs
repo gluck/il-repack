@@ -99,7 +99,7 @@ namespace ILRepacking
 
                 if (ilLinkSuppressionsList.Count > 0)
                 {
-                    _logger.Verbose($"Merging {ilLinkSuppressionsList} files.");
+                    _logger.Verbose($"Merging {SUPPRESSIONS_FILE_NAME} files.");
 
                     var resource = MergeSuppressions(_repack, ilLinkSuppressionsList);
                     AddOrReplaceResource(_repack.TargetAssemblyMainModule.Resources, SUPPRESSIONS_FILE_NAME, resource);
