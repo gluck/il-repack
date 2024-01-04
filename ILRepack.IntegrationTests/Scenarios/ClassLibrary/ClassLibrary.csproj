@@ -1,7 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <!--
+    This is needed to make sure Microsoft.NETFramework.ReferenceAssemblies net47 gets picked up
+    by WPF markup compilation (GenerateTemporaryTargetAssembly task).
+    Microsoft.NETFramework.ReferenceAssemblies.net47.targets gets inserted before TargetFrameworkIdentifier
+    is set.
+    -->
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <MainProjectNuGetGProps>$(BaseIntermediateOutputPath)$(_TargetAssemblyProjectName)$(MSBuildProjectExtension).nuget.g.props</MainProjectNuGetGProps>
+    <MainProjectNuGetGTargets>$(BaseIntermediateOutputPath)$(_TargetAssemblyProjectName)$(MSBuildProjectExtension).nuget.g.targets</MainProjectNuGetGTargets>
+  </PropertyGroup>
+
+  <Import Project="$(MainProjectNuGetGProps)"
+          Condition="$(_TargetAssemblyProjectName) != '' and $(ImportProjectExtensionProps) != false and Exists('$(MainProjectNuGetGProps)')" />
+
+  <PropertyGroup>
+    <!-- intentional to force the C# compiler to emit all generated attributes -->
+    <TargetFramework>net47</TargetFramework>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <!-- force Roslyn to emit Nullable attribute into the assembly-->
+    <Nullable>annotations</Nullable>
+    <Features>nullablePublicOnly</Features>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);CS0169</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DevExpressMvvm" Version="17.1.6" PrivateAssets="all" />
@@ -13,6 +36,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompilerAttributes.cs" />
     <Compile Include="DummyConverter.cs" />
     <Compile Include="DummyUserControl.xaml.cs">
       <DependentUpon>DummyUserControl.xaml</DependentUpon>
@@ -47,4 +71,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
+
+  <Import Project="$(MainProjectNuGetGTargets)"
+          Condition="$(_TargetAssemblyProjectName) != '' and $(ImportProjectExtensionTargets) != false and Exists('$(MainProjectNuGetGTargets)')" />
+
 </Project>

@@ -1,8 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net47</TargetFramework>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <Nullable>annotations</Nullable>
+    <Features>nullablePublicOnly</Features>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);CS0169</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -15,6 +19,7 @@
       <DependentUpon>AnotherDummyUserControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="BclAsyncUsage.cs" />
+    <Compile Include="CompilerAttributes.cs" />
     <Compile Include="ADummyUserControl.xaml.cs">
       <DependentUpon>ADummyUserControl.xaml</DependentUpon>
     </Compile>
