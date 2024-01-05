@@ -1,4 +1,5 @@
 ﻿using ILRepacking.Steps;
+using Mono.Cecil;
 using System;
 
 namespace ILRepacking
@@ -38,7 +39,13 @@ namespace ILRepacking
             }
             catch (Exception e)
             {
-                logger.LogError(e);
+                string error = e.ToString();
+                if (e is AssemblyResolutionException)
+                {
+                    error = e.Message;
+                }
+
+                logger.LogError(error);
                 returnCode = 1;
             }
             finally

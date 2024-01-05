@@ -155,9 +155,9 @@ namespace ILRepacking
                     SymbolsRead = rp.ReadSymbols
                 };
             }
-            catch
+            catch (Exception ex)
             {
-                Logger.Error("Failed to load assembly " + assembly);
+                Logger.Error($"Loading {assembly} failed: {ex.Message}");
                 throw;
             }
         }
