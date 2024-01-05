@@ -80,7 +80,6 @@ namespace ILRepacking
 
         private void ReadInputAssemblies()
         {
-            MergedAssemblyFiles = Options.ResolveFiles();
             OtherAssemblies = new List<AssemblyDefinition>();
             // TODO: this could be parallelized to gain speed
             var primary = MergedAssemblyFiles.FirstOrDefault();
@@ -286,6 +285,15 @@ namespace ILRepacking
             var timer = new Stopwatch();
             timer.Start();
             Options.Validate();
+            MergedAssemblyFiles = Options.ResolveFiles();
+            foreach (var inputFile in MergedAssemblyFiles)
+            {
+                if (!File.Exists(inputFile))
+                {
+                    throw new FileNotFoundException($"Input file not found: {inputFile}");
+                }
+            }
+
             PrintRepackHeader();
 
             string outputFilePath = Options.OutputFile;

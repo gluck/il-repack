@@ -1,6 +1,7 @@
-﻿using ILRepacking.Steps;
+﻿using System;
+using System.IO;
+using ILRepacking.Steps;
 using Mono.Cecil;
-using System;
 
 namespace ILRepacking
 {
@@ -40,7 +41,7 @@ namespace ILRepacking
             catch (Exception e)
             {
                 string error = e.ToString();
-                if (e is AssemblyResolutionException)
+                if (e is AssemblyResolutionException or FileNotFoundException)
                 {
                     error = e.Message;
                 }
