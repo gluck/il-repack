@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <CustomAfterMicrosoftCSharpTargets>$(MSBuildThisFileDirectory)Mono.Cecil.targets</CustomAfterMicrosoftCSharpTargets>
+    <ContinuousIntegrationBuild Condition="$(Configuration) == 'Release'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
 </Project>
