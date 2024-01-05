@@ -48,6 +48,31 @@ namespace ILRepacking
         {
             InitializeDotnetRuntimeDirectories();
 
+            var result = TryResolve(reference);
+
+            // in .NET Core, System.Configuration.dll 4.0.0.0 references System.Configuration.ConfigurationManager.dll 0.0.0.0
+            // so we fish out the version of the actual runtime and try resolve that instead
+            if (result == null)
+            {
+                var version = reference.Version;
+                if (version.Major == 0 &&
+                    version.Minor == 0 &&
+                    version.Build == 0 &&
+                    version.Revision == 0 &&
+                    systemRuntimeVersion is not null)
+                {
+                    var referenceWithVersion = new AssemblyNameReference(reference.Name, systemRuntimeVersion);
+                    referenceWithVersion.Culture = reference.Culture;
+                    referenceWithVersion.PublicKeyToken = reference.PublicKeyToken;
+                    result = TryResolve(referenceWithVersion);
+                }
+            }
+
+            return result;
+        }
+
+        private AssemblyDefinition TryResolve(AssemblyNameReference reference)
+        {
             string fullName = reference.FullName;
             if (assemblyPathsByFullAssemblyName.TryGetValue(fullName, out var filePath))
             {
@@ -56,6 +81,25 @@ namespace ILRepacking
             }
 
             return null;
+        }
+
+        public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+        {
+            return base.Resolve(name, parameters);
+        }
+
+        private Version systemRuntimeVersion;
+
+        public override AssemblyDefinition Resolve(AssemblyNameReference name)
+        {
+            var result = base.Resolve(name);
+
+            if (name.Name == "System.Runtime" && name.Version.Major != 0 && systemRuntimeVersion is null)
+            {
+                systemRuntimeVersion = name.Version;
+            }
+
+            return result;
         }
 
         public new void RegisterAssembly(AssemblyDefinition assembly)
