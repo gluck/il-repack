@@ -121,7 +121,7 @@ namespace ILRepacking.Steps
             {
                 if (RemoveAttributes(type, _ => true))
                 {
-                    _logger.Warn("[" + type + "] attribute wasn't merged because of inconsistency across merged assemblies");
+                    _logger.Verbose("[" + type + "] attribute wasn't merged because of inconsistency across merged assemblies");
                 }
             }
         }
