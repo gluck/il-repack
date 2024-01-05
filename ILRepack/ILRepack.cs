@@ -257,6 +257,32 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
+            string outputFilePath = Options.OutputFile;
+            var outputDir = Path.GetDirectoryName(outputFilePath);
+            var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
+            EnsureDirectoryExists(tempOutputDirectory);
+
+            try
+            {
+                RepackCore(tempOutputDirectory);
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(tempOutputDirectory))
+                    {
+                        Directory.Delete(tempOutputDirectory, recursive: true);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private void RepackCore(string tempOutputDirectory)
+        {
             var timer = new Stopwatch();
             timer.Start();
             Options.Validate();
@@ -264,8 +290,6 @@ namespace ILRepacking
 
             string outputFilePath = Options.OutputFile;
             var outputDir = Path.GetDirectoryName(outputFilePath);
-            var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
-            EnsureDirectoryExists(tempOutputDirectory);
             string tempOutputFilePath = Path.Combine(tempOutputDirectory, Path.GetFileName(outputFilePath));
             Options.OutputFile = tempOutputFilePath;
 
