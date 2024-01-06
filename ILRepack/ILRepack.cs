@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using ILRepacking.Mixins;
 using ILRepacking.Steps;
@@ -416,7 +417,8 @@ namespace ILRepacking
                     StrongNameKeyPair = signingStep.KeyPair,
                     WriteSymbols = Options.DebugInfo && symbolWriterProvider != null,
                     SymbolWriterProvider = symbolWriterProvider,
-                    DeterministicMvid = true
+                    DeterministicMvid = true,
+                    Timestamp = ComputeDeterministicTimestamp()
                 };
 
                 Logger.Verbose($"Writing temporary assembly: {tempOutputFilePath}");
@@ -473,6 +475,40 @@ namespace ILRepacking
             }
 
             Logger.Verbose($"Finished in {timer.Elapsed}");
+        }
+
+        private uint ComputeDeterministicTimestamp()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var assembly in this.MergedAssemblies)
+            {
+                var mvid = assembly.MainModule.Mvid;
+                sb.Append(mvid.ToString());
+            }
+
+            var text = sb.ToString();
+
+            return ComputeHash(text);
+        }
+
+        static uint ComputeHash(string text)
+        {
+            const uint Offset = 2166136261;
+            const uint Prime = 16777619;
+        
+            uint hash = Offset;
+
+            unchecked
+            {
+                for (int i = 0; i < text.Length; i++)
+                {
+                    char ch = text[i];
+                    hash = (hash ^ ch) * Prime;
+                }
+            }
+
+            return hash;
         }
 
         private void MoveTempFile(string tempDirectory, string finalDirectory)
