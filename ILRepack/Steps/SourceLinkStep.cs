@@ -18,7 +18,9 @@ namespace ILRepacking.Steps
 
         private class SourceLinkData
         {
+#pragma warning disable CS0649
             public Dictionary<string, string> documents;
+#pragma warning restore CS0649
         }
 
         public void Perform()
