@@ -514,15 +514,44 @@ namespace ILRepacking
 
         private void ResolveSearchDirectories()
         {
-            foreach (var dir in Options.SearchDirectories)
-                GlobalAssemblyResolver.AddSearchDirectory(dir);
+            var directories = new List<string>();
+
+            foreach (var searchDirectory in Options.SearchDirectories)
+            {
+                directories.Add(searchDirectory);
+            }
+
+            if (directories.Count == 0)
+            {
+                foreach (var input in MergedAssemblyFiles)
+                {
+                    if (!Path.IsPathRooted(input))
+                    {
+                        continue;
+                    }
+
+                    var directory = Path.GetDirectoryName(input);
+                    directory = Path.GetFullPath(directory);
+                    directories.Add(directory);
+                }
+            }
+
             var targetPlatformDirectory = Options.TargetPlatformDirectory ?? ResolveTargetPlatformDirectory(Options.TargetPlatformVersion);
             if (targetPlatformDirectory != null)
             {
-                GlobalAssemblyResolver.AddSearchDirectory(targetPlatformDirectory);
+                directories.Add(targetPlatformDirectory);
                 var facadesDirectory = Path.Combine(targetPlatformDirectory, "Facades");
                 if (Directory.Exists(facadesDirectory))
-                    GlobalAssemblyResolver.AddSearchDirectory(facadesDirectory);
+                {
+                    directories.Add(facadesDirectory);
+                }
+            }
+
+            directories = directories.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            foreach (var dir in directories)
+            {
+                GlobalAssemblyResolver.AddSearchDirectory(dir);
             }
         }
 

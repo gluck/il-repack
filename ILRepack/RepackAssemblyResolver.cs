@@ -1,16 +1,20 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Mono.Cecil;
 
 namespace ILRepacking
 {
-    public class RepackAssemblyResolver : DefaultAssemblyResolver
+    public class RepackAssemblyResolver : BaseAssemblyResolver
     {
-        private bool runtimeDirectoriesInitialized;
+        private readonly Dictionary<string, AssemblyDefinition> cache = new Dictionary<string, AssemblyDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> assemblyPathsByFullAssemblyName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly ReaderParameters readerParameters;
+        private bool runtimeDirectoriesInitialized;
+        private Version systemRuntimeVersion;
+        private static readonly Version netcoreVersionBoundary = new Version(4, 0, 10, 0);
 
         private static readonly HashSet<string> ignoreRuntimeDlls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -39,16 +43,86 @@ namespace ILRepacking
             "wpfgfx_cor3",
         };
 
+        private static readonly HashSet<string> frameworkNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "mscorlib",
+            "Accessibility",
+            "Microsoft.CSharp",
+            "Microsoft.VisualBasic",
+            "Microsoft.VisualC",
+            "netstandard",
+            "PresentationCore",
+            "PresentationFramework",
+            "ReachFramework",
+            "System",
+            "UIAutomationClient",
+            "UIAutomationProvider",
+            "UIAutomationTypes",
+            "WindowsBase",
+            "WindowsFormsIntegration"
+        };
+
         public RepackAssemblyResolver()
         {
             this.ResolveFailure += RepackAssemblyResolver_ResolveFailure;
+            readerParameters = new ReaderParameters()
+            {
+                AssemblyResolver = this
+            };
+        }
+
+        public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+        {
+            string fullName = name.FullName;
+            if (cache.TryGetValue(fullName, out var assembly))
+            {
+                return assembly;
+            }
+
+            assembly = TryResolve(name, parameters);
+            cache[fullName] = assembly;
+
+            return assembly;
+        }
+
+        public override AssemblyDefinition Resolve(AssemblyNameReference name)
+        {
+            var result = Resolve(name, readerParameters);
+            return result;
         }
 
         private AssemblyDefinition RepackAssemblyResolver_ResolveFailure(object sender, AssemblyNameReference reference)
         {
-            InitializeDotnetRuntimeDirectories();
+            return TryResolveFromCoreFixVersion(reference);
+        }
 
-            var result = TryResolve(reference);
+        private AssemblyDefinition TryResolve(AssemblyNameReference name, ReaderParameters parameters)
+        {
+            if (name.Name == "System.Runtime" && name.Version.Major != 0 && systemRuntimeVersion is null)
+            {
+                systemRuntimeVersion = name.Version;
+            }
+
+            // heuristic: assembly more likely to be Core after that version.
+            // Try to resolve from Core first to prevent the base resolver
+            // from resolving Core assemblies from the GAC
+            if (IsFrameworkName(name.Name) && name.Version > netcoreVersionBoundary)
+            {
+                var fromCore = TryResolveFromCoreFixVersion(name);
+                if (fromCore != null)
+                {
+                    return fromCore;
+                }
+            }
+
+            var result = base.Resolve(name, parameters);
+
+            return result;
+        }
+
+        private AssemblyDefinition TryResolveFromCoreFixVersion(AssemblyNameReference reference)
+        {
+            var result = TryResolveFromCore(reference);
 
             // in .NET Core, System.Configuration.dll 4.0.0.0 references System.Configuration.ConfigurationManager.dll 0.0.0.0
             // so we fish out the version of the actual runtime and try resolve that instead
@@ -64,47 +138,43 @@ namespace ILRepacking
                     var referenceWithVersion = new AssemblyNameReference(reference.Name, systemRuntimeVersion);
                     referenceWithVersion.Culture = reference.Culture;
                     referenceWithVersion.PublicKeyToken = reference.PublicKeyToken;
-                    result = TryResolve(referenceWithVersion);
+                    result = TryResolveFromCore(referenceWithVersion);
                 }
             }
 
             return result;
         }
 
-        private AssemblyDefinition TryResolve(AssemblyNameReference reference)
+        private AssemblyDefinition TryResolveFromCore(AssemblyNameReference reference)
         {
+            InitializeDotnetRuntimeDirectories();
+
             string fullName = reference.FullName;
             if (assemblyPathsByFullAssemblyName.TryGetValue(fullName, out var filePath))
             {
-                var result = ModuleDefinition.ReadModule(filePath).Assembly;
+                var result = ModuleDefinition.ReadModule(filePath, readerParameters).Assembly;
                 return result;
             }
 
             return null;
         }
 
-        public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+        public void RegisterAssembly(AssemblyDefinition assembly)
         {
-            return base.Resolve(name, parameters);
-        }
-
-        private Version systemRuntimeVersion;
-
-        public override AssemblyDefinition Resolve(AssemblyNameReference name)
-        {
-            var result = base.Resolve(name);
-
-            if (name.Name == "System.Runtime" && name.Version.Major != 0 && systemRuntimeVersion is null)
+            var name = assembly.Name.FullName;
+            if (cache.ContainsKey(name))
             {
-                systemRuntimeVersion = name.Version;
+                return;
             }
 
-            return result;
+            cache[name] = assembly;
         }
 
-        public new void RegisterAssembly(AssemblyDefinition assembly)
+        private static bool IsFrameworkName(string shortName)
         {
-            base.RegisterAssembly(assembly);
+            return
+                shortName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+                frameworkNames.Contains(shortName);
         }
 
         private void InitializeDotnetRuntimeDirectories()
@@ -178,5 +248,18 @@ namespace ILRepacking
                 }
             }
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            foreach (var assembly in cache.Values)
+            {
+                assembly.Dispose();
+            }
+
+            cache.Clear();
+
+            base.Dispose(disposing);
+        }
     }
 }
+

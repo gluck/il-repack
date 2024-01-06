@@ -71,7 +71,7 @@ namespace ILRepacking
         public ILRepack.Kind? TargetKind { get; set; }
         public string TargetPlatformDirectory { get; set; }
         public string TargetPlatformVersion { get; set; }
-        public IEnumerable<string> SearchDirectories { get; set; }
+        public IEnumerable<string> SearchDirectories { get; set; } = Array.Empty<string>();
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
         public bool SkipConfigMerge { get; set; }
@@ -261,6 +261,7 @@ namespace ILRepacking
             SearchDirectories = cmd
                 .Options("lib")
                 .Concat(new[] { Environment.CurrentDirectory })
+                .Select(d => Path.GetFullPath(d))
                 .Distinct()
                 .ToArray();
 
