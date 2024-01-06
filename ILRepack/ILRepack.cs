@@ -15,18 +15,17 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using ILRepacking.Mixins;
 using ILRepacking.Steps;
+using ILRepacking.Steps.SourceServerData;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
-using ILRepacking.Mixins;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Diagnostics;
-using ILRepacking.Steps.SourceServerData;
 
 namespace ILRepacking
 {
