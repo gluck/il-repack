@@ -145,10 +145,16 @@ namespace ILRepacking
             {
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
+
+                if (IsWellKnownType(type))
+                {
+                    internalize = false;
+                }
             }
             else if (DuplicateTypeAllowed(type))
             {
                 _logger.Verbose("Merging " + type);
+                internalize = false;
             }
             else if (!type.IsPublic || internalize)
             {
@@ -165,6 +171,7 @@ namespace ILRepacking
             else if (_options.UnionMerge)
             {
                 _logger.Verbose("Merging " + type);
+                internalize = false;
             }
             else
             {
@@ -765,13 +772,34 @@ namespace ILRepacking
 
         private bool DuplicateTypeAllowed(TypeDefinition type)
         {
+            if (IsWellKnownType(type))
+            {
+                return true;
+            }
+
+            if (_options.AllowAllDuplicateTypes || _options.AllowedDuplicateTypes.Contains(type.FullName))
+                return true;
+
+            var top = type;
+            while (top.IsNested)
+                top = top.DeclaringType;
+            string nameSpace = top.Namespace;
+            if (!String.IsNullOrEmpty(nameSpace) && _options.AllowedDuplicateNameSpaces.Any(s => s == nameSpace || nameSpace.StartsWith(s + ".")))
+                return true;
+
+            return false;
+        }
+
+        private bool IsWellKnownType(TypeDefinition type)
+        {
             string fullName = type.FullName;
+
             // Merging module because IKVM uses this class to store some fields.
             // Doesn't fully work yet, as IKVM is nice enough to give all the fields the same name...
             if (fullName == "<Module>" || fullName == "__<Proxy>")
                 return true;
 
-            // XAML helper class, identical in all assemblies, unused within the assembly, and instanciated through reflection from the outside
+            // XAML helper class, identical in all assemblies, unused within the assembly, and instantiated through reflection from the outside
             // We could just skip them after the first one, but merging them works just fine
             if (fullName == "XamlGeneratedNamespace.GeneratedInternalTypeHelper")
                 return true;
@@ -785,16 +813,6 @@ namespace ILRepacking
             {
                 return true;
             }
-
-            if (_options.AllowAllDuplicateTypes || _options.AllowedDuplicateTypes.Contains(fullName))
-                return true;
-
-            var top = type;
-            while (top.IsNested)
-                top = top.DeclaringType;
-            string nameSpace = top.Namespace;
-            if (!String.IsNullOrEmpty(nameSpace) && _options.AllowedDuplicateNameSpaces.Any(s => s == nameSpace || nameSpace.StartsWith(s + ".")))
-                return true;
 
             return false;
         }
