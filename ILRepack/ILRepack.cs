@@ -73,6 +73,11 @@ namespace ILRepacking
             Options = options;
             Logger = logger;
 
+            if (logger is RepackLogger repackLogger && repackLogger.Open(options.LogFile))
+            {
+                options.Log = true;
+            }
+
             logger.ShouldLogVerbose = options.LogVerbose;
 
             _repackImporter = new RepackImporter(Logger, Options, this, _aspOffsets);
@@ -475,6 +480,10 @@ namespace ILRepacking
             }
 
             Logger.Verbose($"Finished in {timer.Elapsed}");
+            if (Logger is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         private uint ComputeDeterministicTimestamp()

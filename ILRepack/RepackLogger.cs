@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ILRepacking
 {
-    internal class RepackLogger : ILogger
+    internal class RepackLogger : ILogger, IDisposable
     {
         private string _outputFile;
         private StreamWriter _writer;
@@ -27,6 +27,11 @@ namespace ILRepacking
         {
             if (string.IsNullOrEmpty(file))
                 return false;
+            if (_writer != null)
+            {
+                return true;
+            }
+
             _outputFile = file;
             _writer = new StreamWriter(_outputFile);
             return true;
@@ -36,8 +41,14 @@ namespace ILRepacking
         {
             if (_writer == null)
                 return;
+            _writer.Flush();
             _writer.Close();
             _writer = null;
+        }
+
+        void IDisposable.Dispose()
+        {
+            Close();
         }
 
         public void Error(string msg)

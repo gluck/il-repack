@@ -21,12 +21,6 @@ namespace ILRepacking
                     Usage();
                     Exit(2);
                 }
-                logger.ShouldLogVerbose = options.LogVerbose;
-                //TODO: Open the Logger before the parse
-                if (logger.Open(options.LogFile))
-                {
-                    options.Log = true;
-                }
 
                 ILRepack repack = new ILRepack(options, logger);
                 repack.Repack();
@@ -46,12 +40,12 @@ namespace ILRepacking
                     error = e.Message;
                 }
 
-                logger.LogError(error);
+                logger?.LogError(error);
                 returnCode = 1;
             }
             finally
             {
-                logger.Close();
+                logger?.Close();
                 if (options != null && options.PauseBeforeExit)
                 {
                     Console.WriteLine("Press Any Key To Continue");
