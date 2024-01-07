@@ -107,7 +107,7 @@ namespace ILRepacking.Steps
             foreach (var m in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
             {
                 foreach (var r in m.ExportedTypes)
-                { 
+                {
                     if (!ShouldInternalize(r.FullName) &&
                         !SkipExportedType(r))
                     {
@@ -146,7 +146,11 @@ namespace ILRepacking.Steps
             if (!_repackOptions.Internalize)
                 return false;
 
-            if (_repackOptions.ExcludeInternalizeAssemblies.Contains(type.Module.Assembly.Name.Name, StringComparer.OrdinalIgnoreCase))
+            var excludeList = _repackOptions.ExcludeInternalizeAssemblies;
+
+            string shortName = type.Module.Assembly.Name.Name;
+            if (excludeList.Contains(shortName, StringComparer.OrdinalIgnoreCase) ||
+                excludeList.Contains(shortName + ".dll", StringComparer.OrdinalIgnoreCase))
             {
                 return false;
             }
