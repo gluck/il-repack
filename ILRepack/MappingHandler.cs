@@ -1,11 +1,8 @@
-﻿using Mono.Cecil;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Fasterflect;
-using Mono.Cecil.Metadata;
+using Mono.Cecil;
 
 namespace ILRepacking
 {
@@ -37,6 +34,7 @@ namespace ILRepacking
 
         private readonly IDictionary<Pair, TypeDefinition> mappings = new Dictionary<Pair, TypeDefinition>();
         private readonly IDictionary<Pair, TypeReference> exportMappings = new Dictionary<Pair, TypeReference>();
+        private readonly IDictionary<TypeDefinition, ModuleDefinition> typeToSourceModuleMap = new Dictionary<TypeDefinition, ModuleDefinition>();
 
         internal TypeDefinition GetRemappedType(TypeReference r)
         {
@@ -48,11 +46,18 @@ namespace ILRepacking
             return null;
         }
 
+        internal ModuleDefinition GetOriginalModule(TypeDefinition type)
+        {
+            typeToSourceModuleMap.TryGetValue(type, out var module);
+            return module;
+        }
+
         internal void StoreRemappedType(TypeDefinition orig, TypeDefinition renamed)
         {
             if (orig.Scope != null)
             {
                 mappings[GetTypeKey(orig)] = renamed;
+                typeToSourceModuleMap[renamed] = orig.Module;
             }
         }
 

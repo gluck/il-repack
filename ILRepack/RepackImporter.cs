@@ -152,9 +152,11 @@ namespace ILRepacking
             }
             else if (!type.IsPublic || internalize)
             {
+                var originalModule = _repackContext.MappingHandler.GetOriginalModule(nt);
+
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
-                string other = GenerateName(nt);
+                string other = GenerateName(nt, originalModule?.Mvid.ToString());
                 _logger.Verbose("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
@@ -213,7 +215,7 @@ namespace ILRepacking
 
             if (internalize && _options.RenameInternalized && !IsModuleTag(nt))
             {
-                string newName = GenerateName(nt);
+                string newName = GenerateName(nt, type.Module.Mvid.ToString());
                 _logger.Verbose("Renaming " + nt.FullName + " into " + newName);
                 nt.Name = newName;
             }
@@ -225,9 +227,10 @@ namespace ILRepacking
         //Assembly.Load() will load <Guid><Module> as type and crash
         private static bool IsModuleTag(TypeDefinition nt) => nt.FullName == "<Module>";
 
-        private string GenerateName(TypeDefinition typeDefinition)
+        private string GenerateName(TypeDefinition typeDefinition, string disambiguator = null)
         {
-            return "<" + Guid.NewGuid() + ">" + typeDefinition.Name;
+            disambiguator ??= Guid.NewGuid().ToString();
+            return $"<{disambiguator}>{typeDefinition.Name}";
         }
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition
