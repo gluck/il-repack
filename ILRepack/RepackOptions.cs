@@ -57,6 +57,7 @@ namespace ILRepacking
         public int FileAlignment { get; set; } // UNIMPL, not supported by cecil
         public string[] InputAssemblies { get; set; }
         public bool Internalize { get; set; }
+        public bool ExcludeInternalizeSerializable { get; set; }
         public string KeyFile { get; set; }
         public string KeyContainer { get; set; }
         public bool Parallel { get; set; }
@@ -190,8 +191,9 @@ namespace ILRepacking
             Internalize = cmd.HasOption("internalize");
             if (Internalize)
             {
-                // this file shall contain one regex per line to compare agains FullName of types NOT to internalize
+                // this file shall contain one regex per line to compare against FullName of types NOT to internalize
                 ExcludeFile = cmd.Option("internalize");
+                ExcludeInternalizeSerializable = cmd.HasOption("excludeinternalizeserializable");
             }
 
             RenameInternalized = cmd.Modifier("renameinternalized");

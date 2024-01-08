@@ -155,7 +155,7 @@ namespace ILRepacking.Steps
                 return false;
             }
 
-            if (IsSerializableAndPublic(type))
+            if (_repackOptions.ExcludeInternalizeSerializable && IsSerializableAndPublic(type))
                 return false;
 
             return ShouldInternalize(type.FullName);

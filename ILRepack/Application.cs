@@ -95,6 +95,9 @@ Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies>
                       or an assembly name not to internalize (.dll extension optional)
  - /renameinternalized
                       rename each internalized type to a new unique name
+ - /excludeinternalizeserializable
+                      do not internalize types marked as Serializable
+
  - /allowdup:Type     keep duplicates of the specified type, may be specified more than once
  - /allowdup          if no other /allowdup arguments specified, allow all duplicate types
  - /union             merges types with identical names into one
