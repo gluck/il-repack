@@ -63,43 +63,56 @@ namespace ILRepacking
                 assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ??
                 assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version.ToString() ?? "";
             Console.WriteLine($@"IL Repack {version}
+https://github.com/gluck/il-repack
+
 Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies> ...]
- - /help              displays this usage
+
+ - /help              displays this help
  - @<path>.rsp        response file containing additional arguments, one per line
- - /keyfile:<path>    specifies a keyfile to sign the output assembly
- - /log:<logfile>     enable logging (to a file, if given) (default is disabled)
+ - /log:<logfile>     enable logging to a file (default is disabled)
+ - /verbose           more detailed logging
+
+ - /out:<path>        target assembly path, symbol/config/doc files will be written here as well
+ - <path_to_primary>  primary assembly, gives the name, version to the merged one
+ - <other_assemblies> other assemblies to merge with the primary one
+ - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies
+
+ - /lib:<path>        path(s) to search directories to resolve referenced assemblies (can be specified multiple times)
+
+ - /target:kind       target assembly kind (library, exe, winexe supported, default is same as primary assembly)
  - /ver:M.X.Y.Z       target assembly version
+ - /keyfile:<path>    keyfile to sign the output assembly
+ - /delaysign         set the key, but don't sign the assembly
+
+ - /internalize       make all types except in the first assembly 'internal'.
+                      Types in the transitive closure of public API remain public.
  - /union             merges types with identical names into one
- - /ndebug            disables symbol file generation (omit this if you want symbols and debug information)
+ - /allowdup:Type     keep duplicates of the specified type, may be specified more than once
+ - /allowdup          if no other /allowdup arguments specified, allow all duplicate types
+ - /repackdrop:RepackDropAttribute 
+                      allows dropping members denoted by this attribute name when merging
+
  - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)
  - /attr:<path>       take assembly attributes from the given assembly file
  - /allowMultiple     when copyattrs is specified, allows multiple attributes (if type allows)
- - /target:kind       specify target assembly kind (library, exe, winexe supported, default is same as first assembly)
  - /targetplatform:P  specify target platform (v1, v1.1, v2, v4 supported)
+
  - /skipconfig        skips merging config files
  - /illink            merge IL Linker files
  - /xmldocs           merges XML documentation as well
- - /lib:<path>        adds the path to the search directories for referenced assemblies (can be specified multiple times)
- - /internalize       sets all types but the ones from the first assembly 'internal'
- - /delaysign         sets the key, but don't sign the assembly
+
+ - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)
  - /noRepackRes       do not add the resource '{ResourcesRepackStep.ILRepackListResourceName}' with all merged assembly names
+ - /ndebug            disables symbol file generation (omit this if you want symbols and debug information)
+ - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)
+ - /index             stores file:line debug information as type/method attributes (requires PDB)
+
+ - /parallel          use as many CPUs as possible to merge the assemblies
+ - /pause             pause execution once completed (good for debugging)
 
  - /usefullpublickeyforreferences - NOT IMPLEMENTED
  - /align             - NOT IMPLEMENTED
  - /closed            - NOT IMPLEMENTED
-
- - /repackdrop:RepackDropAttribute allows dropping members denoted by this attribute name when merging
- - /allowdup:Type     allows the specified type for being duplicated in input assemblies
- - /allowduplicateresources allows to duplicate resources in output assembly (by default they're ignored)
- - /zeropekind        allows assemblies with Zero PeKind (but obviously only IL will get merged)
- - /wildcards         allows (and resolves) file wildcards (e.g. *.dll) in input assemblies
- - /parallel          use as many CPUs as possible to merge the assemblies
- - /pause             pause execution once completed (good for debugging)
- - /index             stores file:line debug information as type/method attributes (requires PDB)
- - /verbose           shows more logs
- - /out:<path>        target assembly path, symbol/config/doc files will be written here as well
- - <path_to_primary>  primary assembly, gives the name, version to the merged one
- - <other_assemblies> ...
 
 Note: for compatibility purposes, all Options are case insensitive, and can be specified using '/', '-' or '--' prefix.");
         }
