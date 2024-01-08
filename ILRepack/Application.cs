@@ -58,10 +58,10 @@ namespace ILRepacking
 
         static void Usage()
         {
-            var version = ((AssemblyInformationalVersionAttribute)
-                typeof(ILRepack).Assembly
-                .GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)))
-                .InformationalVersion;
+            var assembly = typeof(ILRepack).Assembly;
+            var version = 
+                assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ??
+                assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version.ToString() ?? "";
             Console.WriteLine($@"IL Repack {version}
 Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies> ...]
  - /help              displays this usage
