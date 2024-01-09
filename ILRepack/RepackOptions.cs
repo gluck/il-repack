@@ -193,7 +193,7 @@ namespace ILRepacking
             {
                 // this file shall contain one regex per line to compare against FullName of types NOT to internalize
                 ExcludeFile = cmd.Option("internalize");
-                ExcludeInternalizeSerializable = cmd.HasOption("excludeinternalizeserializable");
+                ExcludeInternalizeSerializable = cmd.Modifier("excludeinternalizeserializable");
             }
 
             RenameInternalized = cmd.Modifier("renameinternalized");
