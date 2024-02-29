@@ -132,9 +132,10 @@ namespace ILRepacking
                         "ILRepack does not support merging non-.NET libraries (e.g.: native libraries)", e);
                 }
                 // cope with invalid symbol file
-                catch (Exception) when (rp.ReadSymbols)
+                catch (Exception ex) when (rp.ReadSymbols)
                 {
                     rp.ReadSymbols = false;
+                    rp.SymbolReaderProvider = null;
                     try
                     {
                         mergeAsm = AssemblyDefinition.ReadAssembly(assembly, rp);
@@ -144,7 +145,8 @@ namespace ILRepacking
                         throw new InvalidOperationException(
                             "ILRepack does not support merging non-.NET libraries (e.g.: native libraries)", e);
                     }
-                    Logger.Warn("Failed to load debug information for " + assembly);
+
+                    Logger.Warn($"Failed to load debug information for {assembly}:{Environment.NewLine}{ex}");
                 }
 
                 if (!Options.AllowZeroPeKind && (mergeAsm.MainModule.Attributes & ModuleAttributes.ILOnly) == 0)
