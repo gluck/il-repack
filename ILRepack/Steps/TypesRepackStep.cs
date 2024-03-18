@@ -67,10 +67,14 @@ namespace ILRepacking.Steps
                 _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, false);
             }
 
-            foreach (var r in _repackContext.OtherAssemblies.SelectMany(x => x.Modules).SelectMany(m => m.Types))
+            foreach (var module in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
             {
-                _logger.Verbose($"- Importing {r} from {r.Module}");
-                _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r));
+                bool internalizeAssembly = ShouldInternalizeAssembly(module.Assembly.Name.Name);
+                foreach (var r in module.Types)
+                {
+                    _logger.Verbose($"- Importing {r} from {r.Module}");
+                    _repackImporter.Import(r, _repackContext.TargetAssemblyMainModule.Types, ShouldInternalize(r, internalizeAssembly));
+                }
             }
         }
 
@@ -106,9 +110,10 @@ namespace ILRepacking.Steps
 
             foreach (var m in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
             {
+                bool internalizeAssembly = ShouldInternalizeAssembly(m.Assembly.Name.Name);
                 foreach (var r in m.ExportedTypes)
                 {
-                    if (!ShouldInternalize(r.FullName) &&
+                    if (!ShouldInternalize(r.FullName, internalizeAssembly) &&
                         !SkipExportedType(r))
                     {
                         _logger.Verbose($"- Importing Exported Type {r} from {m}");
@@ -122,43 +127,63 @@ namespace ILRepacking.Steps
             }
         }
 
-        /// <summary>
-        /// Check if a type's FullName matches a Regex to exclude it from internalizing.
-        /// </summary>
-        private bool ShouldInternalize(string typeFullName)
+        private bool ShouldInternalizeAssembly(string assemblyShortName)
         {
-            if (!_repackOptions.Internalize)
+            bool internalizeAssembly = _repackOptions.InternalizeAssemblies.Contains(assemblyShortName, StringComparer.OrdinalIgnoreCase);
+
+            if (!_repackOptions.Internalize && !internalizeAssembly)
+            {
                 return false;
+            }
 
-            if (_repackOptions.ExcludeInternalizeMatches.Count == 0)
-                return true;
-
-            string withSquareBrackets = "[" + typeFullName + "]";
-            foreach (Regex r in _repackOptions.ExcludeInternalizeMatches)
-                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
-                    return false;
+            if (_repackOptions.ExcludeInternalizeAssemblies.Contains(assemblyShortName, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
 
             return true;
         }
 
-        private bool ShouldInternalize(TypeDefinition type)
+        /// <summary>
+        /// Check if a type's FullName matches a Regex to exclude it from internalizing.
+        /// </summary>
+        private bool ShouldInternalize(string typeFullName, bool internalizeAssembly)
         {
-            if (!_repackOptions.Internalize)
+            if (!internalizeAssembly)
+            {
                 return false;
+            }
 
-            var excludeList = _repackOptions.ExcludeInternalizeAssemblies;
+            if (_repackOptions.ExcludeInternalizeMatches.Count == 0)
+            {
+                return true;
+            }
 
-            string shortName = type.Module.Assembly.Name.Name;
-            if (excludeList.Contains(shortName, StringComparer.OrdinalIgnoreCase) ||
-                excludeList.Contains(shortName + ".dll", StringComparer.OrdinalIgnoreCase))
+            string withSquareBrackets = "[" + typeFullName + "]";
+            foreach (Regex r in _repackOptions.ExcludeInternalizeMatches)
+            {
+                if (r.IsMatch(typeFullName) || r.IsMatch(withSquareBrackets))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool ShouldInternalize(TypeDefinition type, bool internalizeAssembly)
+        {
+            if (!internalizeAssembly)
             {
                 return false;
             }
 
             if (_repackOptions.ExcludeInternalizeSerializable && IsSerializableAndPublic(type))
+            {
                 return false;
+            }
 
-            return ShouldInternalize(type.FullName);
+            return ShouldInternalize(type.FullName, internalizeAssembly);
         }
 
         private bool IsSerializableAndPublic(TypeDefinition type)

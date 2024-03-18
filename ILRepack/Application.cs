@@ -90,6 +90,10 @@ Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies>
 
  - /internalize       make all types except in the first assembly 'internal'.
                       Types in the transitive closure of public API remain public.
+ - /internalizeassembly:<path>
+                      Internalize a specific assembly name (no extension).
+                      May be specified more than once (one per assembly to internalize).
+                      If specified, no need to also specify /internalize.
  - /internalize:<exclude_file>
                       Each line is either a regex/ full type name not to internalize
                       or an assembly name not to internalize (.dll extension optional)

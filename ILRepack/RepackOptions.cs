@@ -48,7 +48,7 @@ namespace ILRepacking
                     foreach (var line in lines)
                     {
                         ExcludeInternalizeMatches.Add(new Regex(line));
-                        ExcludeInternalizeAssemblies.Add(line);
+                        ExcludeInternalizeAssemblies.Add(StripExtension(line));
                     }
                 }
             }
@@ -99,6 +99,9 @@ namespace ILRepacking
         {
             get { return excludeInternalizeAssemblies; }
         }
+
+        public IReadOnlyList<string> InternalizeAssemblies { get; set; }
+
         public Hashtable AllowedDuplicateTypes
         {
             get { return allowedDuplicateTypes; }
@@ -188,15 +191,18 @@ namespace ILRepacking
             DebugInfo = !cmd.Modifier("ndebug");
             DelaySign = cmd.Modifier("delaysign");
             cmd.Option("align"); // not supported, just prevent interpreting this as file...
+
             Internalize = cmd.HasOption("internalize");
             if (Internalize)
             {
                 // this file shall contain one regex per line to compare against FullName of types NOT to internalize
                 ExcludeFile = cmd.Option("internalize");
-                ExcludeInternalizeSerializable = cmd.Modifier("excludeinternalizeserializable");
             }
 
             RenameInternalized = cmd.Modifier("renameinternalized");
+            ExcludeInternalizeSerializable = cmd.Modifier("excludeinternalizeserializable");
+            InternalizeAssemblies = cmd.Options("internalizeassembly").Select(StripExtension).ToArray();
+
             KeyFile = cmd.Option("keyfile");
             KeyContainer = cmd.Option("keycontainer");
             Log = cmd.HasOption("log");
@@ -325,6 +331,21 @@ namespace ILRepacking
             string dir = Path.GetDirectoryName(s);
             if (String.IsNullOrEmpty(dir)) dir = Directory.GetCurrentDirectory();
             return Directory.GetFiles(Path.GetFullPath(dir), Path.GetFileName(s));
+        }
+
+        private static string StripExtension(string filePath)
+        {
+            if (filePath == null)
+            {
+                return null;
+            }
+
+            if (filePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                filePath = filePath.Substring(0, filePath.Length - 4);
+            }
+
+            return filePath;
         }
 
         public string ToCommandLine()
