@@ -37,7 +37,7 @@ namespace ILRepacking.Steps
 
             if (!_visitedTypes.Add(type)) return;
 
-            callerStack.Push($"{type.Module.Assembly.Name.Name}::{type.FullName}");
+            callerStack.Push($"{type.FullName}");
 
             if (type.HasFields)
             {
