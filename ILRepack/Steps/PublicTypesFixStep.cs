@@ -27,28 +27,25 @@ namespace ILRepacking.Steps
 
             foreach (var type in publicTypes)
             {
-                EnsureDependencies(type, "");
+                EnsureDependencies(type, new Stack<string>());
             }
         }
 
-        private void EnsureDependencies(TypeDefinition type, string reason)
+        private void EnsureDependencies(TypeDefinition type, Stack<string> callerStack)
         {
             if (type == null) return;
 
             if (!_visitedTypes.Add(type)) return;
 
-            if (!string.IsNullOrEmpty(reason))
-            {
-                reason += $" ->{Environment.NewLine}  ";
-            }
-
-            reason += $"{type.Module.Assembly.Name.Name}::{type.FullName}";
+            callerStack.Push($"{type.Module.Assembly.Name.Name}::{type.FullName}");
 
             if (type.HasFields)
             {
                 foreach (var field in type.Fields.Where(f => f.IsPublic))
                 {
-                    EnsureDependencies(field.FieldType, $"{reason}.{field.Name}");
+                    callerStack.Push(field.Name);
+                    EnsureDependencies(field.FieldType, callerStack);
+                    callerStack.Pop();
                 }
             }
 
@@ -64,7 +61,9 @@ namespace ILRepacking.Steps
             {
                 foreach (var property in type.Properties.Where(IsPublic))
                 {
-                    EnsureDependencies(property.PropertyType, $"{reason}.{property.Name}");
+                    callerStack.Push(property.Name);
+                    EnsureDependencies(property.PropertyType, callerStack);
+                    callerStack.Pop();
                 }
             }
 
@@ -72,7 +71,9 @@ namespace ILRepacking.Steps
             {
                 foreach (var evt in type.Events.Where(e => e.AddMethod.IsPublic || e.RemoveMethod.IsPublic))
                 {
-                    EnsureDependencies(evt.EventType, $"{reason}.{evt.Name}");
+                    callerStack.Push(evt.Name);
+                    EnsureDependencies(evt.EventType, callerStack);
+                    callerStack.Pop();
                 }
             }
 
@@ -82,41 +83,59 @@ namespace ILRepacking.Steps
                 {
                     foreach (var parameter in method.Parameters)
                     {
-                        EnsureDependencies(parameter.ParameterType, $"{reason}.{method.Name}({parameter.Name})");
+                        callerStack.Push($"{method.Name}({parameter.Name})");
+                        EnsureDependencies(parameter.ParameterType, callerStack);
+                        callerStack.Pop();
                     }
 
-                    EnsureDependencies(method.ReturnType, $"{reason}.{method.Name} return type");
+                    callerStack.Push($"{method.Name}() return type");
+                    EnsureDependencies(method.ReturnType, callerStack);
+                    callerStack.Pop();
                 }
             }
 
-            EnsureDependencies(type.BaseType, $"{reason} base type");
+            callerStack.Push("base type");
+            EnsureDependencies(type.BaseType, callerStack);
+            callerStack.Pop();
 
-            MarkTypePublic(type, reason);
+            MarkTypePublic(type, callerStack);
+
+            callerStack.Pop();
         }
 
-        private void MarkTypePublic(TypeDefinition type, string reason)
+        private void MarkTypePublic(TypeDefinition type, Stack<string> callerStack)
         {
+            bool madeChanges = false;
+
             if (type.IsNested)
             {
                 if (!type.IsNestedPublic)
                 {
                     type.IsNestedPublic = true;
-                    _logger.Verbose($"Public API: Forcing nested type {type.Module.Assembly.Name.Name}::{type.FullName} to public:{Environment.NewLine}  {reason}");
+                    madeChanges = true;
                 }
 
-                MarkTypePublic(type.DeclaringType, reason + $" -> parent type");
+                callerStack.Push("parent type");
+                MarkTypePublic(type.DeclaringType, callerStack);
+                callerStack.Pop();
             }
             else
             {
                 if (!type.IsPublic)
                 {
                     type.IsPublic = true;
-                    _logger.Verbose($"Public API: Forcing type {type.Module.Assembly.Name.Name}::{type.FullName} to public because of:{Environment.NewLine}  {reason}");
+                    madeChanges = true;
                 }
+            }
+
+            if (madeChanges)
+            {
+                var reason = string.Join($" ->{Environment.NewLine}  ", callerStack.Reverse());
+                _logger.Verbose($"Public API: Forcing type {type.Module.Assembly.Name.Name}::{type.FullName} to public because of:{Environment.NewLine}  {reason}");
             }
         }
 
-        private void EnsureDependencies(TypeReference type, string reason)
+        private void EnsureDependencies(TypeReference type, Stack<string> callerStack)
         {
             if (type == null) return;
 
@@ -124,7 +143,9 @@ namespace ILRepacking.Steps
             {
                 foreach (var argument in genericType.GenericArguments)
                 {
-                    EnsureDependencies(argument, $"{reason}");
+                    callerStack.Push($"Generic type argument {argument.Name}");
+                    EnsureDependencies(argument, callerStack);
+                    callerStack.Pop();
                 }
             }
 
@@ -133,7 +154,7 @@ namespace ILRepacking.Steps
             var definition = type.Resolve();
             if (definition != null)
             {
-                EnsureDependencies(definition, $"{reason}");
+                EnsureDependencies(definition, callerStack);
             }
         }
     }
