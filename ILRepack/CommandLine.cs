@@ -82,10 +82,27 @@ namespace ILRepacking
 
         public bool HasOption(string name)
         {
-            return parameters.Any(x =>
-                x.ToLower().StartsWith("/" + name) ||
-                x.ToLower().StartsWith("-" + name) ||
-                x.ToLower().StartsWith("--" + name));
+            return parameters.Any(x => 
+            {
+                string lower = x.ToLowerInvariant();
+                bool isPrefix = 
+                    lower.StartsWith("/" + name) ||
+                    lower.StartsWith("-" + name) ||
+                    lower.StartsWith("--" + name);
+                if (!isPrefix)
+                {
+                    return false;
+                }
+
+                // if it's a prefix of another word, don't accept it
+                // e.g. don't match /internalizeassembly when asking for HasOption("/internalize")
+                if (lower.Length > name.Length + 1 && char.IsLetter(lower[name.Length + 1]))
+                {
+                    return false;
+                }
+
+                return true;
+            });
         }
 
         public string[] Options(string name)
