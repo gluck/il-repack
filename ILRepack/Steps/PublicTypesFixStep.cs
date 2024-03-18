@@ -27,21 +27,28 @@ namespace ILRepacking.Steps
 
             foreach (var type in publicTypes)
             {
-                EnsureDependencies(type);
+                EnsureDependencies(type, "");
             }
         }
 
-        private void EnsureDependencies(TypeDefinition type)
+        private void EnsureDependencies(TypeDefinition type, string reason)
         {
             if (type == null) return;
 
             if (!_visitedTypes.Add(type)) return;
 
+            if (!string.IsNullOrEmpty(reason))
+            {
+                reason += $" ->{Environment.NewLine}  ";
+            }
+
+            reason += $"{type.Module.Assembly.Name.Name}::{type.FullName}";
+
             if (type.HasFields)
             {
                 foreach (var field in type.Fields.Where(f => f.IsPublic))
                 {
-                    EnsureDependencies(field.FieldType);
+                    EnsureDependencies(field.FieldType, $"{reason}.{field.Name}");
                 }
             }
 
@@ -57,7 +64,7 @@ namespace ILRepacking.Steps
             {
                 foreach (var property in type.Properties.Where(IsPublic))
                 {
-                    EnsureDependencies(property.PropertyType);
+                    EnsureDependencies(property.PropertyType, $"{reason}.{property.Name}");
                 }
             }
 
@@ -65,7 +72,7 @@ namespace ILRepacking.Steps
             {
                 foreach (var evt in type.Events.Where(e => e.AddMethod.IsPublic || e.RemoveMethod.IsPublic))
                 {
-                    EnsureDependencies(evt.EventType);
+                    EnsureDependencies(evt.EventType, $"{reason}.{evt.Name}");
                 }
             }
 
@@ -75,31 +82,41 @@ namespace ILRepacking.Steps
                 {
                     foreach (var parameter in method.Parameters)
                     {
-                        EnsureDependencies(parameter.ParameterType);
+                        EnsureDependencies(parameter.ParameterType, $"{reason}.{method.Name}({parameter.Name})");
                     }
-                    EnsureDependencies(method.ReturnType);
+
+                    EnsureDependencies(method.ReturnType, $"{reason}.{method.Name} return type");
                 }
             }
 
-            EnsureDependencies(type.BaseType);
+            EnsureDependencies(type.BaseType, $"{reason} base type");
 
-            MarkTypePublic(type);
+            MarkTypePublic(type, reason);
         }
 
-        private void MarkTypePublic(TypeDefinition type)
+        private void MarkTypePublic(TypeDefinition type, string reason)
         {
             if (type.IsNested)
             {
-                type.IsNestedPublic = true;
-                MarkTypePublic(type.DeclaringType);
+                if (!type.IsNestedPublic)
+                {
+                    type.IsNestedPublic = true;
+                    _logger.Verbose($"Public API: Forcing nested type {type.Module.Assembly.Name.Name}::{type.FullName} to public:{Environment.NewLine}  {reason}");
+                }
+
+                MarkTypePublic(type.DeclaringType, reason + $" -> parent type");
             }
             else
             {
-                type.IsPublic = true;
+                if (!type.IsPublic)
+                {
+                    type.IsPublic = true;
+                    _logger.Verbose($"Public API: Forcing type {type.Module.Assembly.Name.Name}::{type.FullName} to public because of:{Environment.NewLine}  {reason}");
+                }
             }
         }
 
-        private void EnsureDependencies(TypeReference type)
+        private void EnsureDependencies(TypeReference type, string reason)
         {
             if (type == null) return;
 
@@ -107,15 +124,17 @@ namespace ILRepacking.Steps
             {
                 foreach (var argument in genericType.GenericArguments)
                 {
-                    EnsureDependencies(argument);
+                    EnsureDependencies(argument, $"{reason}");
                 }
             }
 
             if (type.Scope != _repackContext.TargetAssemblyMainModule) return;
 
             var definition = type.Resolve();
-
-            EnsureDependencies(definition);
+            if (definition != null)
+            {
+                EnsureDependencies(definition, $"{reason}");
+            }
         }
     }
 }
