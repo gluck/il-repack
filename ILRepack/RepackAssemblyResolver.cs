@@ -6,6 +6,8 @@ using Mono.Cecil;
 
 namespace ILRepacking
 {
+    public delegate void AssemblyResolvedDelegate(string assemblyName, string location);
+
     public class RepackAssemblyResolver : BaseAssemblyResolver
     {
         private readonly Dictionary<string, AssemblyDefinition> cache = new Dictionary<string, AssemblyDefinition>(StringComparer.Ordinal);
@@ -15,6 +17,8 @@ namespace ILRepacking
         private bool runtimeDirectoriesInitialized;
         private Version systemRuntimeVersion;
         private static readonly Version netcoreVersionBoundary = new Version(4, 0, 10, 0);
+
+        public event AssemblyResolvedDelegate AssemblyResolved;
 
         private static readonly HashSet<string> ignoreRuntimeDlls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -81,6 +85,8 @@ namespace ILRepacking
 
             assembly = TryResolve(name, parameters);
             cache[fullName] = assembly;
+
+            AssemblyResolved?.Invoke(fullName, assembly.MainModule.FileName);
 
             return assembly;
         }

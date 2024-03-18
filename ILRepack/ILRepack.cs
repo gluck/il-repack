@@ -80,6 +80,14 @@ namespace ILRepacking
 
             logger.ShouldLogVerbose = options.LogVerbose;
 
+            if (logger.ShouldLogVerbose)
+            {
+                GlobalAssemblyResolver.AssemblyResolved += (assemblyName, filePath) =>
+                {
+                    logger.Verbose($"Resolved '{assemblyName}' from '{filePath}'");
+                };
+            }
+
             _repackImporter = new RepackImporter(Logger, Options, this, _aspOffsets);
         }
 
