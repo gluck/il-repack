@@ -100,7 +100,7 @@ namespace ILRepacking
             get { return excludeInternalizeAssemblies; }
         }
 
-        public IReadOnlyList<string> InternalizeAssemblies { get; set; }
+        public IReadOnlyList<string> InternalizeAssemblies { get; set; } = Array.Empty<string>();
 
         public Hashtable AllowedDuplicateTypes
         {
