@@ -15,6 +15,7 @@
   <ItemGroup>
     <None Include="ILRepack.snk" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\README.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\ILRepack.png" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(MSBuildThisFileDirectory)..\ILRepack.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(MSBuildThisFileDirectory)ILRepack.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

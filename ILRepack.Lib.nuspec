@@ -16,9 +16,11 @@
     <summary>ILRepack is a utility that can be used to merge multiple .NET assemblies into a single assembly</summary>
     <tags>ILRepack ILMerge dotnet IL</tags>
     <copyright>Copyright Francois Valdy 2011-2015</copyright>
+    <icon>ILRepack.png</icon>
   </metadata>
   <files>
     <file src="Repacked\ILRepack.dll" target="lib\net472" />
     <file src="README.md" />
+    <file src="ILRepack.png" />
   </files>
 </package>
