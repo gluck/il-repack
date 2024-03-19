@@ -41,7 +41,17 @@ namespace ILRepacking
                     error = e.Message;
                 }
 
-                logger?.LogError(error);
+                // we've already printed the error earlier
+                if (error.StartsWith("System.InvalidOperationException: ILRepack does not support merging"))
+                {
+                    error = null;
+                }
+
+                if (error != null)
+                {
+                    logger?.LogError(error);
+                }
+
                 returnCode = 1;
             }
             finally
