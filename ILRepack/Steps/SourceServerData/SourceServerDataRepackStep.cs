@@ -79,11 +79,8 @@ namespace ILRepacking.Steps.SourceServerData
     /// </summary>
     internal class NullSourceServerStep : ISourceServerDataRepackStep
     {
-        private ILogger _logger;
-
         public NullSourceServerStep(ILogger logger)
         {
-            _logger = logger;
         }
 
         public void Perform()
@@ -93,8 +90,6 @@ namespace ILRepacking.Steps.SourceServerData
 
         public void Write()
         {
-            _logger.Warn("Did not write source server data to output assembly. " +
-            "Source server data is only writeable on Windows");
         }
 
         public void Dispose()
