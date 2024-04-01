@@ -1,5 +1,34 @@
 # IL Repack changelog
 
+## 2.0.29
+### Fixed
+* Fix #355 - properly rewrite parameter types for calli instructions, fixes invalid tokens and runtime exceptions
+
+## 2.0.28
+### Added
+* ability to internalize specific assemblies via one or more `/internalizeassembly:System.Foo`. `/internalize` is not required when these are specified.
+* Log reasons why a type was made public
+* print caller stack causality in PublicTypesFixStep when a type is left public
+* log resolved assemblies and location in verbose mode
+* add NuGet package icon
+
+### Fixed
+* cleaner error when input is not a managed assembly
+* include missing arg in README.md
+* fix CommandLine.HasOption() when one arg is a prefix of another
+* better error tolerance when reading bad dll or pdb
+
+## 2.0.27
+### Added
+* add `developmentDependency` in ILRepack.nuspec
+
+## 2.0.25
+### Added
+* add `/excludeinternalizeserializable` option to avoid internalizing types marked as serializable
+
+### Fixed
+* minor updates to command-line help
+
 ## 2.0.24
 ### Added
 * ILRepack is now deterministic - running it on the same inputs will produce byte-for-byte identical output
