@@ -297,6 +297,14 @@ namespace ILRepacking
             {
                 var call_site = (Mono.Cecil.CallSite)instr.Operand;
                 call_site.ReturnType = Fix(call_site.ReturnType);
+                if (call_site.HasParameters)
+                {
+                    for (int i = 0; i < call_site.Parameters.Count; i++)
+                    {
+                        var parameter = call_site.Parameters[i];
+                        parameter.ParameterType = Fix(parameter.ParameterType);
+                    }
+                }
             }
             else switch (instr.OpCode.OperandType)
                 {
