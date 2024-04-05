@@ -8,7 +8,7 @@ namespace ILRepacking
 {
     public delegate void AssemblyResolvedDelegate(string assemblyName, string location);
 
-    public class RepackAssemblyResolver : BaseAssemblyResolver
+    internal class RepackAssemblyResolver : BaseAssemblyResolver
     {
         private readonly Dictionary<string, AssemblyDefinition> cache = new Dictionary<string, AssemblyDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> assemblyPathsByFullAssemblyName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

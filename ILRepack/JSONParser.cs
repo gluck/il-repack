@@ -28,7 +28,7 @@ namespace TinyJson
     // - No JIT Emit support to parse structures quickly
     // - Limited to parsing <2GB JSON files (due to int.MaxValue)
     // - Parsing of abstract classes or interfaces is NOT supported and will throw an exception.
-    public static class JSONParser
+    internal static class JSONParser
     {
         [ThreadStatic] static Stack<List<string>> splitArrayPool;
         [ThreadStatic] static StringBuilder stringBuilder;

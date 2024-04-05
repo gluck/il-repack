@@ -14,7 +14,7 @@ namespace ILRepacking
     /// Merger of ILLink tool files. https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/ILLink-files.md
     /// Documentation of file formats: https://github.com/dotnet/runtime/blob/main/docs/tools/illink/data-formats.md
     /// </summary>
-    public class ILLinkFileMergeStep : IRepackStep
+    internal class ILLinkFileMergeStep : IRepackStep
     {
         private const string DESCRIPTORS_FILE_NAME = "ILLink.Descriptors.xml";
         private const string SUBSTITUTIONS_FILE_NAME = "ILLink.Substitutions.xml";

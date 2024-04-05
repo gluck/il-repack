@@ -37,16 +37,28 @@ namespace ILRepacking
 
         internal IList<string> MergedAssemblyFiles { get; set; }
         internal string PrimaryAssemblyFile { get; set; }
-        // contains all 'other' assemblies, but not the primary assembly
-        public IList<AssemblyDefinition> OtherAssemblies { get; private set; }
-        // contains all assemblies, primary (first one) and 'other'
-        public IList<AssemblyDefinition> MergedAssemblies { get; private set; }
-        public AssemblyDefinition TargetAssemblyDefinition { get; private set; }
-        public AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
-        public RepackAssemblyResolver GlobalAssemblyResolver { get; } = new RepackAssemblyResolver();
 
-        public ModuleDefinition TargetAssemblyMainModule => TargetAssemblyDefinition.MainModule;
-        public ModuleDefinition PrimaryAssemblyMainModule => PrimaryAssemblyDefinition.MainModule;
+        // contains all 'other' assemblies, but not the primary assembly
+        internal IList<AssemblyDefinition> OtherAssemblies { get; private set; }
+        // contains all assemblies, primary (first one) and 'other'
+        internal IList<AssemblyDefinition> MergedAssemblies { get; private set; }
+
+        internal AssemblyDefinition TargetAssemblyDefinition { get; private set; }
+        internal AssemblyDefinition PrimaryAssemblyDefinition { get; private set; }
+        internal RepackAssemblyResolver GlobalAssemblyResolver { get; } = new RepackAssemblyResolver();
+
+        internal ModuleDefinition TargetAssemblyMainModule => TargetAssemblyDefinition.MainModule;
+        internal ModuleDefinition PrimaryAssemblyMainModule => PrimaryAssemblyDefinition.MainModule;
+
+        // We need to avoid exposing Cecil types in our public API, so that all of Cecil can be internalized.
+        // See https://github.com/gluck/il-repack/issues/358.
+        RepackAssemblyResolver IRepackContext.GlobalAssemblyResolver => GlobalAssemblyResolver;
+        ModuleDefinition IRepackContext.TargetAssemblyMainModule => TargetAssemblyMainModule;
+        AssemblyDefinition IRepackContext.TargetAssemblyDefinition => TargetAssemblyDefinition;
+        AssemblyDefinition IRepackContext.PrimaryAssemblyDefinition => PrimaryAssemblyDefinition;
+        ModuleDefinition IRepackContext.PrimaryAssemblyMainModule => PrimaryAssemblyMainModule;
+        IList<AssemblyDefinition> IRepackContext.MergedAssemblies => MergedAssemblies;
+        IList<AssemblyDefinition> IRepackContext.OtherAssemblies => OtherAssemblies;
 
         private IKVMLineIndexer _lineIndexer;
         private ReflectionHelper _reflectionHelper;

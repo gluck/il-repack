@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ILRepacking
 {
-    public class ProcessRunner
+    internal class ProcessRunner
     {
         public class ProcessRunResult
         {
