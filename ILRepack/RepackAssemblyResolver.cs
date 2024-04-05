@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace ILRepacking
 {
-    public delegate void AssemblyResolvedDelegate(string assemblyName, string location);
+    internal delegate void AssemblyResolvedDelegate(string assemblyName, string location);
 
     internal class RepackAssemblyResolver : BaseAssemblyResolver
     {
