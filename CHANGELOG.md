@@ -1,5 +1,10 @@
 # IL Repack changelog
 
+## 2.0.30
+### Fixed
+* Fix #357 - fix regression when parsing command line arguments with --
+* Fix #358 - made Cecil types internal in the repacked ILRepack.exe/dll, reduced public API
+
 ## 2.0.29
 ### Fixed
 * Fix #355 - properly rewrite parameter types for calli instructions, fixes invalid tokens and runtime exceptions
