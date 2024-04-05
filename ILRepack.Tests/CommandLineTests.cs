@@ -140,6 +140,23 @@ namespace ILRepack.Tests
         }
 
         [Test]
+        public void PrefixKinds()
+        {
+            AssertHasOption("--internalize", "internalize");
+            AssertHasOption("/internalize", "internalize");
+            AssertHasOption("-internalize", "internalize");
+            AssertHasOption("/internalize", "internal", false);
+            AssertHasOption("/internalize", "internalizeSerializable", false);
+
+            void AssertHasOption(string arguments, string option, bool expectTrue = true)
+            {
+                string[] array = { arguments };
+                var commandLine = new CommandLine(array);
+                Assert.AreEqual(expectTrue, commandLine.HasOption(option));
+            }
+        }
+
+        [Test]
         public void TrimQuotes()
         {
             string[] arguments = { "/lib:\"path\\in\\quotes\"" };

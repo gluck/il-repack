@@ -85,18 +85,24 @@ namespace ILRepacking
             return parameters.Any(x => 
             {
                 string lower = x.ToLowerInvariant();
-                bool isPrefix = 
+
+                bool isPrefix1 = 
                     lower.StartsWith("/" + name) ||
-                    lower.StartsWith("-" + name) ||
-                    lower.StartsWith("--" + name);
+                    lower.StartsWith("-" + name);
+
+                bool isPrefix2 = lower.StartsWith("--" + name);
+
+                bool isPrefix = isPrefix1 || isPrefix2;
                 if (!isPrefix)
                 {
                     return false;
                 }
 
+                int prefixLength = isPrefix2 ? 2 : 1;
+
                 // if it's a prefix of another word, don't accept it
                 // e.g. don't match /internalizeassembly when asking for HasOption("/internalize")
-                if (lower.Length > name.Length + 1 && char.IsLetter(lower[name.Length + 1]))
+                if (lower.Length > name.Length + prefixLength && char.IsLetterOrDigit(lower[name.Length + prefixLength]))
                 {
                     return false;
                 }
