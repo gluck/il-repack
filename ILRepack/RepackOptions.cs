@@ -106,6 +106,7 @@ namespace ILRepacking
         {
             get { return allowedDuplicateTypes; }
         }
+
         public List<string> AllowedDuplicateNameSpaces
         {
             get { return allowedDuplicateNameSpaces; }
@@ -124,7 +125,7 @@ namespace ILRepacking
         private readonly IFile file;
         private string excludeFile;
 
-        private void AllowDuplicateType(string typeName)
+        public void AllowDuplicateType(string typeName)
         {
             if (typeName.EndsWith(".*"))
             {
