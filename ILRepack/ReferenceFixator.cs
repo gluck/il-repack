@@ -468,9 +468,13 @@ namespace ILRepacking
                                      ? method.ReturnType
                                      : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
                 // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
-                _logger.Warn("Method reference is used with definition return type / parameter. Indicates a likely invalid set of assemblies, consider one of the following");
-                _logger.Warn(" - Remove the assembly defining " + culprit + " from the merge");
-                _logger.Warn(" - Add assembly defining " + method + " to the merge");
+                string text = 
+@$"Method reference is used with definition return type / parameter.
+Indicates a likely invalid set of assemblies, consider one of the following:
+ - Remove the assembly defining {culprit} from the merge
+ - Add assembly defining {method} to the merge: {method.DeclaringType.Scope}
+";
+                _logger.Warn(text);
 
                 // one case where it'll work correctly however (but doesn't seem common):
                 // A references B
