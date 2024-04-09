@@ -112,7 +112,7 @@ namespace ILRepacking
             get { return allowedDuplicateNameSpaces; }
         }
 
-        public bool AllowAllDuplicateTypes { get; private set; }
+        public bool AllowAllDuplicateTypes { get; set; }
 
         public string RepackDropAttribute { get; set; }
         public bool RenameInternalized { get; set; }
