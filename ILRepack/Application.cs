@@ -20,6 +20,11 @@ namespace ILRepacking
                 if (options.ShouldShowUsage)
                 {
                     Usage();
+                    if (options.PauseBeforeExit)
+                    {
+                        Pause();
+                    }
+
                     Exit(2);
                 }
 
@@ -59,11 +64,16 @@ namespace ILRepacking
                 logger?.Close();
                 if (options != null && options.PauseBeforeExit)
                 {
-                    Console.WriteLine("Press Any Key To Continue");
-                    Console.ReadKey(true);
+                    Pause();
                 }
             }
             return returnCode;
+        }
+
+        private static void Pause()
+        {
+            Console.WriteLine("Press Any Key To Continue");
+            Console.ReadKey(true);
         }
 
         static void Usage()

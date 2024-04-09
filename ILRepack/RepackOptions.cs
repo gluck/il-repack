@@ -155,11 +155,15 @@ namespace ILRepacking
         {
             cmd = commandLine;
             this.file = file;
+            ShouldShowUsage = cmd.Modifier("?") || cmd.Modifier("help") || cmd.Modifier("h") || cmd.HasNoOptions;
+            PauseBeforeExit = cmd.Modifier("pause");
             if (!ShouldShowUsage)
+            {
                 Parse();
+            }
         }
 
-        internal bool ShouldShowUsage => cmd.Modifier("?") || cmd.Modifier("help") || cmd.Modifier("h") || cmd.HasNoOptions;
+        internal bool ShouldShowUsage { get; private set; }
 
         void Parse()
         {
@@ -184,7 +188,6 @@ namespace ILRepacking
             AllowWildCards = cmd.Modifier("wildcards");
             AllowZeroPeKind = cmd.Modifier("zeropekind");
             Parallel = cmd.Modifier("parallel");
-            PauseBeforeExit = cmd.Modifier("pause");
             AttributeFile = cmd.Option("attr");
             Closed = cmd.Modifier("closed");
             CopyAttributes = cmd.Modifier("copyattrs");
