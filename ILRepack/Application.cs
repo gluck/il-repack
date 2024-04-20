@@ -28,6 +28,17 @@ namespace ILRepacking
                     Exit(2);
                 }
 
+                try
+                {
+                    options.Validate();
+                }
+                catch (Exception argumentException)
+                {
+                    Console.Error.WriteLine(argumentException.Message);
+                    Usage();
+                    return -2;
+                }
+
                 ILRepack repack = new ILRepack(options, logger);
                 repack.Repack();
                 returnCode = 0;
