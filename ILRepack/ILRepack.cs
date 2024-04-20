@@ -283,6 +283,8 @@ namespace ILRepacking
         /// </summary>
         public void Repack()
         {
+            Options.Validate();
+
             string outputFilePath = Options.OutputFile;
             var outputDir = Path.GetDirectoryName(outputFilePath);
             var tempOutputDirectory = Path.Combine(outputDir, $"ILRepack-{Process.GetCurrentProcess().Id}-{DateTime.UtcNow.Ticks.ToString().Substring(12)}");
@@ -311,7 +313,6 @@ namespace ILRepacking
         {
             var timer = new Stopwatch();
             timer.Start();
-            Options.Validate();
             MergedAssemblyFiles = Options.ResolveFiles();
             foreach (var inputFile in MergedAssemblyFiles)
             {
