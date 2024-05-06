@@ -38,5 +38,12 @@ namespace ILRepack.Tests
                 File.Delete(mergedExePath);
             }
         }
+
+        [Test]
+        public void InitializeDotnetRuntimeDirectoriesTest()
+        {
+            var resolver = new RepackAssemblyResolver();
+            resolver.InitializeDotnetRuntimeDirectories();
+        }
     }
 }

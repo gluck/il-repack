@@ -183,7 +183,7 @@ namespace ILRepacking
                 frameworkNames.Contains(shortName);
         }
 
-        private void InitializeDotnetRuntimeDirectories()
+        public void InitializeDotnetRuntimeDirectories()
         {
             if (runtimeDirectoriesInitialized)
             {
@@ -206,9 +206,25 @@ namespace ILRepacking
             while ((line = reader.ReadLine()) != null)
             {
                 var pathStart = line.LastIndexOf('[') + 1;
-                var path = line.Substring(pathStart, line.LastIndexOf(']') - pathStart);
+                if (pathStart == 0)
+                {
+                    continue;
+                }
+
+                var pathEnd = line.LastIndexOf(']');
+                if (pathEnd == -1 || pathEnd <= pathStart)
+                {
+                    continue;
+                }
+
+                var path = line.Substring(pathStart, pathEnd - pathStart);
                 var runtimeInfo = line.Substring(0, pathStart - 1);
                 var parts = runtimeInfo.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                {
+                    continue;
+                }
+
                 var fullPath = Path.Combine(path, parts[1]);
                 allRuntimes.Add(fullPath);
             }
