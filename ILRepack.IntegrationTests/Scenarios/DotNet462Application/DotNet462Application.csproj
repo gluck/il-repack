@@ -15,4 +15,8 @@
 
   <Import Project="..\..\Repack.targets" />
 
+  <PropertyGroup>
+    <ILRepackExtraArgs>/repackdrop:RepackDropAttribute;AnotherDropAttribute</ILRepackExtraArgs>
+  </PropertyGroup>
+
 </Project>

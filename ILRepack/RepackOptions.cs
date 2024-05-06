@@ -115,6 +115,8 @@ namespace ILRepacking
         public bool AllowAllDuplicateTypes { get; set; }
 
         public string RepackDropAttribute { get; set; }
+        public HashSet<string> RepackDropAttributes { get; } = new HashSet<string>();
+
         public bool RenameInternalized { get; set; }
 
         private readonly Hashtable allowedDuplicateTypes = new Hashtable();
@@ -288,6 +290,8 @@ namespace ILRepacking
                 {
                     RepackDropAttribute = "RepackDropAttribute";
                 }
+
+                RepackDropAttributes.UnionWith(RepackDropAttribute.Split([';'], StringSplitOptions.RemoveEmptyEntries));
             }
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)

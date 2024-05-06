@@ -238,19 +238,28 @@ namespace ILRepacking
 
         private bool ShouldDrop<TMember>(TMember member) where TMember : ICustomAttributeProvider, IMemberDefinition
         {
-            bool hasFilter = String.IsNullOrEmpty(_options.RepackDropAttribute) == false;
-            if (hasFilter == false)
+            var dropAttributes = _options.RepackDropAttributes;
+            if (!dropAttributes.Any())
             {
                 return false;
             }
-            // skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
-            var shouldDrop = member.HasCustomAttributes
-                && member.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.Name == _options.RepackDropAttribute) != null;
-            if (shouldDrop)
+
+            if (!member.HasCustomAttributes)
             {
-                _logger.Verbose("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + _options.RepackDropAttribute);
+                return false;
             }
-            return shouldDrop;
+
+            // skip members marked with a custom attribute named as /repackdrop:RepackDropAttribute
+            var dropAttribute = member.CustomAttributes.FirstOrDefault(attr => 
+                dropAttributes.Contains(attr.AttributeType.Name) ||
+                dropAttributes.Contains(attr.AttributeType.FullName));
+            if (dropAttribute != null)
+            {
+                _logger.Verbose("Repack dropped " + typeof(TMember).Name + ": " + member.FullName + " as it was marked with " + dropAttribute.AttributeType.FullName);
+                return true;
+            }
+
+            return false;
         }
 
         // Real stuff below //
