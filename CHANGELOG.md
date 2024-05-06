@@ -1,5 +1,16 @@
 # IL Repack changelog
 
+## 2.0.32
+### Fixed
+* Fix #361 - fix ArgumentOutOfRange in RepackAssemblyResolver.cs:line 203 (in InitializeDotnetRuntimeDirectories())
+
+### Added
+* Fix #345 - support multiple semicolon-separated attributes in /repackdrop
+
+## 2.0.31
+### Fixed
+* Fix #319 - support some obfuscated binaries (such as Oracle)
+
 ## 2.0.30
 ### Fixed
 * Fix #357 - fix regression when parsing command line arguments with --
