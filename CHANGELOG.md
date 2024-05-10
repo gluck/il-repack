@@ -1,5 +1,9 @@
 # IL Repack changelog
 
+## 2.0.33
+### Fixed
+* Fix #362 - Fix TypeReferences in MethodDebugInformation
+
 ## 2.0.32
 ### Fixed
 * Fix #361 - fix ArgumentOutOfRange in RepackAssemblyResolver.cs:line 203 (in InitializeDotnetRuntimeDirectories())
