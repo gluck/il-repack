@@ -45,6 +45,27 @@ namespace ILRepacking
             return nmr;
         }
 
+        private AssemblyNameReference Fix(AssemblyNameReference assemblyNameReference)
+        {
+            if (assemblyNameReference == null)
+            {
+                return assemblyNameReference;
+            }
+
+            string newFullName = _repackContext.FixAssemblyName(assemblyNameReference.FullName);
+            if (newFullName != assemblyNameReference.FullName)
+            {
+                return new AssemblyNameReference(newFullName, assemblyNameReference.Version)
+                {
+                    Attributes = assemblyNameReference.Attributes,
+                    Culture = assemblyNameReference.Culture,
+                    Hash = assemblyNameReference.Hash,
+                };
+            }
+
+            return assemblyNameReference;
+        }
+
         private FieldReference Fix(FieldReference field)
         {
             field.DeclaringType = Fix(field.DeclaringType);
@@ -269,6 +290,55 @@ namespace ILRepacking
             FixReferences(meth.MethodReturnType.CustomAttributes);
             if (meth.HasBody)
                 FixReferences(meth.Body);
+
+            FixReferences(meth.DebugInformation);
+        }
+
+        private void FixReferences(MethodDebugInformation debugInformation)
+        {
+            if (debugInformation == null)
+            {
+                return;
+            }
+
+            FixReferences(debugInformation.Scope);
+        }
+
+        private void FixReferences(ScopeDebugInformation scope)
+        {
+            if (scope == null)
+            {
+                return;
+            }
+
+            if (scope.HasScopes)
+            {
+                foreach (var child in scope.Scopes)
+                {
+                    FixReferences(child);
+                }
+            }
+
+            FixReferences(scope.Import);
+        }
+
+        private void FixReferences(ImportDebugInformation import)
+        {
+            if (import == null || !import.HasTargets)
+            {
+                return;
+            }
+
+            foreach (var target in import.Targets)
+            {
+                if (target.Type == null && target.AssemblyReference == null)
+                {
+                    continue;
+                }
+
+                target.Type = Fix(target.Type);
+                target.AssemblyReference = Fix(target.AssemblyReference);
+            }
         }
 
         private void FixReferences(MethodBody body)
