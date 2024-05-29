@@ -34,8 +34,7 @@ namespace ILRepacking
                 }
                 catch (Exception argumentException)
                 {
-                    Console.Error.WriteLine(argumentException.Message);
-                    Usage();
+                    Error(argumentException.Message);
                     return -2;
                 }
 
@@ -45,8 +44,7 @@ namespace ILRepacking
             }
             catch (RepackOptions.InvalidTargetKindException e)
             {
-                Console.Error.WriteLine(e.Message);
-                Usage();
+                Error(e.Message);
                 Exit(2);
             }
             catch (Exception e)
@@ -164,6 +162,36 @@ Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies>
  - /closed            - NOT IMPLEMENTED
 
 Note: for compatibility purposes, all Options are case insensitive, and can be specified using '/', '-' or '--' prefix.");
+        }
+
+        public static void Error(string text)
+        {
+            Write(text, ConsoleColor.Red, writer: Console.Error);
+        }
+
+        public static void Write(
+            string message,
+            ConsoleColor color = ConsoleColor.Gray,
+            bool newLineAtEnd = true,
+            TextWriter writer = null)
+        {
+            writer ??= Console.Out;
+
+            lock (writer)
+            {
+                var oldColor = Console.ForegroundColor;
+                Console.ForegroundColor = color;
+                if (newLineAtEnd)
+                {
+                    writer.WriteLine(message);
+                }
+                else
+                {
+                    writer.Write(message);
+                }
+
+                Console.ForegroundColor = oldColor;
+            }
         }
 
         static void Exit(int exitCode)

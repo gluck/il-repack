@@ -214,13 +214,7 @@ namespace ILRepacking
             Log = cmd.HasOption("log");
             if (Log)
                 LogFile = cmd.Option("log");
-            string outputFilePath = cmd.Option("out");
-            if (!string.IsNullOrEmpty(outputFilePath))
-            {
-                outputFilePath = Path.GetFullPath(outputFilePath);
-            }
-
-            OutputFile = outputFilePath;
+            OutputFile = cmd.Option("out");
             PublicKeyTokens = cmd.Modifier("usefullpublickeyforreferences");
             var targetKind = cmd.Option("target");
             if (string.IsNullOrEmpty(targetKind))
@@ -323,6 +317,18 @@ namespace ILRepacking
 
             if ((KeyFile != null) && !file.Exists(KeyFile))
                 throw new ArgumentException($"KeyFile does not exist: '{KeyFile}'.");
+
+            if (!string.IsNullOrEmpty(OutputFile))
+            {
+                try
+                {
+                    OutputFile = Path.GetFullPath(OutputFile);
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Output file {OutputFile} is not valid: {ex.Message}");
+                }
+            }
         }
 
         public IList<string> ResolveFiles()

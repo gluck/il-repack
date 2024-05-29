@@ -19,7 +19,7 @@ namespace ILRepacking
         public void LogError(object str)
         {
             string logStr = Convert.ToString(str);
-            Console.Error.WriteLine(logStr);
+            Application.Error(logStr);
             _writer?.WriteLine(logStr);
         }
 
@@ -58,7 +58,9 @@ namespace ILRepacking
 
         public void Warn(string msg)
         {
-            Log($"WARNING: {msg}");
+            msg = $"WARNING: {msg}";
+            Application.Write(msg, ConsoleColor.Yellow);
+            _writer?.WriteLine(msg);
         }
 
         public void Info(string msg)
