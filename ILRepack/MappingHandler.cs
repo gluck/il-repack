@@ -52,12 +52,12 @@ namespace ILRepacking
             return module;
         }
 
-        internal void StoreRemappedType(TypeDefinition orig, TypeDefinition renamed)
+        internal void StoreRemappedType(TypeDefinition original, TypeDefinition renamed)
         {
-            if (orig.Scope != null)
+            if (original.Scope != null)
             {
-                mappings[GetTypeKey(orig)] = renamed;
-                typeToSourceModuleMap[renamed] = orig.Module;
+                mappings[GetTypeKey(original)] = renamed;
+                typeToSourceModuleMap[renamed] = original.Module;
             }
         }
 
