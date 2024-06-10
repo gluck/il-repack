@@ -78,6 +78,21 @@ namespace ILRepacking.Steps
             }
         }
 
+        private bool IsTypeForwarder(ExportedType exportedType)
+        {
+            if (exportedType.IsForwarder)
+            {
+                return true;
+            }
+
+            if (exportedType.DeclaringType is { } declaringType)
+            {
+                return IsTypeForwarder(declaringType);
+            }
+
+            return false;
+        }
+
         private void RepackExportedTypes()
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
@@ -90,25 +105,38 @@ namespace ILRepacking.Steps
 
                 foreach (var exportedType in module.ExportedTypes)
                 {
-                    bool parentIsForwarder = exportedType.DeclaringType != null && exportedType.DeclaringType.IsForwarder;
-                    bool forwarded = exportedType.IsForwarder || parentIsForwarder;
+                    TypeReference reference = null;
+                    bool forwardedToTargetAssembly = false;
 
-                    bool skipExportedType = forwarded && _allTypes.Any(t => t.FullName == exportedType.FullName);
-                    if (skipExportedType)
+                    if (IsTypeForwarder(exportedType))
                     {
-                        continue;
+                        var forwardedTo = _allTypes.FirstOrDefault(t => t.FullName == exportedType.FullName);
+                        if (forwardedTo != null)
+                        {
+                            forwardedToTargetAssembly = true;
+                            reference = forwardedTo;
+                        }
                     }
 
-                    if (internalizeAssembly && ShouldInternalize(exportedType.FullName, internalizeAssembly))
+                    if (reference == null)
                     {
-                        continue;
+                        reference = CreateReference(exportedType);
                     }
 
-                    var reference = CreateReference(exportedType);
                     _repackContext.MappingHandler.StoreExportedType(
                         module,
                         exportedType.FullName,
                         reference);
+
+                    if (ShouldInternalize(exportedType.FullName, internalizeAssembly))
+                    {
+                        continue;
+                    }
+
+                    if (forwardedToTargetAssembly)
+                    {
+                        continue;
+                    }
 
                     _logger.Verbose($"- Importing Exported Type {exportedType} from {exportedType.Scope}");
                     _repackImporter.Import(
