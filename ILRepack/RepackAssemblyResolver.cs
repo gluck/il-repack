@@ -109,10 +109,18 @@ namespace ILRepacking
                 systemRuntimeVersion = name.Version;
             }
 
+            bool resolveFromCoreFirst = IsFrameworkName(name.Name) && name.Version > netcoreVersionBoundary;
+
+            // see https://github.com/gluck/il-repack/issues/347
+            if (name.Name.Equals("Microsoft.VisualBasic", StringComparison.OrdinalIgnoreCase) && name.Version.Major <= 10)
+            {
+                resolveFromCoreFirst = false;
+            }
+
             // heuristic: assembly more likely to be Core after that version.
             // Try to resolve from Core first to prevent the base resolver
             // from resolving Core assemblies from the GAC
-            if (IsFrameworkName(name.Name) && name.Version > netcoreVersionBoundary)
+            if (resolveFromCoreFirst)
             {
                 var fromCore = TryResolveFromCoreFixVersion(name);
                 if (fromCore != null)
