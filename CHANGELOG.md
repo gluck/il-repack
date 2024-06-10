@@ -1,5 +1,10 @@
 # IL Repack changelog
 
+## 2.0.34
+### Fixed
+ * Fix #347 - Error merging VB app
+ * Fix #359 - fix TypeForwardedTo
+
 ## 2.0.33
 ### Fixed
 * Fix #362 - Fix TypeReferences in MethodDebugInformation
