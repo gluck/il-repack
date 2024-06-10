@@ -90,45 +90,46 @@ namespace ILRepacking.Steps
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
             _logger.Verbose("Processing exported types");
+
             foreach (var module in _repackContext.MergedAssemblies.SelectMany(x => x.Modules))
             {
-                foreach (var typeForwarder in module.ExportedTypes)
+                foreach (var exportedType in module.ExportedTypes)
                 {
-                    bool skipExportedType = SkipExportedType(typeForwarder);
+                    bool skipExportedType = SkipExportedType(exportedType);
                     if (skipExportedType)
                     {
                         continue;
                     }
 
-                    var reference = CreateReference(typeForwarder);
+                    var reference = CreateReference(exportedType);
                     _repackContext.MappingHandler.StoreExportedType(
                         module,
-                        typeForwarder.FullName,
+                        exportedType.FullName,
                         reference);
                 }
             }
 
-            foreach (var r in _repackContext.PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
+            foreach (var exportedType in _repackContext.PrimaryAssemblyDefinition.Modules.SelectMany(x => x.ExportedTypes))
             {
-                _logger.Verbose($"- Importing Exported Type {r} from {r.Scope}");
+                _logger.Verbose($"- Importing Exported Type {exportedType} from {exportedType.Scope}");
                 _repackImporter.Import(
-                    r, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
+                    exportedType, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
             }
 
-            foreach (var m in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
+            foreach (var module in _repackContext.OtherAssemblies.SelectMany(x => x.Modules))
             {
-                bool internalizeAssembly = ShouldInternalizeAssembly(m.Assembly.Name.Name);
-                foreach (var r in m.ExportedTypes)
+                bool internalizeAssembly = ShouldInternalizeAssembly(module.Assembly.Name.Name);
+                foreach (var exportedType in module.ExportedTypes)
                 {
-                    if (!ShouldInternalize(r.FullName, internalizeAssembly) &&
-                        !SkipExportedType(r))
+                    if (!ShouldInternalize(exportedType.FullName, internalizeAssembly) &&
+                        !SkipExportedType(exportedType))
                     {
-                        _logger.Verbose($"- Importing Exported Type {r} from {m}");
-                        _repackImporter.Import(r, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
+                        _logger.Verbose($"- Importing Exported Type {exportedType} from {module}");
+                        _repackImporter.Import(exportedType, targetAssemblyMainModule.ExportedTypes, targetAssemblyMainModule);
                     }
                     else
                     {
-                        _logger.Verbose($"- Skipping Exported Type {r} from {m}");
+                        _logger.Verbose($"- Skipping Exported Type {exportedType} from {module}");
                     }
                 }
             }
