@@ -47,7 +47,7 @@ namespace ILRepacking
             _aspOffsets = aspOffsets;
         }
 
-        public void Import(ExportedType type, Collection<ExportedType> exportedTypesCollection, ModuleDefinition module)
+        public void Import(ExportedType type, Collection<ExportedType> exportedTypesCollection, ModuleDefinition targetAssemblyMainModule)
         {
             var scope = default(IMetadataScope);
 
@@ -83,7 +83,7 @@ namespace ILRepacking
                 }
             }
 
-            var newExportedType = new ExportedType(type.Namespace, type.Name, module, scope)
+            var newExportedType = new ExportedType(type.Namespace, type.Name, targetAssemblyMainModule, scope)
             {
                 Attributes = type.Attributes,
                 Identifier = type.Identifier, // TODO: CHECK THIS when merging multiple assemblies when exported types ?
