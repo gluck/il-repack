@@ -100,7 +100,11 @@ namespace ILRepacking.Steps
                         continue;
                     }
 
-                    _repackContext.MappingHandler.StoreExportedType(module, typeForwarder.FullName, CreateReference(typeForwarder));
+                    var reference = CreateReference(typeForwarder);
+                    _repackContext.MappingHandler.StoreExportedType(
+                        module,
+                        typeForwarder.FullName,
+                        reference);
                 }
             }
 
