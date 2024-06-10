@@ -90,14 +90,17 @@ namespace ILRepacking.Steps
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
             _logger.Verbose("Processing exported types");
-            foreach (var m in _repackContext.MergedAssemblies.SelectMany(x => x.Modules))
+            foreach (var module in _repackContext.MergedAssemblies.SelectMany(x => x.Modules))
             {
-                foreach (var r in m.ExportedTypes)
+                foreach (var typeForwarder in module.ExportedTypes)
                 {
-                    if (SkipExportedType(r))
+                    bool skipExportedType = SkipExportedType(typeForwarder);
+                    if (skipExportedType)
+                    {
                         continue;
+                    }
 
-                    _repackContext.MappingHandler.StoreExportedType(m, r.FullName, CreateReference(r));
+                    _repackContext.MappingHandler.StoreExportedType(module, typeForwarder.FullName, CreateReference(typeForwarder));
                 }
             }
 
