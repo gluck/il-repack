@@ -78,14 +78,6 @@ namespace ILRepacking.Steps
             }
         }
 
-        private bool SkipExportedType(ExportedType type)
-        {
-            bool parentIsForwarder = type.DeclaringType != null && type.DeclaringType.IsForwarder;
-            bool forwarded = type.IsForwarder || parentIsForwarder;
-
-            return forwarded && _allTypes.Any(t => t.FullName == type.FullName);
-        }
-
         private void RepackExportedTypes()
         {
             var targetAssemblyMainModule = _repackContext.TargetAssemblyMainModule;
@@ -98,7 +90,10 @@ namespace ILRepacking.Steps
 
                 foreach (var exportedType in module.ExportedTypes)
                 {
-                    bool skipExportedType = SkipExportedType(exportedType);
+                    bool parentIsForwarder = exportedType.DeclaringType != null && exportedType.DeclaringType.IsForwarder;
+                    bool forwarded = exportedType.IsForwarder || parentIsForwarder;
+
+                    bool skipExportedType = forwarded && _allTypes.Any(t => t.FullName == exportedType.FullName);
                     if (skipExportedType)
                     {
                         continue;
