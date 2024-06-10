@@ -47,9 +47,10 @@ namespace ILRepacking
             _aspOffsets = aspOffsets;
         }
 
-        public void Import(ExportedType type, Collection<ExportedType> col, ModuleDefinition module)
+        public void Import(ExportedType type, Collection<ExportedType> exportedTypesCollection, ModuleDefinition module)
         {
             var scope = default(IMetadataScope);
+
             // try to skip redirects to merged assemblies
             if (type.Scope is AssemblyNameReference)
             {
@@ -57,6 +58,7 @@ namespace ILRepacking
                 {
                     return;
                 }
+
                 scope = _repackContext.PlatformFixer.FixPlatformVersion(((AssemblyNameReference)type.Scope));
             }
             else if (type.Scope is ModuleReference)
@@ -65,26 +67,30 @@ namespace ILRepacking
                 {
                     return;
                 }
+
                 // TODO fix scope (should probably be added to target ModuleReferences, otherwise metadatatoken will be wrong)
                 // I've never seen an exported type redirected to a module, doing so would be blind guessing
                 scope = type.Scope;
             }
+
             if (type.IsForwarder)
             {
                 // Skip duplicated forwarders
                 var fullName = type.FullName;
-                if (col.Any(t => t.IsForwarder && t.FullName == fullName))
+                if (exportedTypesCollection.Any(t => t.IsForwarder && t.FullName == fullName))
                 {
                     return;
                 }
             }
-            var nt = new ExportedType(type.Namespace, type.Name, module, scope)
+
+            var newExportedType = new ExportedType(type.Namespace, type.Name, module, scope)
             {
                 Attributes = type.Attributes,
                 Identifier = type.Identifier, // TODO: CHECK THIS when merging multiple assemblies when exported types ?
                 DeclaringType = type.DeclaringType
             };
-            col.Add(nt);
+
+            exportedTypesCollection.Add(newExportedType);
         }
 
         public TypeReference Import(TypeReference reference, IGenericParameterProvider context)
