@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <DebugType>embedded</DebugType>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
   </PropertyGroup>
@@ -26,13 +26,14 @@
     <ProjectReference Include="..\ILRepack\ILRepack.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="fasterflect" Version="2.1.3" />
-    <PackageReference Include="FSharp.Core" Version="4.0.0.1" />
-    <PackageReference Include="SharpZipLib" Version="1.3.3"/>
-    <PackageReference Include="Moq" Version="4.2.1409.1722" />
-    <PackageReference Include="NUnit" Version="3.12.0" />
-    <PackageReference Include="Rx-Main" Version="2.2.5" />
+    <PackageReference Include="fasterflect" Version="3.0.0" />
+    <PackageReference Include="FSharp.Core" Version="8.0.300" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="SourceLink" Version="1.1.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
   </ItemGroup>
 </Project>

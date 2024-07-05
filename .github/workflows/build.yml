@@ -81,6 +81,9 @@ jobs:
     name: test-${{ matrix.os }}
     needs: build
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: pwsh
     strategy:
       matrix:
         os: [ 'windows-latest', 'ubuntu-latest', 'macOS-latest' ]
