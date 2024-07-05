@@ -285,7 +285,8 @@ namespace ILRepacking
                     RepackDropAttribute = "RepackDropAttribute";
                 }
 
-                RepackDropAttributes.UnionWith(RepackDropAttribute.Split([';'], StringSplitOptions.RemoveEmptyEntries));
+                // Disambiguate overload for .net8 between string? and [char].
+                RepackDropAttributes.UnionWith(RepackDropAttribute.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
             }
 
             // everything that doesn't start with a '/' must be a file to merge (verify when loading the files)

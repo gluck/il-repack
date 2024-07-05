@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>ilrepack</ToolCommandName>
+    <PackageId>dotnet-ilrepack</PackageId>
+    <Description>ILRepack - Open-source alternative to ILMerge</Description>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadme>readme.md</PackageReadme>
+    <Copyright>Copyright Francois Valdy 2011-2015</Copyright>
+    <PackageTags>ILRepack ILMerge dotnet IL dotnet-tool tool</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/gluck/il-repack</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ILRepack\**\*.cs" Exclude="..\ILRepack\Properties\AssemblyInfo.cs;..\ILRepack\bin\**\*.*;..\ILRepack\obj\**\*.*;" />
+    <None Include="..\README.md" CopyToOutputDirectory="PreserveNewest" Pack="true" PackagePath="readme.md" />
+    <None Include="..\ilrepack.png" Pack="true" PackagePath="icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BamlParser" Version="1.0.1" />
+    <PackageReference Include="fasterflect" Version="3.0.0" />
+    <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(PkgSourceLink)\tools\pdbstr.exe" LogicalName="ILRepacking.pdbstr.exe" />
+  </ItemGroup>
+
+
+</Project>
