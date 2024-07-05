@@ -37,5 +37,4 @@
     <EmbeddedResource Include="$(PkgSourceLink)\tools\pdbstr.exe" LogicalName="ILRepacking.pdbstr.exe" />
   </ItemGroup>
 
-
 </Project>
