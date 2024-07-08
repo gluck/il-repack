@@ -28,6 +28,6 @@ _NCrunch*
 *.ncrunchproject
 *.sln.cache
 *.DotSettings
-/.vs
+.vs
 /.idea
 *.binlog
