@@ -77,7 +77,7 @@ jobs:
           dotnet tool install -g --version 4.0.18 sleet 
           sleet push bin --config none -f --verbose -p "SLEET_FEED_CONTAINER=nuget" -p "SLEET_FEED_CONNECTIONSTRING=${{ secrets.SLEET_CONNECTION }}" -p "SLEET_FEED_TYPE=azure" || echo "No packages found"
   
-  test:
+  test-tool:
     name: test-${{ matrix.os }}
     needs: build
     runs-on: ${{ matrix.os }}
@@ -88,6 +88,9 @@ jobs:
       matrix:
         os: [ 'windows-latest', 'ubuntu-latest', 'macOS-latest' ]
     steps:
+      - name: 🤘 checkout
+        uses: actions/checkout@v4
+
       - name: ⬇️ artifacts
         uses: actions/download-artifact@v3
         with:
@@ -100,9 +103,27 @@ jobs:
 
       - name: 🧪 run
         run: |
-          ilrepack /help
-          if [ $? -eq 2 ]; then
-              echo "Done"
-          else
-              exit 1
-          fi
+          ilrepack --version
+
+      - name: 📦 ilrepack
+        shell: pwsh
+        working-directory: ILRepack.IntegrationTests/Scenarios/AnalyzerWithDependencies
+        run: |
+          dotnet build -c:Release -p:MergeAnalyzerAssemblies=false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Abstractions.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Logging.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Tokens.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Encoding.CodePages.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Encodings.Web.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Json.dll | Should -Be $true
+          # ensure the same assemblies are not present when ilrepack global tool is run
+          dotnet build -c:Release -p:MergeAnalyzerAssemblies=true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Abstractions.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Logging.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Tokens.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Encoding.CodePages.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Encodings.Web.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Json.dll | Should -Be $false
+
