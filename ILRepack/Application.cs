@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using ILRepacking.Steps;
 using Mono.Cecil;
@@ -11,6 +12,12 @@ namespace ILRepacking
         [STAThread]
         static int Main(string[] args)
         {
+            if (args.Contains("--version"))
+            {
+                Console.WriteLine(typeof(Application).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion);
+                return 0;
+            }
+
             RepackLogger logger = new RepackLogger();
             RepackOptions options = null;
             int returnCode = -1;

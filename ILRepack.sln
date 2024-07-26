@@ -1,50 +1,58 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35005.142
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4547EE79-6D49-4318-B473-B5BBF73B434C}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		Directory.Build.props = Directory.Build.props
-		ILRepack.nuspec = ILRepack.nuspec
 		ILRepack.Lib.nuspec = ILRepack.Lib.nuspec
+		ILRepack.nuspec = ILRepack.nuspec
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepack", "ILRepack\ILRepack.csproj", "{4A253A60-D998-4CA2-B9D5-46567A2FBF80}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILRepack", "ILRepack\ILRepack.csproj", "{4A253A60-D998-4CA2-B9D5-46567A2FBF80}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "cecil\Mono.Cecil.csproj", "{D68133BD-1E63-496E-9EDE-4FBDBF77B486}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepack.Tests", "ILRepack.Tests\ILRepack.Tests.csproj", "{468ED600-2E3B-471C-BB8A-B0D968FD7FA2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILRepack.Tests", "ILRepack.Tests\ILRepack.Tests.csproj", "{468ED600-2E3B-471C-BB8A-B0D968FD7FA2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration Tests Scenarios", "Integration Tests Scenarios", "{04819B25-ABEA-46F7-90D5-149C8304F67F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibrary", "ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj", "{801489B7-46CB-42D0-8581-0120F3566A8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClassLibrary", "ILRepack.IntegrationTests\Scenarios\ClassLibrary\ClassLibrary.csproj", "{801489B7-46CB-42D0-8581-0120F3566A8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryClassUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryClassUsageInXAML\LibraryClassUsageInXAML.csproj", "{CE27F333-D875-43D0-9D3C-4F8F102FC92D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryClassUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryClassUsageInXAML\LibraryClassUsageInXAML.csproj", "{CE27F333-D875-43D0-9D3C-4F8F102FC92D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepack.IntegrationTests", "ILRepack.IntegrationTests\ILRepack.IntegrationTests.csproj", "{B0E4D418-5F5D-4F19-B1DB-0659F17F9251}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILRepack.IntegrationTests", "ILRepack.IntegrationTests\ILRepack.IntegrationTests.csproj", "{B0E4D418-5F5D-4F19-B1DB-0659F17F9251}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryUserControlUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryUserControlUsageInXAML\LibraryUserControlUsageInXAML.csproj", "{2D4C999E-8175-4505-AC33-7A641ED32F2B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryUserControlUsageInXAML", "ILRepack.IntegrationTests\Scenarios\LibraryUserControlUsageInXAML\LibraryUserControlUsageInXAML.csproj", "{2D4C999E-8175-4505-AC33-7A641ED32F2B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnotherClassLibrary", "ILRepack.IntegrationTests\Scenarios\AnotherClassLibrary\AnotherClassLibrary.csproj", "{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnotherClassLibrary", "ILRepack.IntegrationTests\Scenarios\AnotherClassLibrary\AnotherClassLibrary.csproj", "{F92CF620-F1A5-4A3E-A774-4199F54FEF2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NestedLibraryUsageInXAML", "ILRepack.IntegrationTests\Scenarios\NestedLibraryUsageInXAML\NestedLibraryUsageInXAML.csproj", "{B8282E50-564D-4E5B-B96F-4A8E53067551}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NestedLibraryUsageInXAML", "ILRepack.IntegrationTests\Scenarios\NestedLibraryUsageInXAML\NestedLibraryUsageInXAML.csproj", "{B8282E50-564D-4E5B-B96F-4A8E53067551}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFSampleApplication", "ILRepack.IntegrationTests\Scenarios\WPFSampleApplication\WPFSampleApplication.csproj", "{A183949D-1057-4585-B76D-F86CA28C69D0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFSampleApplication", "ILRepack.IntegrationTests\Scenarios\WPFSampleApplication\WPFSampleApplication.csproj", "{A183949D-1057-4585-B76D-F86CA28C69D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFThemingAndLibraryStyles", "ILRepack.IntegrationTests\Scenarios\WPFThemingAndLibraryStyles\WPFThemingAndLibraryStyles.csproj", "{6A827942-BEEF-4E49-A3A4-306E21428E85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFThemingAndLibraryStyles", "ILRepack.IntegrationTests\Scenarios\WPFThemingAndLibraryStyles\WPFThemingAndLibraryStyles.csproj", "{6A827942-BEEF-4E49-A3A4-306E21428E85}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet462Application", "ILRepack.IntegrationTests\Scenarios\DotNet462Application\DotNet462Application.csproj", "{EECC6459-78C6-4A08-9039-DE37E75866E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNet462Application", "ILRepack.IntegrationTests\Scenarios\DotNet462Application\DotNet462Application.csproj", "{EECC6459-78C6-4A08-9039-DE37E75866E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet462NetStandard2", "ILRepack.IntegrationTests\Scenarios\DotNet462NetStandard2\DotNet462NetStandard2.csproj", "{90F1C943-3C23-4091-B07F-0B34748AE056}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNet462NetStandard2", "ILRepack.IntegrationTests\Scenarios\DotNet462NetStandard2\DotNet462NetStandard2.csproj", "{90F1C943-3C23-4091-B07F-0B34748AE056}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibraryCore", "ILRepack.IntegrationTests\Scenarios\ClassLibraryCore\ClassLibraryCore.csproj", "{9B574C47-951F-EB28-A009-53262C44F743}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClassLibraryCore", "ILRepack.IntegrationTests\Scenarios\ClassLibraryCore\ClassLibraryCore.csproj", "{9B574C47-951F-EB28-A009-53262C44F743}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsTestNetCoreApp", "ILRepack.IntegrationTests\Scenarios\WindowsFormsTestNetCoreApp\WindowsFormsTestNetCoreApp.csproj", "{B1C3FCA3-8DDD-CFC0-0B0B-A4BBE31D7E13}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsFormsTestNetCoreApp", "ILRepack.IntegrationTests\Scenarios\WindowsFormsTestNetCoreApp\WindowsFormsTestNetCoreApp.csproj", "{B1C3FCA3-8DDD-CFC0-0B0B-A4BBE31D7E13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFSampleApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFSampleApplicationCore\WPFSampleApplicationCore.csproj", "{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFSampleApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFSampleApplicationCore\WPFSampleApplicationCore.csproj", "{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILRepackTool", "ILRepackTool\ILRepackTool.csproj", "{B8A1DD9C-70E8-4734-9A26-D593BD406820}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Mdb", "cecil\symbols\mdb\Mono.Cecil.Mdb.csproj", "{13529DEB-9921-4FD0-B50D-F202B9500F53}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Pdb", "cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cecil", "Cecil", "{3C913262-6FDC-43C2-9BC5-054A4016FE2E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -116,11 +124,24 @@ Global
 		{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8A1DD9C-70E8-4734-9A26-D593BD406820}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8A1DD9C-70E8-4734-9A26-D593BD406820}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8A1DD9C-70E8-4734-9A26-D593BD406820}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8A1DD9C-70E8-4734-9A26-D593BD406820}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13529DEB-9921-4FD0-B50D-F202B9500F53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13529DEB-9921-4FD0-B50D-F202B9500F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13529DEB-9921-4FD0-B50D-F202B9500F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13529DEB-9921-4FD0-B50D-F202B9500F53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{D68133BD-1E63-496E-9EDE-4FBDBF77B486} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
 		{801489B7-46CB-42D0-8581-0120F3566A8F} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{CE27F333-D875-43D0-9D3C-4F8F102FC92D} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{2D4C999E-8175-4505-AC33-7A641ED32F2B} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
@@ -133,6 +154,8 @@ Global
 		{9B574C47-951F-EB28-A009-53262C44F743} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{B1C3FCA3-8DDD-CFC0-0B0B-A4BBE31D7E13} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+		{13529DEB-9921-4FD0-B50D-F202B9500F53} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
+		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {54C7CB02-6231-428F-BBD0-113CC9852908}

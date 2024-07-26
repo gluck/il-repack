@@ -1,0 +1,50 @@
+﻿# Builds a final release version and pushes to nuget.org 
+# whenever a release is published.
+# Requires: secrets.NUGET_API_KEY
+
+name: publish
+on:
+  release:
+    types: [prereleased, released]
+
+env:
+  DOTNET_NOLOGO: true
+  Configuration: Release
+  PackageOutputPath: ${{ github.workspace }}/bin
+  VersionLabel: ${{ github.ref }}
+  
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: 🤘 checkout
+        uses: actions/checkout@v4
+        with: 
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: ⚙ msbuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: 🙏 build
+        run: msbuild /r /m /bl 
+
+      - name: 🧪 test
+        run: dotnet test --no-build -l trx
+
+      - name: 🗎 trx
+        if: always()
+        run: |
+            dotnet tool install -g dotnet-trx
+            trx
+
+      - name: 📦 pack
+        run: |
+            dotnet pack --no-build ILRepack/ILRepack.csproj
+            dotnet pack --no-build ILRepackTool/ILRepackTool.csproj
+
+      - name: 🚀 nuget
+        env:
+            NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        if: env.NUGET_API_KEY  != ''
+        run: dotnet nuget push ./bin/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate

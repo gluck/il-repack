@@ -1,0 +1,131 @@
+﻿# Builds and runs tests in all three supported OSes
+# Pushes CI feed if secrets.SLEET_CONNECTION is provided
+
+name: build
+on: 
+  workflow_dispatch:
+  push:
+    branches: [ main, dev, 'dev/*', 'feature/*', 'rel/*' ]
+    paths-ignore:
+      - changelog.md
+      - code-of-conduct.md
+      - security.md
+      - support.md
+      - readme.md
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  DOTNET_NOLOGO: true
+  Configuration: Release
+  PackageOutputPath: ${{ github.workspace }}/bin
+  VersionPrefix: 42.42.${{ github.run_number }}
+  VersionLabel: ${{ github.ref }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: "windows-latest"
+    steps:
+      - name: 🤘 checkout
+        uses: actions/checkout@v4
+        with: 
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: ⚙ msbuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: 🙏 build
+        shell: pwsh
+        run: msbuild /r /m /bl 
+
+      - name: 🧪 test
+        run: dotnet test --no-build -l trx
+
+      - name: 🗎 trx
+        if: always()
+        run: |
+            dotnet tool install -g dotnet-trx
+            trx
+
+      - name: 📦 pack
+        run: |
+            dotnet pack --no-build ILRepack/ILRepack.csproj
+            dotnet pack --no-build ILRepackTool/ILRepackTool.csproj
+
+      - name: ⬆️ upload
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pkg
+          path: bin/*   
+
+      - name: 🐛 logs
+        uses: actions/upload-artifact@v3
+        if: runner.debug && always()
+        with:
+          name: logs
+          path: '*.binlog'
+
+      - name: 🚀 sleet
+        env:
+            SLEET_CONNECTION: ${{ secrets.SLEET_CONNECTION }}
+        if: env.SLEET_CONNECTION != ''
+        run: |
+          dotnet tool install -g --version 4.0.18 sleet 
+          sleet push bin --config none -f --verbose -p "SLEET_FEED_CONTAINER=nuget" -p "SLEET_FEED_CONNECTIONSTRING=${{ secrets.SLEET_CONNECTION }}" -p "SLEET_FEED_TYPE=azure" || echo "No packages found"
+  
+  test-tool:
+    name: test-${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: pwsh
+    strategy:
+      matrix:
+        os: [ 'windows-latest', 'ubuntu-latest', 'macOS-latest' ]
+    steps:
+      - name: 🤘 checkout
+        uses: actions/checkout@v4
+
+      - name: ⬇️ artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: pkg
+          path: bin
+
+      - name: ⚙ install
+        working-directory: bin
+        run: dotnet tool update -g dotnet-ilrepack --prerelease --add-source .
+
+      - name: 🧪 run
+        run: |
+          ilrepack --version
+
+      - name: 📦 ilrepack
+        shell: pwsh
+        working-directory: ILRepack.IntegrationTests/Scenarios/AnalyzerWithDependencies
+        run: |
+          dotnet build -c:Release -p:MergeAnalyzerAssemblies=false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Abstractions.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Logging.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Tokens.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Encoding.CodePages.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Encodings.Web.dll | Should -Be $true
+          test-path bin/Release/netstandard2.0/System.Text.Json.dll | Should -Be $true
+          # ensure the same assemblies are not present when ilrepack global tool is run
+          dotnet build -c:Release -p:MergeAnalyzerAssemblies=true
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Abstractions.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Logging.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/Microsoft.IdentityModel.Tokens.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Encoding.CodePages.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Encodings.Web.dll | Should -Be $false
+          test-path bin/Release/netstandard2.0/System.Text.Json.dll | Should -Be $false
+

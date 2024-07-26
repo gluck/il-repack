@@ -32,7 +32,9 @@ namespace ILRepack.Tests.Steps.ResourceProcessing
                 Assert.True(Enumerable.SequenceEqual(stringArray, back));
 
                 var stream = new MemoryStream();
+#pragma warning disable SYSLIB0011 // Type or member is obsolete
                 new BinaryFormatter().Serialize(stream, stringArray);
+#pragma warning restore SYSLIB0011 // Type or member is obsolete
                 var oracleBytes = stream.ToArray();
 
                 Assert.True(Enumerable.SequenceEqual(bytes, oracleBytes));

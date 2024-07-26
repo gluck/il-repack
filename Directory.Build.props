@@ -15,4 +15,27 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
   </ItemGroup>
 
+  <PropertyGroup Label="Version">
+    <VersionPrefix Condition="$(VersionPrefix) == ''">42.42.42</VersionPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Version" Condition="$(VersionLabel) != ''">
+    <_VersionLabel>$(VersionLabel.Replace('refs/heads/', ''))</_VersionLabel>
+    <_VersionLabel>$(_VersionLabel.Replace('refs/tags/v', ''))</_VersionLabel>
+
+    <!-- For PRs, we just need a fixed package version numbered after the PR # itself, so remove the commits # at the end -->
+    <_VersionLabel Condition="$(_VersionLabel.Contains('refs/pull/'))">$(VersionLabel.TrimEnd('.0123456789'))</_VersionLabel>
+    <!-- Next replace the prefix for simply 'pr', so we end up with 'pr99/merge' by default -->
+    <_VersionLabel>$(_VersionLabel.Replace('refs/pull/', 'pr'))</_VersionLabel>
+    <!-- Remove the /merge now, if present -->
+    <_VersionLabel>$(_VersionLabel.Replace('/merge', ''))</_VersionLabel>
+    <!-- Finally sanitize the branch with dashes, so we can build path-separated branches, like rel/v1.0.0 or feature/foo -->
+    <_VersionLabel>$(_VersionLabel.Replace('/', '-'))</_VersionLabel>
+
+    <!-- Set sanitized version to the actual version suffix used in build/pack -->
+    <VersionSuffix Condition="!$(VersionLabel.Contains('refs/tags/'))">$(_VersionLabel)</VersionSuffix>
+    <!-- Special case for tags, the label is actually the version. Backs compat since passed-in value overrides MSBuild-set one -->
+    <Version Condition="$(VersionLabel.Contains('refs/tags/'))">$(_VersionLabel)</Version>
+  </PropertyGroup>
+
 </Project>
