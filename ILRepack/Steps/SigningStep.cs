@@ -15,20 +15,33 @@
 //
 using Mono.Cecil;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ILRepacking.Steps
 {
     class SigningStep : IRepackStep
     {
+        public class SigningInfo
+        {
+            public SigningInfo(StrongNameKeyPair keyPair)
+            {
+                KeyPair = keyPair;
+            }
+            
+            public SigningInfo(byte[] keyBlob)
+            {
+                KeyBlob = keyBlob;
+            }
+
+            public StrongNameKeyPair KeyPair { get; private set; }
+            public byte[] KeyBlob { get; private set; }
+        }
+
         readonly IRepackContext _repackContext;
         readonly RepackOptions _repackOptions;
 
-        public StrongNameKeyPair KeyPair { get; private set; }
+        public SigningInfo KeyInfo { get; private set; }
 
         public SigningStep(
             IRepackContext repackContext,
@@ -42,23 +55,23 @@ namespace ILRepacking.Steps
         {
             if (_repackOptions.KeyContainer != null || (_repackOptions.KeyFile != null && File.Exists(_repackOptions.KeyFile)))
             {
-                var snkp = default(StrongNameKeyPair);
+                var si = default(SigningInfo);
                 var publicKey = default(byte[]);
                 if (_repackOptions.KeyContainer != null)
                 {
-                    snkp = new StrongNameKeyPair(_repackOptions.KeyContainer);
+                    si = new SigningInfo(new StrongNameKeyPair(_repackOptions.KeyContainer));
                 }
                 else if(_repackOptions.KeyFile != null && File.Exists(_repackOptions.KeyFile))
                 {
                     var keyFileContents = File.ReadAllBytes(_repackOptions.KeyFile);
                     try
                     {
-                        snkp = new StrongNameKeyPair(keyFileContents);
-                        publicKey = snkp.PublicKey;
+                        si = new SigningInfo(keyFileContents);
+                        publicKey = GetPublicKey(new WriterParameters { StrongNameKeyBlob = keyFileContents });
                     }
-                    catch (ArgumentException)
+                    catch (Exception)
                     {
-                        snkp = null;
+                        si = null;
                         if(_repackOptions.DelaySign)
                         {
                             publicKey = keyFileContents;
@@ -70,7 +83,7 @@ namespace ILRepacking.Steps
                 if (!_repackOptions.DelaySign)
                 {
                     _repackContext.TargetAssemblyMainModule.Attributes |= ModuleAttributes.StrongNameSigned;
-                    KeyPair = snkp;
+                    KeyInfo = si;
                 }
             }
             else
@@ -79,5 +92,12 @@ namespace ILRepacking.Steps
                 _repackContext.TargetAssemblyMainModule.Attributes &= ~ModuleAttributes.StrongNameSigned;
             }
         }
+
+        internal static Func<WriterParameters, byte[]> GetPublicKey 
+            => (Func<WriterParameters, byte[]>)typeof(WriterParameters)
+                .Assembly
+                .GetType("Mono.Cecil.CryptoService")
+                .GetMethod("GetPublicKey")
+                .CreateDelegate(typeof(Func<WriterParameters, byte[]>));
     }
 }
