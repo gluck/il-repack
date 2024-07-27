@@ -4,8 +4,12 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
+    <Authors>kzu, Kirill Osenkov</Authors>
     <ToolCommandName>ilrepack</ToolCommandName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>dotnet-ilrepack</PackageId>
+    <RollForward>major</RollForward>
+    <DebugType>embedded</DebugType>
     <Description>ILRepack - Open-source alternative to ILMerge</Description>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadme>readme.md</PackageReadme>
