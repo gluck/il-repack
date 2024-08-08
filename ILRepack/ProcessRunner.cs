@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,7 +31,15 @@ namespace ILRepacking
 
         public static async Task<ProcessRunResult> RunAsync(ProcessStartInfo processStartInfo)
         {
-            Process process = Process.Start(processStartInfo);
+            Process process;
+            try
+            {
+                process = Process.Start(processStartInfo);
+            }
+            catch (Win32Exception ex)
+            {
+                throw new FileNotFoundException($"{ex.Message}: {processStartInfo.FileName}");
+            }
 
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();

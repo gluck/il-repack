@@ -200,46 +200,58 @@ namespace ILRepacking
 
             runtimeDirectoriesInitialized = true;
 
-            var process = ProcessRunner.Run("dotnet", "--list-runtimes");
-            if (process.ExitCode != 0)
+            try
             {
-                throw new Exception(".NET Core SDK list query failed with code " + process.ExitCode);
+                var process = ProcessRunner.Run("dotnet", "--list-runtimes");
+                if (process == null || process.ExitCode != 0)
+                {
+                    throw new Exception(".NET Core SDK list query failed with code " + process.ExitCode);
+                }
+
+                var allRuntimes = new List<string>();
+
+                var reader = new StringReader(process.Output);
+
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var pathStart = line.LastIndexOf('[') + 1;
+                    if (pathStart == 0)
+                    {
+                        continue;
+                    }
+
+                    var pathEnd = line.LastIndexOf(']');
+                    if (pathEnd == -1 || pathEnd <= pathStart)
+                    {
+                        continue;
+                    }
+
+                    var path = line.Substring(pathStart, pathEnd - pathStart);
+                    var runtimeInfo = line.Substring(0, pathStart - 1);
+                    var parts = runtimeInfo.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 2)
+                    {
+                        continue;
+                    }
+
+                    var fullPath = Path.Combine(path, parts[1]);
+                    allRuntimes.Add(fullPath);
+                }
+
+                allRuntimes.Reverse();
+
+                ReadRuntimes(allRuntimes);
             }
-
-            var allRuntimes = new List<string>();
-
-            var reader = new StringReader(process.Output);
-
-            string line;
-            while ((line = reader.ReadLine()) != null)
+            catch (Exception ex)
             {
-                var pathStart = line.LastIndexOf('[') + 1;
-                if (pathStart == 0)
+                if (ex is AggregateException aggregate)
                 {
-                    continue;
+                    ex = aggregate.InnerException;
                 }
 
-                var pathEnd = line.LastIndexOf(']');
-                if (pathEnd == -1 || pathEnd <= pathStart)
-                {
-                    continue;
-                }
-
-                var path = line.Substring(pathStart, pathEnd - pathStart);
-                var runtimeInfo = line.Substring(0, pathStart - 1);
-                var parts = runtimeInfo.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2)
-                {
-                    continue;
-                }
-
-                var fullPath = Path.Combine(path, parts[1]);
-                allRuntimes.Add(fullPath);
+                Application.Error($"Error when calling 'dotnet --list-runtimes': {ex.Message}");
             }
-
-            allRuntimes.Reverse();
-
-            ReadRuntimes(allRuntimes);
         }
 
         private void ReadRuntimes(IEnumerable<string> allRuntimes)
