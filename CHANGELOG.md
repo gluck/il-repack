@@ -1,5 +1,11 @@
 # IL Repack changelog
 
+## 2.0.35
+### Fixed
+ * PR #366 - assembly strong name Linux compatibility
+ * PR #364 - add dotnet-ilrepack .NET tool
+ * Improve error handling when dotnet.exe not found
+
 ## 2.0.34
 ### Fixed
  * Fix #347 - Error merging VB app
