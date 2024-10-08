@@ -27,7 +27,10 @@ ILRepack can now be installed as a `dotnet tool`:
 PS C:\> dotnet tool install -g dotnet-ilrepack
 ```
 
-You can then run ILRepack using `dotnet ilrepack`.
+You can then run ILRepack using `ilrepack`.
+
+> [!Note]
+> There's no need to use `dotnet ilrepack`, as the way the tool is installed into the `dotnet tool`s path, all you need to do is issue the command `ilrepack`.
 
 Syntax
 ------
