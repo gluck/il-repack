@@ -18,6 +18,17 @@ You can grab it using [NuGet](http://nuget.org/packages/ILRepack/).
 
 Or if you're old-school (and want to stay like that), this [direct link](http://nuget.org/api/v2/package/ILRepack) will give you the latest nupkg file, which you can open as a zip file.
 
+Dotnet Tool Installation
+-----
+
+ILRepack can now be installed as a `dotnet tool`:
+
+```powershell
+PS C:\> dotnet tool install -g dotnet-ilrepack
+```
+
+You can then run ILRepack using `dotnet ilrepack`.
+
 Syntax
 ------
 
