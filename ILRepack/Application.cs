@@ -154,6 +154,7 @@ Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies>
  - /keepotherversionreferences
                       take reference assembly version into account when removing references
 
+ - /preservetimestamp preserve original file PE timestamp
  - /skipconfig        skips merging config files
  - /illink            merge IL Linker files
  - /xmldocs           merges XML documentation as well
