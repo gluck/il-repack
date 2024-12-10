@@ -1,5 +1,9 @@
 # IL Repack changelog
 
+## 2.0.36
+### Added
+ * PR #381 - Add /preservetimestamp command line option
+
 ## 2.0.35
 ### Fixed
  * PR #366 - assembly strong name Linux compatibility
