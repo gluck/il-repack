@@ -75,6 +75,7 @@ namespace ILRepacking
         public IEnumerable<string> SearchDirectories { get; set; } = Array.Empty<string>();
         public bool UnionMerge { get; set; }
         public Version Version { get; set; }
+        public bool PreserveTimestamp { get; set; }
         public bool SkipConfigMerge { get; set; }
         public bool MergeIlLinkerFiles { get; set; }
         public bool XmlDocumentation { get; set; }
@@ -260,6 +261,7 @@ namespace ILRepacking
             var version = cmd.Option("ver");
             if (!string.IsNullOrEmpty(version))
                 Version = new Version(version);
+            PreserveTimestamp = cmd.Modifier("preservetimestamp");
             SkipConfigMerge = cmd.Modifier("skipconfig");
             MergeIlLinkerFiles = cmd.Modifier("illink");
             XmlDocumentation = cmd.Modifier("xmldocs");

@@ -446,9 +446,13 @@ namespace ILRepacking
                     StrongNameKeyBlob = signingStep.KeyInfo?.KeyBlob,
                     WriteSymbols = Options.DebugInfo && symbolWriterProvider != null,
                     SymbolWriterProvider = symbolWriterProvider,
-                    DeterministicMvid = true,
-                    Timestamp = ComputeDeterministicTimestamp()
+                    DeterministicMvid = true
                 };
+
+                if (!Options.PreserveTimestamp)
+                {
+                    parameters.Timestamp = ComputeDeterministicTimestamp();
+                }
 
                 Logger.Verbose($"Writing temporary assembly: {tempOutputFilePath}");
                 TargetAssemblyDefinition.Write(tempOutputFilePath, parameters);
