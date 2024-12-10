@@ -8,11 +8,12 @@
     <ToolCommandName>ilrepack</ToolCommandName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>dotnet-ilrepack</PackageId>
+    <Version>1.0.3</Version>
     <RollForward>major</RollForward>
     <DebugType>embedded</DebugType>
     <Description>ILRepack - Open-source alternative to ILMerge</Description>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReadme>readme.md</PackageReadme>
+    <PackageReadme>..\readme.md</PackageReadme>
     <Copyright>Copyright Francois Valdy 2011-2015</Copyright>
     <PackageTags>ILRepack ILMerge dotnet IL dotnet-tool tool</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
