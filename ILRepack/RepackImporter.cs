@@ -169,6 +169,15 @@ namespace ILRepacking
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt, originalModule?.Mvid.ToString());
+
+                //Check whether renamed type already exists
+                TypeDefinition otherNt = _repackContext.TargetAssemblyMainModule.GetType(other);
+                if (otherNt != null)
+                {
+                    //Create a random name
+                    other = GenerateName(nt);
+                }
+
                 _logger.Verbose("Renaming " + nt.FullName + " into " + other);
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
