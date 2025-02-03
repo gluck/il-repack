@@ -66,6 +66,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("WPFSampleApplicationCore");
         }
 
+        [Test]
+        public void GivenLibraryRewritesPackUrisInCSharp_MergedWpfApplicationRunsSuccessfully()
+        {
+            RunScenario("WPFCSharpPackUriApplicationCore");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);

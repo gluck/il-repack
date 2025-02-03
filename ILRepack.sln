@@ -54,6 +54,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Pdb", "cecil\sym
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cecil", "Cecil", "{3C913262-6FDC-43C2-9BC5-054A4016FE2E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFCSharpPackUriApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFCSharpPackUriApplicationCore\WPFCSharpPackUriApplicationCore.csproj", "{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,10 @@ Global
 		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -156,6 +162,7 @@ Global
 		{7B3B8608-1E8D-5830-1D03-E2ABB5C782DE} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 		{13529DEB-9921-4FD0-B50D-F202B9500F53} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
 		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
+		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {54C7CB02-6231-428F-BBD0-113CC9852908}

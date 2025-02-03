@@ -44,6 +44,15 @@ namespace ILRepacking.Steps
             {
                 PatchIComponentConnector(type);
                 PatchWpfToolkitVersionResourceDictionary(type);
+                PatchWpfPackUrisInStrings(type);
+            }
+        }
+
+        private void PatchWpfPackUrisInStrings(TypeDefinition type)
+        {
+            foreach (var method in type.Methods.Where(x => x.HasBody))
+            {
+                PatchMethod(method);
             }
         }
 
