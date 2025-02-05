@@ -12,7 +12,7 @@ test:
 artifacts:
   - path: 'ILRepack\bin\Release\net472\*.nupkg'
     name: Nuget
-  - path: 'ILRepackTool\bin\Release\dotnet-ilrepack*.nupkg
+  - path: 'ILRepackTool\bin\Release\dotnet-ilrepack*.nupkg'
     name: 'dotnet-ilrepack.nupkg'
   - path: 'msbuild.binlog'
     name: 'MSBuild binlog'
