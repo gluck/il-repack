@@ -54,7 +54,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Pdb", "cecil\sym
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cecil", "Cecil", "{3C913262-6FDC-43C2-9BC5-054A4016FE2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFCSharpPackUriApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFCSharpPackUriApplicationCore\WPFCSharpPackUriApplicationCore.csproj", "{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFPackUrisInClrStringsApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFPackUrisInClrStringsApplicationCore\WPFPackUrisInClrStringsApplicationCore.csproj", "{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

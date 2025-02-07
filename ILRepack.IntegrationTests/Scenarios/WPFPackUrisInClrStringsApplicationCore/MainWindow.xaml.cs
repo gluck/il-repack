@@ -4,7 +4,7 @@ using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
-namespace WPFCSharpPackUriApplicationCore
+namespace WPFPackUrisInClrStringsApplicationCore
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

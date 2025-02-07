@@ -67,9 +67,9 @@ namespace ILRepack.IntegrationTests
         }
 
         [Test]
-        public void GivenLibraryRewritesPackUrisInCSharp_MergedWpfApplicationRunsSuccessfully()
+        public void GivenLibraryWithWpfPackUrisInClrStrings_MergedWpfApplicationRunsSuccessfully()
         {
-            RunScenario("WPFCSharpPackUriApplicationCore");
+            RunScenario("WPFPackUrisInClrStringsApplicationCore");
         }
 
         private void RunScenario(string scenarioName)
