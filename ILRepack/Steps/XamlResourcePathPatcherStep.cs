@@ -42,13 +42,12 @@ namespace ILRepacking.Steps
             _logger.Verbose("Processing XAML resource paths ...");
             foreach (var type in types)
             {
-                PatchIComponentConnector(type);
+                PatchWpfPackUrisInClrStrings(type);
                 PatchWpfToolkitVersionResourceDictionary(type);
-                PatchWpfPackUrisInStrings(type);
             }
         }
 
-        private void PatchWpfPackUrisInStrings(TypeDefinition type)
+        private void PatchWpfPackUrisInClrStrings(TypeDefinition type)
         {
             foreach (var method in type.Methods.Where(x => x.HasBody))
             {
@@ -75,21 +74,6 @@ namespace ILRepacking.Steps
             }
 
             PatchWpfToolkitEndInitMethod(endInitMethod);
-        }
-
-        private void PatchIComponentConnector(TypeDefinition type)
-        {
-            if (!type.Interfaces.Any(t => t.InterfaceType.FullName == "System.Windows.Markup.IComponentConnector"))
-                return;
-
-            var initializeMethod = type.Methods.FirstOrDefault(m =>
-                m.Name == "InitializeComponent" && m.Parameters.Count == 0);
-
-            if (initializeMethod == null || !initializeMethod.HasBody)
-                return;
-
-            _logger.Verbose(" - Patching type " + type.FullName);
-            PatchMethod(initializeMethod);
         }
 
         private void PatchWpfToolkitEndInitMethod(MethodDefinition method)
