@@ -66,6 +66,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("WPFSampleApplicationCore");
         }
 
+        [Test]
+        public void GivenLibraryWithWpfPackUrisInClrStrings_MergedWpfApplicationRunsSuccessfully()
+        {
+            RunScenario("WPFPackUrisInClrStringsApplicationCore");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);

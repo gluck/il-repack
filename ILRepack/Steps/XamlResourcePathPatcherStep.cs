@@ -37,13 +37,51 @@ namespace ILRepacking.Steps
 
         public void Perform()
         {
-            var types = _repackContext.TargetAssemblyDefinition.Modules.SelectMany(m => m.Types);
+            var relevantTypes = GetTypesWhichMayContainPackUris();
 
             _logger.Verbose("Processing XAML resource paths ...");
+            foreach (var type in relevantTypes)
+            {
+                PatchWpfPackUrisInClrStrings(type);
+                PatchWpfToolkitVersionResourceDictionary(type);
+            }
+        }
+
+        private IEnumerable<TypeDefinition> GetTypesWhichMayContainPackUris()
+        {
+            var types = _repackContext.TargetAssemblyDefinition.Modules.SelectMany(m => m.Types);
+
+            var isModuleReferencingWpfMap = new Dictionary<ModuleDefinition, bool>();
+
             foreach (var type in types)
             {
-                PatchIComponentConnector(type);
-                PatchWpfToolkitVersionResourceDictionary(type);
+                var originalModule = _repackContext.MappingHandler.GetOriginalModule(type);
+                if (!isModuleReferencingWpfMap.TryGetValue(originalModule, out var isReferencingWpf))
+                {
+                    isModuleReferencingWpfMap[originalModule] = isReferencingWpf = IsModuleDefinitionReferencingWpf(originalModule);
+                }
+
+                if (!isReferencingWpf)
+                {
+                    continue;
+                }
+
+                yield return type;
+            }
+        }
+
+        private bool IsModuleDefinitionReferencingWpf(ModuleDefinition module)
+        {
+            // checking for PresentationFramework instead of PresentationCore, as for example
+            // AnotherClassLibrary only references PresenationFramework but not PresentationCore
+            return module.AssemblyReferences.Any(y => y.Name == "PresentationFramework");
+        }
+
+        private void PatchWpfPackUrisInClrStrings(TypeDefinition type)
+        {
+            foreach (var method in type.Methods.Where(x => x.HasBody))
+            {
+                PatchMethod(method);
             }
         }
 
@@ -66,21 +104,6 @@ namespace ILRepacking.Steps
             }
 
             PatchWpfToolkitEndInitMethod(endInitMethod);
-        }
-
-        private void PatchIComponentConnector(TypeDefinition type)
-        {
-            if (!type.Interfaces.Any(t => t.InterfaceType.FullName == "System.Windows.Markup.IComponentConnector"))
-                return;
-
-            var initializeMethod = type.Methods.FirstOrDefault(m =>
-                m.Name == "InitializeComponent" && m.Parameters.Count == 0);
-
-            if (initializeMethod == null || !initializeMethod.HasBody)
-                return;
-
-            _logger.Verbose(" - Patching type " + type.FullName);
-            PatchMethod(initializeMethod);
         }
 
         private void PatchWpfToolkitEndInitMethod(MethodDefinition method)
