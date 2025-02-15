@@ -53,11 +53,11 @@ namespace ILRepacking.Steps
 
         /// <summary>
         /// Checks if there are other module initializers to call from the primary module initializer.
-        /// If that is the case the module initializer gets renamed, a new initializer is added, calls all other module initializers
-        /// and at the end the original initializer. The other initializers are then re
+        /// If that is the case, a new initializer is added which calls all found module initializers.
+        /// All found initializers are renamed to be unique while still conveying their origin.
         /// </summary>
-        /// <param name="mainAssembly">Die Assembly, in der der kombinierte Module-Initializer angelegt wird.</param>
-        /// <param name="assemblies">Die Assemblys, aus denen die Module-Initializer eingesammelt werden.</param>
+        /// <param name="targetModule">Target module which gets the new module initializer</param>
+        /// <param name="modulesToMerge">Modules which should be scanned for module initializers.</param>
         private void MergeModuleInitializers(ModuleDefinition targetModule, IEnumerable<ModuleDefinition> modulesToMerge)
         {
             var anyModuleInitializersToMerge = modulesToMerge.Any(m =>
