@@ -119,7 +119,7 @@ namespace ILRepacking.Steps
 
         private void DemoteModuleInitializerMethodToNormalMethod(MethodDefinition initializer)
         {
-            var newName = $"{initializer.Module.Assembly.Name.Name}_.ModuleInitializer";
+            var newName = $"{initializer.Module.Assembly.Name.ToString().Replace(" ", "_").Replace("=", "_").Replace(",", "")}_ModuleInitializer";
 
             _logger.Verbose($"  - Rename module initializer of '{initializer.Module.Assembly.Name.Name}' to '{newName}'");
 
