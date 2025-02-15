@@ -44,8 +44,11 @@ namespace ILRepacking.Steps
         {
             _logger.Verbose("Processing module initializers");
 
-            var otherModules = _repackContext.OtherAssemblies.SelectMany(x => x.Modules).ToArray();
-            MergeModuleInitializers(_repackContext.TargetAssemblyMainModule, otherModules);
+            var modulesToMerge = _repackContext.OtherAssemblies
+                .Concat([_repackContext.PrimaryAssemblyDefinition])
+                .SelectMany(x => x.Modules)
+                .ToArray();
+            MergeModuleInitializers(_repackContext.TargetAssemblyMainModule, modulesToMerge);
         }
 
         /// <summary>
@@ -55,42 +58,39 @@ namespace ILRepacking.Steps
         /// </summary>
         /// <param name="mainAssembly">Die Assembly, in der der kombinierte Module-Initializer angelegt wird.</param>
         /// <param name="assemblies">Die Assemblys, aus denen die Module-Initializer eingesammelt werden.</param>
-        private void MergeModuleInitializers(ModuleDefinition mainModule, IEnumerable<ModuleDefinition> modulesToMerge)
+        private void MergeModuleInitializers(ModuleDefinition targetModule, IEnumerable<ModuleDefinition> modulesToMerge)
         {
-            var anyModuleInitializersToMerge = modulesToMerge.Any(m => m.Types.Any(t => t.Name == "<Module>"));
+            var anyModuleInitializersToMerge = modulesToMerge.Any(m =>
+                m.Types.Any(t =>
+                    t.Name == "<Module>" &&
+                    t.Methods.Any(m =>
+                        m.IsStatic &&
+                        m.Name == ".cctor")));
             if (!anyModuleInitializersToMerge)
             {
                 _logger.Verbose("- Found no module initializers to be merged - skip");
                 return;
             }
 
-            var mainModuleType = mainModule.Types.FirstOrDefault(t => t.Name == "<Module>");
-            if (mainModuleType is null)
+            var targetModuleType = targetModule.Types.FirstOrDefault(t => t.Name == "<Module>");
+            if (targetModuleType is null)
             {
-                mainModuleType = new TypeDefinition(
+                targetModuleType = new TypeDefinition(
                     "",
                     "<Module>",
                     TypeAttributes.NotPublic | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit,
-                    mainModule.TypeSystem.Object
+                    targetModule.TypeSystem.Object
                 );
-                mainModule.Types.Add(mainModuleType);
+                targetModule.Types.Add(targetModuleType);
             }
 
-            var originalMainInitializer = mainModuleType.Methods.FirstOrDefault(m => m.Name == ".cctor");
-            if (originalMainInitializer is not null)
-            {
-                _logger.Verbose($"- Process main module initializer");
-
-                DemoteModuleInitializerMethodToNormalMethod(originalMainInitializer);
-            }
-
-            var newMainInitializer = new MethodDefinition(
+            var targetInitializer = new MethodDefinition(
                 ".cctor",
                 MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
-                mainModule.TypeSystem.Void
+                targetModule.TypeSystem.Void
             );
 
-            var newIl = newMainInitializer.Body.GetILProcessor();
+            var newIl = targetInitializer.Body.GetILProcessor();
 
             foreach (var moduleToMerge in modulesToMerge)
             {
@@ -108,25 +108,18 @@ namespace ILRepacking.Steps
 
                 DemoteModuleInitializerMethodToNormalMethod(subInitializer);
 
-                var call = newIl.Create(OpCodes.Call, mainModule.ImportReference(subInitializer));
+                var call = newIl.Create(OpCodes.Call, targetModule.ImportReference(subInitializer));
                 newIl.Append(call);
-            }
-
-            if (originalMainInitializer is not null)
-            {
-                _logger.Verbose($"- Process original primary module initializer of {mainModule.Assembly.Name.Name}");
-                var callOriginal = newIl.Create(OpCodes.Call, originalMainInitializer);
-                newIl.Append(callOriginal);
             }
 
             newIl.Append(newIl.Create(OpCodes.Ret));
 
-            mainModuleType.Methods.Add(newMainInitializer);
+            targetModuleType.Methods.Add(targetInitializer);
         }
 
         private void DemoteModuleInitializerMethodToNormalMethod(MethodDefinition initializer)
         {
-            var newName = $"{initializer.Module.Assembly.Name.Name}_ModuleInitializer";
+            var newName = $"{initializer.Module.Assembly.Name.Name}_.ModuleInitializer";
 
             _logger.Verbose($"  - Rename module initializer of '{initializer.Module.Assembly.Name.Name}' to '{newName}'");
 
