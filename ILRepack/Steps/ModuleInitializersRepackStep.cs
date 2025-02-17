@@ -17,6 +17,7 @@
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ILRepacking.Steps
@@ -44,10 +45,15 @@ namespace ILRepacking.Steps
         {
             _logger.Verbose("Processing module initializers");
 
-            var modulesToMerge = _repackContext.OtherAssemblies
+            var assemblies = _repackContext.OtherAssemblies
                 .Concat([_repackContext.PrimaryAssemblyDefinition])
-                .SelectMany(x => x.Modules)
-                .ToArray();
+                .ToHashSet();
+
+            var orderedAssemblies = TopologicalSort(assemblies);
+
+            var modulesToMerge = orderedAssemblies // dependency-assemblies should be deep-first, so the call order is deep-first
+                .SelectMany(x => x.Modules);
+
             MergeModuleInitializers(_repackContext.TargetAssemblyMainModule, modulesToMerge);
         }
 
@@ -127,6 +133,73 @@ namespace ILRepacking.Steps
             initializer.Name = newName;
             initializer.IsSpecialName = false;
             initializer.IsRuntimeSpecialName = false;
+        }
+
+        private List<AssemblyDefinition> TopologicalSort(HashSet<AssemblyDefinition> assemblies)
+        {
+            var loadedAssemblies = assemblies.ToDictionary(a => a.Name.Name); // Ensure quick lookup
+            var visited = new HashSet<AssemblyDefinition>();
+            var deepFirstAssemblies = new List<AssemblyDefinition>(assemblies.Count);
+
+            _logger.Verbose("- Sort dependencies");
+
+            foreach (var assembly in assemblies)
+            {
+                if (DepthFirstSearch(assembly))
+                {
+                    break;
+                }
+            }
+
+            return deepFirstAssemblies;
+
+            bool DepthFirstSearch(AssemblyDefinition assembly)
+            {
+                if (!visited.Add(assembly)) // already visited
+                    return false;
+
+                foreach (var reference in assembly.MainModule.AssemblyReferences)
+                {
+                    if (!loadedAssemblies.TryGetValue(reference.Name, out var referencedAsm))
+                    {
+                        try
+                        {
+                            referencedAsm = _repackContext.GlobalAssemblyResolver.Resolve(reference);
+                            loadedAssemblies[reference.Name] = referencedAsm;
+
+                            _logger.Verbose($"  - Loaded {reference.Name}");
+                        }
+                        catch
+                        {
+                            // noop
+                        }
+
+                        if (referencedAsm is null)
+                        {
+                            _logger.Verbose($"- Warning: Could not find {reference.Name}");
+                            continue;
+                        }
+                    }
+
+                    if (DepthFirstSearch(referencedAsm))
+                    {
+                        return true;
+                    }
+                }
+
+                if (assemblies.Contains(assembly))
+                {
+                    deepFirstAssemblies.Add(assembly);
+                }
+
+                // found all assemblies yet?
+                if (deepFirstAssemblies.Count == assemblies.Count)
+                {
+                    return true;
+                }
+
+                return false;
+            }
         }
     }
 }
