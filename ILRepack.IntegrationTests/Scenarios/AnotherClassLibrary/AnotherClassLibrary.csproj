@@ -23,6 +23,9 @@
     <Compile Include="ADummyUserControl.xaml.cs">
       <DependentUpon>ADummyUserControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ModuleInitializers\MakeInitialized.cs" />
+    <Compile Include="ModuleInitializers\LibraryModuleInitializer.cs" />
+    <Compile Include="ModuleInitializers\ModuleInitializerAttribute.cs" />
     <Compile Include="WpfWindowStarter.cs" />
   </ItemGroup>
   <ItemGroup>
