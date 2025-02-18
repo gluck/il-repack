@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NestedLibraryUsageInXAML": {
+      "commandName": "Project"
+    },
+    "Merged": {
+      "commandName": "Executable",
+      "executablePath": "$(TargetDir)merged\\NestedLibraryUsageInXAML.exe"
+    }
+  }
+}

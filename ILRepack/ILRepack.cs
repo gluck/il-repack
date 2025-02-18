@@ -419,6 +419,7 @@ namespace ILRepacking
                 {
                     signingStep,
                     new ReferencesRepackStep(Logger, this, Options),
+                    new ModuleInitializersRepackStep(Logger, this, Options),
                     new TypesRepackStep(Logger, this, _repackImporter, Options),
                     new ILLinkFileMergeStep(Logger, this, Options),
                     new ResourcesRepackStep(Logger, this, Options),

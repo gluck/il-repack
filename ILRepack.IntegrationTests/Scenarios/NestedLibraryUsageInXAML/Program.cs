@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Windows;
 
 namespace NestedLibraryUsageInXAML
@@ -18,6 +19,21 @@ namespace NestedLibraryUsageInXAML
                 Console.WriteLine(e);
                 return 1;
             }
+        }
+
+        internal static int Counter { get; private set; }
+
+        [ModuleInitializer]
+        internal static void TheInitializer()
+        {
+            Counter++;
+            Counter *= AnotherClassLibrary.ModuleInitializers.MakeInitialized.Counter;
+        }
+
+        [ModuleInitializer]
+        internal static void TheInitializer2()
+        {
+            Counter++;
         }
     }
 }

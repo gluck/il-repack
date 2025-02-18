@@ -42,6 +42,9 @@
       <DependentUpon>DummyUserControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="GenericBasedResourceKey.cs" />
+    <Compile Include="ModuleInitializers\LibraryModuleInitializer.cs" />
+    <Compile Include="ModuleInitializers\MakeInitialized.cs" />
+    <Compile Include="ModuleInitializers\ModuleInitializerAttribute.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
