@@ -135,9 +135,26 @@ namespace ILRepacking.Steps
             initializer.IsRuntimeSpecialName = false;
         }
 
+        private Dictionary<string, AssemblyDefinition> ToDictionarySkipDuplicates(IEnumerable<AssemblyDefinition> assemblies)
+        {
+            var dict = new Dictionary<string, AssemblyDefinition>();
+            foreach (var assembly in assemblies)
+            {
+                if (!dict.ContainsKey(assembly.Name.Name))
+                {
+                    dict[assembly.Name.Name] = assembly;
+                }
+                else
+                {
+                    _logger.Verbose($"- Duplicate key found: {assembly.Name.Name} - skipping");
+                }
+            }
+            return dict;
+        }
+
         private List<AssemblyDefinition> TopologicalSort(HashSet<AssemblyDefinition> assemblies)
         {
-            var loadedAssemblies = assemblies.ToDictionary(a => a.Name.Name); // Ensure quick lookup
+            var loadedAssemblies = ToDictionarySkipDuplicates(assemblies); // Ensure quick lookup
             var visited = new HashSet<AssemblyDefinition>();
             var deepFirstAssemblies = new List<AssemblyDefinition>(assemblies.Count);
 
