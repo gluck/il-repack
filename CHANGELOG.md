@@ -1,5 +1,14 @@
 # IL Repack changelog
 
+## 2.0.38
+### Fixed
+ * PR #390 - Patch pack-uris in CLR strings
+ * PR #393 - Preserve module initializers
+
+## 2.0.37
+### Fixed
+ * PR #389 - If the renamed type already exists, use a random name
+
 ## 2.0.36
 ### Added
  * PR #381 - Add /preservetimestamp command line option
