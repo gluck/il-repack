@@ -137,19 +137,21 @@ namespace ILRepacking.Steps
 
         private Dictionary<string, AssemblyDefinition> ToDictionarySkipDuplicates(IEnumerable<AssemblyDefinition> assemblies)
         {
-            var dict = new Dictionary<string, AssemblyDefinition>();
+            var dictionary = new Dictionary<string, AssemblyDefinition>();
             foreach (var assembly in assemblies)
             {
-                if (!dict.ContainsKey(assembly.Name.Name))
+                var key = assembly.Name.Name;
+                if (!dictionary.ContainsKey(key))
                 {
-                    dict[assembly.Name.Name] = assembly;
+                    dictionary[key] = assembly;
                 }
                 else
                 {
-                    _logger.Verbose($"- Duplicate key found: {assembly.Name.Name} - skipping");
+                    _logger.Verbose($"- Duplicate key found: {key} - skipping");
                 }
             }
-            return dict;
+
+            return dictionary;
         }
 
         private List<AssemblyDefinition> TopologicalSort(HashSet<AssemblyDefinition> assemblies)
