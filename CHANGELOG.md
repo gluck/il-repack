@@ -1,5 +1,9 @@
 # IL Repack changelog
 
+## 2.0.39
+### Fixed
+ * PR #395 - fix duplicate key
+
 ## 2.0.38
 ### Fixed
  * PR #390 - Patch pack-uris in CLR strings
