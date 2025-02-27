@@ -145,7 +145,7 @@ namespace ILRepacking
                 return null;
             }
 
-            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.GetType(type.FullName);
+            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x => x.Name == type.Name && x.Namespace == type.Namespace);
             bool justCreatedType = false;
             if (nt == null)
             {
@@ -165,20 +165,23 @@ namespace ILRepacking
             else if (!type.IsPublic || internalize)
             {
                 var originalModule = _repackContext.MappingHandler.GetOriginalModule(nt);
-
+                _logger.Verbose($"- Renaming previously imported type {nt.FullName} from {originalModule.Name}");
+                
                 // rename the type previously imported.
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt, originalModule?.Mvid.ToString());
-
+                
                 //Check whether renamed type already exists
-                TypeDefinition otherNt = _repackContext.TargetAssemblyMainModule.GetType(other);
+                TypeDefinition otherNt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x => x.Name == other && x.Namespace == nt.Namespace);
                 if (otherNt != null)
                 {
+                    var otherOriginalModule = _repackContext.MappingHandler.GetOriginalModule(otherNt);
+                    _logger.Verbose($"- Collision found with type {otherNt.FullName} from {otherOriginalModule.Name}. Renaming now to a random name");
                     //Create a random name
                     other = GenerateName(nt);
                 }
 
-                _logger.Verbose("Renaming " + nt.FullName + " into " + other);
+                _logger.Verbose($"- Renaming {nt.FullName} from {originalModule.Name} into {nt.Namespace}.{other}");
                 nt.Name = other;
                 nt = CreateType(type, col, internalize, null);
                 justCreatedType = true;
