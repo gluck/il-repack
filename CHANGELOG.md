@@ -1,5 +1,13 @@
 # IL Repack changelog
 
+## 2.0.41
+### Fixed
+ * Fix TypeReferences in ScopeDebugInformation.Constants
+
+## 2.0.40
+### Fixed
+ * PR #396 - Consider namespace during collision detection
+
 ## 2.0.39
 ### Fixed
  * PR #395 - fix duplicate key
