@@ -320,6 +320,14 @@ namespace ILRepacking
             }
 
             FixReferences(scope.Import);
+
+            if (scope.HasConstants)
+            {
+                foreach (var constant in scope.Constants)
+                {
+                    constant.ConstantType = Fix(constant.ConstantType);
+                }
+            }
         }
 
         private void FixReferences(ImportDebugInformation import)
