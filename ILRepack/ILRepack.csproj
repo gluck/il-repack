@@ -5,7 +5,6 @@
     <TargetFramework>net472</TargetFramework>
     <Product>ILRepack</Product>
     <Copyright>Copyright © Francois Valdy 2011</Copyright>
-    <Version>2.0.42</Version>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
     <DebugType>embedded</DebugType>

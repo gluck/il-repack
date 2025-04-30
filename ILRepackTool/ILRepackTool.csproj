@@ -8,7 +8,6 @@
     <ToolCommandName>ilrepack</ToolCommandName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>dotnet-ilrepack</PackageId>
-    <Version>1.0.8</Version>
     <RollForward>major</RollForward>
     <DebugType>embedded</DebugType>
     <Description>ILRepack - Open-source alternative to ILMerge</Description>
