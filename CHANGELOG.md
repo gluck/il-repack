@@ -1,5 +1,9 @@
 # IL Repack changelog
 
+## 2.0.42
+### Fixed
+ * Fix #404 - Stack overflow with target framework net48 and Polly.Core
+
 ## 2.0.41
 ### Fixed
  * Fix TypeReferences in ScopeDebugInformation.Constants
