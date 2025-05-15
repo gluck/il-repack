@@ -183,7 +183,7 @@ namespace ILRepacking.Steps
                     {
                         try
                         {
-                            referencedAsm = _repackContext.GlobalAssemblyResolver.Resolve(reference);
+                            referencedAsm = _repackContext.GlobalAssemblyResolver.Resolve(reference, assembly);
                             loadedAssemblies[reference.Name] = referencedAsm;
 
                             _logger.Verbose($"  - Loaded {reference.Name}");

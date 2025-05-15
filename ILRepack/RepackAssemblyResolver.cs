@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 
@@ -17,6 +18,7 @@ namespace ILRepacking
         private bool runtimeDirectoriesInitialized;
         private Version systemRuntimeVersion;
         private static readonly Version netcoreVersionBoundary = new Version(4, 0, 10, 0);
+        private bool requestingAssemblyIsCore = false;
 
         public event AssemblyResolvedDelegate AssemblyResolved;
 
@@ -97,6 +99,24 @@ namespace ILRepacking
             return result;
         }
 
+        public AssemblyDefinition Resolve(AssemblyNameReference name, AssemblyDefinition requestingAssembly)
+        {
+            if (requestingAssembly?.CustomAttributes?.FirstOrDefault(a =>
+                a.AttributeType.Name == "TargetFrameworkAttribute") is { } targetFrameworkAttribute)
+            {
+                if (targetFrameworkAttribute.ConstructorArguments.Count > 0 &&
+                    targetFrameworkAttribute.ConstructorArguments[0].Value is string value &&
+                    value.Contains(".NETCoreApp"))
+                {
+                    requestingAssemblyIsCore = true;
+                }
+            }
+
+            var result = Resolve(name);
+            requestingAssemblyIsCore = false;
+            return result;
+        }
+
         private AssemblyDefinition RepackAssemblyResolver_ResolveFailure(object sender, AssemblyNameReference reference)
         {
             return TryResolveFromCoreFixVersion(reference);
@@ -115,6 +135,14 @@ namespace ILRepacking
             if (name.Name.Equals("Microsoft.VisualBasic", StringComparison.OrdinalIgnoreCase) && name.Version.Major <= 10)
             {
                 resolveFromCoreFirst = false;
+            }
+
+            // see https://github.com/gluck/il-repack/issues/404
+            // Provide a hint to the resolver that the calling assembly is Core, so 
+            // it should try resolving from Core first.
+            if (requestingAssemblyIsCore)
+            {
+                resolveFromCoreFirst = true;
             }
 
             // heuristic: assembly more likely to be Core after that version.
