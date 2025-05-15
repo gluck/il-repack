@@ -3,7 +3,7 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <ContinuousIntegrationBuild Condition="$(Configuration) == 'Release'">true</ContinuousIntegrationBuild>
-    <Version>2.0.42</Version>
+    <Version>2.0.43</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(Configuration) == 'Debug'">
