@@ -137,6 +137,31 @@ namespace ILRepacking
             return _repackContext.TargetAssemblyMainModule.ImportReference(reference, context);
         }
 
+        private static bool AreTypesEqualByName(TypeDefinition t1, TypeDefinition t2)
+        {
+            if (t1 == null && t2 == null)
+            {
+                return true;
+            }
+
+            if (t1 == null || t2 == null)
+            {
+                return false;
+            }
+
+            if (t1.Name != t2.Name)
+            {
+                return false;
+            }
+
+            if (t1.Namespace != t2.Namespace)
+            {
+                return false;
+            }
+
+            return AreTypesEqualByName(t1.DeclaringType, t2.DeclaringType);
+        }
+
         public TypeDefinition Import(TypeDefinition type, Collection<TypeDefinition> col, bool internalize)
         {
             _logger.Verbose("- Importing " + type);
@@ -145,7 +170,10 @@ namespace ILRepacking
                 return null;
             }
 
-            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x => x.Name == type.Name && x.Namespace == type.Namespace);
+            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x =>
+                x.Name == type.Name &&
+                x.Namespace == type.Namespace &&
+                AreTypesEqualByName(x.DeclaringType, type.DeclaringType));
             bool justCreatedType = false;
             if (nt == null)
             {
@@ -171,13 +199,16 @@ namespace ILRepacking
                 // renaming the new one before import made Cecil throw an exception.
                 string other = GenerateName(nt, originalModule?.Mvid.ToString());
                 
-                //Check whether renamed type already exists
-                TypeDefinition otherNt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x => x.Name == other && x.Namespace == nt.Namespace);
+                // Check whether renamed type already exists
+                TypeDefinition otherNt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x =>
+                    x.Name == other &&
+                    x.Namespace == nt.Namespace &&
+                    AreTypesEqualByName(x.DeclaringType, nt.DeclaringType));
                 if (otherNt != null)
                 {
                     var otherOriginalModule = _repackContext.MappingHandler.GetOriginalModule(otherNt);
                     _logger.Verbose($"- Collision found with type {otherNt.FullName} from {otherOriginalModule.Name}. Renaming now to a random name");
-                    //Create a random name
+                    // Create a random name
                     other = GenerateName(nt);
                 }
 
