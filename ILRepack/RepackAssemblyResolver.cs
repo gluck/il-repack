@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Mono.Cecil;
 
 namespace ILRepacking
@@ -79,6 +80,8 @@ namespace ILRepacking
 
         public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
         {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             string fullName = name.FullName;
             if (cache.TryGetValue(fullName, out var assembly))
             {
