@@ -170,10 +170,7 @@ namespace ILRepacking
                 return null;
             }
 
-            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x =>
-                x.Name == type.Name &&
-                x.Namespace == type.Namespace &&
-                AreTypesEqualByName(x.DeclaringType, type.DeclaringType));
+            TypeDefinition nt = _repackContext.TargetAssemblyMainModule.Types.FirstOrDefault(x => AreTypesEqualByName(x, type));
             bool justCreatedType = false;
             if (nt == null)
             {
