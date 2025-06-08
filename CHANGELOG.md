@@ -1,5 +1,12 @@
 # IL Repack changelog
 
+## 2.0.44
+ * Fix #401 - config merger
+ * PR #408 - config merger
+
+## 2.0.43
+ * Fix #405 - conflicting nested types with the same name
+
 ## 2.0.42
 ### Fixed
  * Fix #404 - Stack overflow with target framework net48 and Polly.Core
