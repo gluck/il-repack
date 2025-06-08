@@ -81,11 +81,11 @@ namespace ILRepacking
 
             var ns = "urn:schemas-microsoft-com:asm.v1";
 
-            var bindings = runtime.Elements(XName.Get("assemblyBinding", ns));
+            var bindings = runtime.Elements(XName.Get("assemblyBinding", ns)).ToArray();
 
             foreach (var binding in bindings)
             {
-                var dependents = binding.Elements(XName.Get("dependentAssembly", ns));
+                var dependents = binding.Elements(XName.Get("dependentAssembly", ns)).ToArray();
 
                 foreach (var dependent in dependents)
                 {
