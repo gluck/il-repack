@@ -46,8 +46,15 @@ namespace ILRepacking
                 validConfigFiles.RemoveAt(0);
                 foreach (var configFile in validConfigFiles)
                 {
-                    MergeElements(firstFile.Root, configFile.Root);
+                    MergeElements(firstFile.Root, configFile.Root, new());
                 }
+
+                CleanupMultipleStartups(firstFile.Root);
+
+                var mergedAssemblies = new HashSet<string>(repack.MergedAssemblies.Select(a => a.Name.Name));
+
+                CleanupRedirectedAssemblies(firstFile.Root, mergedAssemblies);
+
                 firstFile.Save(repack.Options.OutputFile + ".config");
             }
             catch (Exception e)
@@ -56,8 +63,63 @@ namespace ILRepacking
             }
         }
 
+        private static void CleanupMultipleStartups(XElement root)
+        {
+            var startups = root.Elements("startup");
+
+            foreach (var s in startups.Skip(1))
+            {
+                s.Remove();
+            }
+        }
+
+        private static void CleanupRedirectedAssemblies(XElement root, HashSet<string> mergedAssemblies)
+        {
+            var runtime = root.Element("runtime");
+            if (runtime == null)
+                return;
+
+            var ns = "urn:schemas-microsoft-com:asm.v1";
+
+            var bindings = runtime.Elements(XName.Get("assemblyBinding", ns));
+
+            foreach (var binding in bindings)
+            {
+                var dependents = binding.Elements(XName.Get("dependentAssembly", ns));
+
+                foreach (var dependent in dependents)
+                {
+                    var identity = dependent.Element(XName.Get("assemblyIdentity", ns));
+
+                    if (identity == null) continue;
+
+                    var name = identity.Attribute("name");
+
+                    if (mergedAssemblies.Contains(name.Value))
+                    {
+                        dependent.Remove();
+                    }
+                }
+
+                if (binding.Elements().Count() == 0)
+                {
+                    binding.Remove();
+                }
+            }
+        }
+
         // determine which elements we consider the same
-        private static bool AreEquivalent(XElement a, XElement b)
+        private static bool ShouldMerge(XElement a, XElement b)
+        {
+            if (a.Name == XName.Get("assemblyBinding", "urn:schemas-microsoft-com:asm.v1"))
+            {
+                return false;
+            }
+
+            return SameElement(a, b);
+        }
+
+        private static bool SameElement(XElement a, XElement b)
         {
             if (a.Name != b.Name) return false;
             if (!a.HasAttributes && !b.HasAttributes) return true;
@@ -69,13 +131,15 @@ namespace ILRepacking
         }
 
         // Merge "merged" document B into "source" A
-        private static void MergeElements(XElement parentA, XElement parentB)
+        private static void MergeElements(XElement parentA, XElement parentB, HashSet<XElement> state)
         {
             // merge per-element content from parentB into parentA
             //
-            foreach (XNode childB in parentB.DescendantNodes())
+            foreach (XNode nodeB in parentB.DescendantNodes())
             {
-                if (childB is XText) continue;
+                if (nodeB is not XElement childB) continue;
+
+                if (state.Contains(childB)) continue;
 
                 // merge childB with first equivalent childA
                 // equivalent childB1, childB2,.. will be combined
@@ -83,9 +147,9 @@ namespace ILRepacking
                 bool isMatchFound = false;
                 foreach (XElement childA in parentA.Descendants())
                 {
-                    if (AreEquivalent(childA, (XElement)childB))
+                    if (ShouldMerge(childA, childB))
                     {
-                        MergeElements(childA, (XElement)childB);
+                        MergeElements(childA, childB, state);
                         isMatchFound = true;
                         break;
                     }
@@ -93,7 +157,15 @@ namespace ILRepacking
 
                 // if there is no equivalent childA, add childB into parentA
                 //
-                if (!isMatchFound) parentA.Add(childB);
+                if (isMatchFound)
+                    return;
+
+                parentA.Add(childB);
+
+                foreach (var e in childB.DescendantsAndSelf())
+                {
+                    state.Add(e);
+                }
             }
         }
     }
