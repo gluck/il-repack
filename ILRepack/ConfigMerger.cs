@@ -67,7 +67,7 @@ namespace ILRepacking
         {
             var startups = root.Elements("startup");
 
-            foreach (var s in startups.Skip(1))
+            foreach (var s in startups.Skip(1).ToArray())
             {
                 s.Remove();
             }
@@ -101,7 +101,7 @@ namespace ILRepacking
                     }
                 }
 
-                if (binding.Elements().Count() == 0)
+                if (!binding.Elements().Any())
                 {
                     binding.Remove();
                 }
