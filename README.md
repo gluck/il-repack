@@ -4,9 +4,9 @@
 Introduction
 ============
 
-ILRepack is a tool used to merge multiple .NET assemblies into a single assembly.
+ILRepack is a tool used to merge multiple .NET Framework assemblies into a single assembly.
 
-ILRepack is a replacement for the discontinued [ILMerge](http://www.microsoft.com/downloads/details.aspx?FamilyID=22914587-B4AD-4EAE-87CF-B14AE6A939B0&displaylang=en) / [Mono.Merge](http://evain.net/blog/articles/2006/11/06/an-introduction-to-mono-merge).
+ILRepack is a replacement for the discontinued [ILMerge](https://github.com/Microsoft/ILMerge) / [Mono.Merge](http://evain.net/blog/articles/2006/11/06/an-introduction-to-mono-merge).
 
 The former being ~~closed-source~~ ([now open-sourced](https://github.com/Microsoft/ILMerge)), impossible to customize, slow, resource consuming and many more.
 The later being deprecated, unsupported, and based on an old version of Mono.Cecil.
