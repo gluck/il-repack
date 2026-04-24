@@ -4,7 +4,7 @@
 Introduction
 ============
 
-ILRepack is a tool used to merge multiple .NET Framework assemblies into a single assembly.
+ILRepack is a tool used to merge multiple .NET assemblies into a single assembly.
 
 ILRepack is a replacement for the discontinued [ILMerge](https://github.com/Microsoft/ILMerge) / [Mono.Merge](http://evain.net/blog/articles/2006/11/06/an-introduction-to-mono-merge).
 
