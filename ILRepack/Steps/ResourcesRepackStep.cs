@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2011 Francois Valdy
 // Copyright (c) 2015 Timotei Dolean
 //
@@ -17,11 +17,11 @@
 
 using ILRepacking.Steps.ResourceProcessing;
 using Mono.Cecil;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Resources;
-using System.Runtime.Serialization;
 
 namespace ILRepacking.Steps
 {
@@ -98,45 +98,59 @@ namespace ILRepacking.Steps
                     }
                     else
                     {
-                        if (!_options.AllowDuplicateResources && _targetAssemblyMainModule.Resources.Any(x => x.Name == resource.Name))
-                        {
-                            // Not much we can do about 'ikvm__META-INF!MANIFEST.MF'
-                            _logger.Warn("Ignoring duplicate resource " + resource.Name);
-                        }
-                        else
-                        {
-                            _logger.Verbose("- Importing " + resource.Name);
-                            var newResource = resource;
-                            switch (resource.ResourceType)
-                            {
-                                case ResourceType.AssemblyLinked:
-                                    // TODO
-                                    _logger.Warn("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + resource.Name);
-                                    break;
+                        var isDuplicate = !_options.AllowDuplicateResources && _targetAssemblyMainModule.Resources.Any(x => x.Name == resource.Name);
 
-                                case ResourceType.Linked:
-                                    // TODO ? (or not)
-                                    break;
+                        _logger.Verbose("- Importing " + resource.Name);
+                        var newResource = resource;
+                        switch (resource.ResourceType)
+                        {
+                            case ResourceType.AssemblyLinked:
+                                // TODO
+                                _logger.Warn("AssemblyLinkedResource reference may need to be fixed (to link to newly created assembly)" + resource.Name);
+                                break;
 
-                                case ResourceType.Embedded:
-                                    var er = (EmbeddedResource)resource;
-                                    if (er.Name.EndsWith(".resources"))
+                            case ResourceType.Linked:
+                                // TODO ? (or not)
+                                break;
+
+                            case ResourceType.Embedded:
+                                var er = (EmbeddedResource)resource;
+                                if (er.Name.EndsWith(".resources"))
+                                {
+                                    // we don't want to write the bamls to other embedded resource files
+                                    bool shouldWriteCollectedBamlStreams =
+                                        isPrimaryAssembly &&
+                                        $"{assembly.Name.Name}.g.resources".Equals(er.Name);
+
+                                    if (shouldWriteCollectedBamlStreams)
+                                        areCollectedStreamsWritten = true;
+
+                                    newResource = FixResxResource(assembly, er, assemblyProcessors,
+                                        shouldWriteCollectedBamlStreams ? bamlStreamCollector : null);
+
+                                    // .resources blobs are always merged regardless of AllowDuplicateResources —
+                                    // ResourceManager locates a resource by exact name, so two blobs with the same
+                                    // name in one assembly means the second is permanently unreachable.
+                                    var existingResx = _targetAssemblyMainModule.Resources
+                                        .FirstOrDefault(x => x.Name == resource.Name) as EmbeddedResource;
+                                    if (existingResx != null)
                                     {
-                                        // we don't want to write the bamls to other embedded resource files
-                                        bool shouldWriteCollectedBamlStreams =
-                                            isPrimaryAssembly &&
-                                            $"{assembly.Name.Name}.g.resources".Equals(er.Name);
-
-                                        if (shouldWriteCollectedBamlStreams)
-                                            areCollectedStreamsWritten = true;
-
-                                        newResource = FixResxResource(assembly, er, assemblyProcessors,
-                                            shouldWriteCollectedBamlStreams ? bamlStreamCollector : null);
+                                        _logger.Warn($"Duplicate .resources {resource.Name}, merging entries from {assembly.Name.Name}");
+                                        newResource = MergeEmbeddedResxResources(existingResx, (EmbeddedResource)newResource);
+                                        _targetAssemblyMainModule.Resources.Remove(existingResx);
+                                        isDuplicate = false;
                                     }
-                                    break;
-                            }
-                            _targetAssemblyMainModule.Resources.Add(newResource);
+                                }
+                                break;
                         }
+
+                        if (isDuplicate)
+                        {
+                            _logger.Warn($"Duplicate resource {resource.Name}, replacing with version from {assembly.Name.Name}");
+                            _targetAssemblyMainModule.Resources.Remove(
+                                _targetAssemblyMainModule.Resources.First(x => x.Name == resource.Name));
+                        }
+                        _targetAssemblyMainModule.Resources.Add(newResource);
                     }
                 }
             }
@@ -308,6 +322,81 @@ namespace ILRepacking.Steps
             var stream = new MemoryStream();
             StringArrayBinaryFormatter.Serialize(stream, sorted);
             return new EmbeddedResource(ILRepackListResourceName, ManifestResourceAttributes.Public, stream.ToArray());
+        }
+
+        private EmbeddedResource MergeEmbeddedResxResources(EmbeddedResource existing, EmbeddedResource incoming)
+        {
+            var entries = ReadResxEntries(existing);
+            var incomingEntries = ReadResxEntries(incoming);
+
+            // Fall back to last-wins for DeserializingResourceReader blobs (bugfix #277 format)
+            if (entries == null || incomingEntries == null)
+                return incoming;
+
+            foreach (var kvp in incomingEntries)
+                entries[kvp.Key] = kvp.Value;
+
+            // Pass byte[] to EmbeddedResource so GetResourceStream() returns a fresh seekable
+            // MemoryStream on each call (stream-based constructor hands ownership to the caller).
+            byte[] merged;
+            using (var output = new MemoryStream())
+            {
+                using (var rw = new ResourceWriter(output))
+                {
+                    foreach (var write in entries.Values)
+                        write(rw);
+                }  // ResourceWriter.Dispose calls Generate()
+                merged = output.ToArray();
+            }
+            return new EmbeddedResource(existing.Name, existing.Attributes, merged);
+        }
+
+        private static Dictionary<string, Action<ResourceWriter>> ReadResxEntries(EmbeddedResource er)
+        {
+            var entries = new Dictionary<string, Action<ResourceWriter>>();
+            using (var rr = new ResReader(er.GetResourceStream()))
+            {
+                // null when resMgrHeaderVersion > 1; also guard DeserializingResourceReader format
+                if (rr.ReaderType?.StartsWith("System.Resources.Extensions.DeserializingResourceReader") == true)
+                    return null;
+
+                foreach (var res in rr)
+                {
+                    var name = res.name;
+                    if (res.IsString)
+                    {
+                        var value = (string)rr.GetObject(res);
+                        entries[name] = rw => rw.AddResource(name, value);
+                    }
+                    else if (res.typeCode == (int)ResourceTypeCode.ByteArray)
+                    {
+                        var bytes = (byte[])rr.GetObject(res);
+                        entries[name] = rw => rw.AddResource(name, bytes);
+                    }
+                    else if (res.typeCode == (int)ResourceTypeCode.Stream)
+                    {
+                        // Capture bytes now; the MemoryStream returned by GetObject is tied to
+                        // the ResReader's underlying stream which is disposed after this loop.
+                        var bytes = ((MemoryStream)rr.GetObject(res)).ToArray();
+                        entries[name] = rw => rw.AddResource(name, new MemoryStream(bytes));
+                    }
+                    else if (res.typeCode > (int)ResourceTypeCode.Null &&
+                             res.typeCode < (int)ResourceTypeCode.StartOfUserTypes)
+                    {
+                        // Remaining built-in primitives: Boolean, Char, Int32, DateTime, etc.
+                        var value = rr.GetObject(res);
+                        entries[name] = rw => rw.AddResource(name, value);
+                    }
+                    else
+                    {
+                        // User-defined types: type is a real CLR assembly-qualified name.
+                        var type = res.type;
+                        var data = res.data;
+                        entries[name] = rw => rw.AddResourceData(name, type, data);
+                    }
+                }
+            }
+            return entries;
         }
     }
 }
