@@ -1,5 +1,8 @@
 # IL Repack changelog
 
+## 2.0.45
+ * PR #421 - merge resources with the same name
+
 ## 2.0.44
  * Fix #401 - config merger
  * PR #408 - config merger
