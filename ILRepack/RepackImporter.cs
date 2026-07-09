@@ -318,7 +318,7 @@ namespace ILRepacking
         /// </summary>
         private void CloneTo(FieldDefinition field, TypeDefinition nt)
         {
-            if (nt.Fields.Any(x => x.Name == field.Name))
+            if (nt.Fields.Any(x => x.Name == field.Name && x.FieldType.FullName == field.FieldType.FullName))
             {
                 return;
             }
