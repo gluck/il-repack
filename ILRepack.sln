@@ -56,6 +56,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cecil", "Cecil", "{3C913262
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFPackUrisInClrStringsApplicationCore", "ILRepack.IntegrationTests\Scenarios\WPFPackUrisInClrStringsApplicationCore\WPFPackUrisInClrStringsApplicationCore.csproj", "{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryDuplicateFieldNames", "ILRepack.IntegrationTests\Scenarios\LibraryDuplicateFieldNames\LibraryDuplicateFieldNames.csproj", "{EE1C3C00-B0B9-6264-94E4-77F5713E4A15}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -142,6 +144,10 @@ Global
 		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE1C3C00-B0B9-6264-94E4-77F5713E4A15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE1C3C00-B0B9-6264-94E4-77F5713E4A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE1C3C00-B0B9-6264-94E4-77F5713E4A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE1C3C00-B0B9-6264-94E4-77F5713E4A15}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -163,6 +169,7 @@ Global
 		{13529DEB-9921-4FD0-B50D-F202B9500F53} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
 		{2FD46DD0-A43E-4DFC-AE1F-E587141FC227} = {3C913262-6FDC-43C2-9BC5-054A4016FE2E}
 		{3A114A93-FC8C-4C84-ADA6-F4E84BAEC443} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
+		{EE1C3C00-B0B9-6264-94E4-77F5713E4A15} = {04819B25-ABEA-46F7-90D5-149C8304F67F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {54C7CB02-6231-428F-BBD0-113CC9852908}
