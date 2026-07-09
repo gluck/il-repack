@@ -14,6 +14,7 @@
 //   limitations under the License.
 //
 
+using ILRepacking.Mixins;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -71,7 +72,10 @@ namespace ILRepacking
             field.DeclaringType = Fix(field.DeclaringType);
             if (field.DeclaringType.IsDefinition && !field.IsDefinition)
             {
-                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.FirstOrDefault(x => x.Name == field.Name && x.FieldType.FullName == field.FieldType.FullName);
+                var matches = ((TypeDefinition)field.DeclaringType).Fields.Where(f => f.Name == field.Name).ToList();
+                FieldDefinition def = matches.Count > 1 ?
+                                      matches.FirstOrDefault(f => f.FieldType.FullName == field.FieldType.FullName) :
+                                      matches.FirstOrDefault();
                 if (def == null)
                     throw new NullReferenceException("Field \"" + field + "\" with field type \"" + field.FieldType + "\" not found in type \"" + field.DeclaringType + "\".");
                 return def;
@@ -546,7 +550,7 @@ namespace ILRepacking
                                      ? method.ReturnType
                                      : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
                 // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
-                string text = 
+                string text =
 @$"Method reference is used with definition return type / parameter.
 Indicates a likely invalid set of assemblies, consider one of the following:
  - Remove the assembly defining {culprit} from the merge
