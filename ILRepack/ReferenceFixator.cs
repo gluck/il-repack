@@ -71,7 +71,7 @@ namespace ILRepacking
             field.DeclaringType = Fix(field.DeclaringType);
             if (field.DeclaringType.IsDefinition && !field.IsDefinition)
             {
-                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.FirstOrDefault(x => x.Name == field.Name);
+                FieldDefinition def = ((TypeDefinition)field.DeclaringType).Fields.FirstOrDefault(x => x.Name == field.Name && x.FieldType.FullName == field.FieldType.FullName);
                 if (def == null)
                     throw new NullReferenceException("Field \"" + field + "\" not found in type \"" + field.DeclaringType + "\".");
                 return def;
