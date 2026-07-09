@@ -19,9 +19,6 @@
     <None Include="$(MSBuildThisFileDirectory)ILRepack.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
     <ProjectReference Include="..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
@@ -48,6 +45,7 @@
   </Target>
 
   <Target Name="MakeStandaloneILRepack"
+      Condition="'$(TargetFramework)' == 'net472'"
       DependsOnTargets="PrepareNupkgInfo"
       Inputs="$(TargetPath);$(OutDir)Mono.Cecil.dll;$(MSBuildThisFileFullPath)"
       Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
@@ -69,7 +67,7 @@
   <Target Name="PackNuGet"
       AfterTargets="Build"
       DependsOnTargets="MakeStandaloneILRepack"
-      Condition="$(Configuration) == 'Release'"
+      Condition="$(Configuration) == 'Release' AND '$(TargetFramework)' == 'net472'"
       Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(ILRepackNuspecPath);$(ILRepackLibNuspecPath);$(MSBuildThisFileFullPath)"
       Outputs="$(ILRepackNupkgPath);$(ILRepackLibNupkgPath)">
     <PackTask
