@@ -549,7 +549,7 @@ namespace ILRepacking
                                      ? method.ReturnType
                                      : method.Parameters.First(x => x.ParameterType.IsDefinition).ParameterType;
                 // warn about invalid merge assembly set, as this method is not gonna work fine (peverify would warn as well)
-                string text =
+                string text = 
 @$"Method reference is used with definition return type / parameter.
 Indicates a likely invalid set of assemblies, consider one of the following:
  - Remove the assembly defining {culprit} from the merge
