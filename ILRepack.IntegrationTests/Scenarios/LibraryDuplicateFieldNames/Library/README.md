@@ -29,6 +29,18 @@ namespace Library
             {
                 throw new InvalidOperationException("Unexpected number of fields.");
             }
+            if (test1 != "changed")
+            {
+                throw new InvalidOperationException($"Unexpected string value: {test1}");
+            }
+            if (test2 != 42)
+            {
+                throw new InvalidOperationException($"Unexpected int value: {test2}");
+            }
+            if (test3 != 3.1415)
+            {
+                throw new InvalidOperationException($"Unexpected double value: {test3}");
+            }
         }
     }
 }
