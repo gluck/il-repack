@@ -72,6 +72,12 @@ namespace ILRepack.IntegrationTests
             RunScenario("WPFPackUrisInClrStringsApplicationCore");
         }
 
+        [Test]
+        public void GivenLibraryDuplicateFieldNames_MergedApplicationRunsSuccessfully()
+        {
+            RunScenario("LibraryDuplicateFieldNames");
+        }
+
         private void RunScenario(string scenarioName)
         {
             string scenarioExecutable = GetScenarioExecutable(scenarioName);
