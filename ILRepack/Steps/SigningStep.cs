@@ -17,6 +17,7 @@ using Mono.Cecil;
 using System;
 using System.IO;
 using System.Reflection;
+#pragma warning disable SYSLIB0017 // StrongNameKeyPair is obsolete on modern .NET; kept for net472 key-container support
 
 namespace ILRepacking.Steps
 {

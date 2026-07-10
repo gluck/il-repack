@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -95,17 +94,6 @@ namespace ILRepack.IntegrationTests.Peverify
                 return Observable.Empty<string>();
             }
             ).Distinct();
-        }
-
-        private static string FindRegistryValueUnderKey(string registryBaseKeyName, string registryKeyName, RegistryView registryView)
-        {
-            using (RegistryKey registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-            {
-                using (RegistryKey registryKey2 = registryKey.OpenSubKey(registryBaseKeyName))
-                {
-                    return registryKey2?.GetValue(registryKeyName)?.ToString() ?? string.Empty;
-                }
-            }
         }
 
     }

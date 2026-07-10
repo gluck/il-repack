@@ -340,7 +340,9 @@ namespace TinyJson
 
         static object ParseObject(Type type, string json)
         {
+#pragma warning disable SYSLIB0050 // FormatterServices.GetUninitializedObject is obsolete
             object instance = FormatterServices.GetUninitializedObject(type);
+#pragma warning restore SYSLIB0050
 
             //The list is split into key/value pairs only, this means the split must be divisible by 2 to be valid JSON
             List<string> elems = Split(json);

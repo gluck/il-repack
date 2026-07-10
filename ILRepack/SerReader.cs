@@ -340,7 +340,9 @@ namespace ILRepacking
 
         public string Name;
         public List<MemberInfo> Members;
+#pragma warning disable CS0649 // read by the deserializer pattern; kept for format completeness
         public int ReferenceCount;
+#pragma warning restore CS0649
     }
 
     internal class MemberInfo : TypeHoldingThing, ValueHoldingThing
@@ -357,7 +359,9 @@ namespace ILRepacking
     internal class ClassTypeInfo
     {
         public string TypeName;
+#pragma warning disable CS0649 // read by the deserializer pattern; kept for format completeness
         public int? LibraryID;
+#pragma warning restore CS0649
     }
 
     internal class ObjectString : ObjectWithId
