@@ -1,5 +1,10 @@
 # IL Repack changelog
 
+## 2.0.46
+ * PR #424 - disambiguate same-name fields by type
+ * PR #425 - add integration test
+ * PR #426 - target netstandard2.0 and net10.0 in ILRepack.Lib
+
 ## 2.0.45
  * PR #421 - merge resources with the same name
 
