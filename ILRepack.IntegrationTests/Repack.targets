@@ -19,8 +19,10 @@
     <MakeDir Directories="$(TargetDir)merged" />
     <PropertyGroup>
       <ILRepackVerboseArgument Condition="$(ILRepackVerbose) == true"> /verbose</ILRepackVerboseArgument>
+      <!-- On net10.0+ the ProjectReference resolves to ILRepack.dll, which must be run through the dotnet host. -->
+      <ILRepackHostPrefix Condition="'%(ILRepackExe.Extension)' == '.dll'">dotnet </ILRepackHostPrefix>
     </PropertyGroup>
-    <Exec Command="&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs)$(ILRepackVerboseArgument) /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) @(ILRepackInput->'%(Filename)%(Extension)', ' ')"
+    <Exec Command="$(ILRepackHostPrefix)&quot;@(ILRepackExe)&quot; $(ILRepackExtraArgs)$(ILRepackVerboseArgument) /log /out:$(TargetDir)merged\$(TargetFileName) $(TargetFileName) @(ILRepackInput->'%(Filename)%(Extension)', ' ')"
         WorkingDirectory="$(TargetDir)"
         ConsoleToMSBuild="True" />
     <Copy Condition="Exists('$(ProjectRuntimeConfigFilePath)')"
