@@ -47,7 +47,7 @@ namespace ILRepacking.Steps.ResourceProcessing
         {
             BamlDocument bamlDocument = BamlUtils.FromResourceBytes(resource.data);
 
-            foreach (dynamic node in bamlDocument)
+            foreach (BamlRecord node in bamlDocument)
             {
                 ProcessRecord(node, containingAssembly);
             }
@@ -133,6 +133,15 @@ namespace ILRepacking.Steps.ResourceProcessing
 
         private void ProcessRecord(BamlRecord record, AssemblyDefinition containingAssembly)
         {
+            switch (record)
+            {
+                case PropertyWithConverterRecord r: ProcessRecord(r, containingAssembly); break;
+                case TextWithConverterRecord r: ProcessRecord(r, containingAssembly); break;
+                case AssemblyInfoRecord r: ProcessRecord(r, containingAssembly); break;
+                case PIMappingRecord r: ProcessRecord(r, containingAssembly); break;
+                case XmlnsPropertyRecord r: ProcessRecord(r, containingAssembly); break;
+                case TypeInfoRecord r: ProcessRecord(r, containingAssembly); break;
+            }
         }
 
         public string RemoveTypeAssemblyInformation(string fullTypeName)

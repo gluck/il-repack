@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>ILRepacking</RootNamespace>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net472;netstandard2.0;net10.0</TargetFrameworks>
     <Product>ILRepack</Product>
     <Copyright>Copyright © Francois Valdy 2011</Copyright>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
@@ -10,6 +10,9 @@
     <DebugType>embedded</DebugType>
     <!-- Generated NuGet package doesn't have the target framework dependency, and we're OK with that -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- netstandard2.0 libraries don't copy NuGet package assets (Fasterflect, BamlParser)
+         to the output dir by default; the repack step needs them next to the target. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <None Include="ILRepack.snk" CopyToOutputDirectory="PreserveNewest" />
@@ -19,16 +22,13 @@
     <None Include="$(MSBuildThisFileDirectory)ILRepack.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
     <ProjectReference Include="..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BamlParser" Version="1.0.1" />
-    <PackageReference Include="fasterflect" Version="2.1.3" />
+    <PackageReference Include="fasterflect" Version="2.1.3" NoWarn="NU1701" />
     <PackageReference Include="SourceLink" Version="1.1.0" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
@@ -39,56 +39,65 @@
     <PropertyGroup>
       <ILRepackNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.nuspec</ILRepackNuspecPath>
       <ILRepackLibNuspecPath>$(MSBuildThisFileDirectory)..\ILRepack.Lib.nuspec</ILRepackLibNuspecPath>
-      <ILRepackNupkgPath>$(OutDir)ILRepack.$(Version).nupkg</ILRepackNupkgPath>
-      <ILRepackLibNupkgPath>$(OutDir)ILRepack.Lib.$(Version).nupkg</ILRepackLibNupkgPath>
-      <StandaloneILRepackExe>$(OutDir)Repacked\ILRepack.exe</StandaloneILRepackExe>
-      <StandaloneILRepackDll>$(OutDir)Repacked\ILRepack.dll</StandaloneILRepackDll>
-      <DependencyDllList>ILRepack.exe Fasterflect.dll BamlParser.dll Mono.Cecil.dll Mono.Cecil.Mdb.dll Mono.Cecil.Pdb.dll</DependencyDllList>
+      <RepackOutDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\</RepackOutDir>
+      <DependencyDllList>$(TargetFileName) Fasterflect.dll BamlParser.dll Mono.Cecil.dll Mono.Cecil.Mdb.dll Mono.Cecil.Pdb.dll</DependencyDllList>
     </PropertyGroup>
   </Target>
 
+  <!-- Produce the standalone (repacked) ILRepack for every target framework.
+       net472 yields ILRepack.exe (also copied to ILRepack.dll for the Lib package);
+       the .dll-based TFMs (netstandard2.0, net10.0) are hosted through 'dotnet'. -->
   <Target Name="MakeStandaloneILRepack"
+      AfterTargets="Build"
+      Condition="'$(TargetFramework)' != ''"
       DependsOnTargets="PrepareNupkgInfo"
       Inputs="$(TargetPath);$(OutDir)Mono.Cecil.dll;$(MSBuildThisFileFullPath)"
-      Outputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll)">
+      Outputs="$(OutDir)Repacked\$(TargetFileName)">
     <MakeDir Directories="$(OutDir)Repacked" />
     <PropertyGroup>
-      <DotnetExePrefix Condition="!$([MSBuild]::IsOSPlatform('windows'))">mono </DotnetExePrefix>
+      <ILRepackHostPrefix Condition="'$(TargetExt)' == '.dll'">dotnet </ILRepackHostPrefix>
+      <ILRepackHostPrefix Condition="'$(TargetExt)' != '.dll' AND !$([MSBuild]::IsOSPlatform('windows'))">mono </ILRepackHostPrefix>
       <UseKeyFile Condition="$([MSBuild]::IsOSPlatform('windows'))">/keyfile:ILRepack.snk </UseKeyFile>
     </PropertyGroup>
     <Exec
-        Command="$(DotnetExePrefix)&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) $(UseKeyFile)/out:Repacked/ILRepack.exe $(DependencyDllList)" 
+        Command="$(ILRepackHostPrefix)&quot;$(TargetPath)&quot; /log /wildcards /internalize /ver:$(AssemblyVersion) $(UseKeyFile)/out:Repacked/$(TargetFileName) $(DependencyDllList)"
         WorkingDirectory="$(OutDir)"
         ConsoleToMSBuild="True" />
-    <Copy 
-        SourceFiles="$(OutDir)Repacked\ILRepack.exe" 
+    <Copy
+        Condition="'$(TargetExt)' == '.exe'"
+        SourceFiles="$(OutDir)Repacked\$(TargetFileName)"
         DestinationFiles="$(OutDir)Repacked\ILRepack.dll"
         SkipUnchangedFiles="True" />
   </Target>
 
+  <!-- Pack once, in the outer (TargetFramework-less) build, after every inner build has
+       produced its repacked output. ILRepack ships the net472 exe only (unchanged);
+       ILRepack.Lib ships the repacked library for every target framework. -->
   <Target Name="PackNuGet"
       AfterTargets="Build"
-      DependsOnTargets="MakeStandaloneILRepack"
-      Condition="$(Configuration) == 'Release'"
-      Inputs="$(StandaloneILRepackExe);$(StandaloneILRepackDll);$(ILRepackNuspecPath);$(ILRepackLibNuspecPath);$(MSBuildThisFileFullPath)"
-      Outputs="$(ILRepackNupkgPath);$(ILRepackLibNupkgPath)">
+      DependsOnTargets="PrepareNupkgInfo"
+      Condition="'$(Configuration)' == 'Release' AND '$(TargetFramework)' == ''"
+      Inputs="$(RepackOutDir)net472\Repacked\ILRepack.exe;$(RepackOutDir)netstandard2.0\Repacked\ILRepack.dll;$(RepackOutDir)net10.0\Repacked\ILRepack.dll;$(ILRepackNuspecPath);$(ILRepackLibNuspecPath);$(MSBuildThisFileFullPath)"
+      Outputs="$(RepackOutDir)net472\ILRepack.$(Version).nupkg;$(RepackOutDir)net472\ILRepack.Lib.$(Version).nupkg">
     <PackTask
+        NoWarn="NU5128"
         PackItem="$(ILRepackNuspecPath)"
         NuspecFile="$(ILRepackNuspecPath)"
         NuspecProperties="version=$(Version)"
-        NuspecBasePath="$(OutDir)"
-        NuspecOutputPath="$(NuspecOutputPath)"
-        PackageOutputPath="$(OutDir)"
-        RestoreOutputPath="$(RestoreOutputPath)"
+        NuspecBasePath="$(RepackOutDir)net472"
+        NuspecOutputPath="$(MSBuildThisFileDirectory)obj\$(Configuration)"
+        PackageOutputPath="$(RepackOutDir)net472"
+        RestoreOutputPath="$(MSBuildThisFileDirectory)obj"
         SymbolPackageFormat="snupkg" />
     <PackTask
+        NoWarn="NU5128"
         PackItem="$(ILRepackLibNuspecPath)"
         NuspecProperties="version=$(Version)"
         NuspecFile="$(ILRepackLibNuspecPath)"
-        NuspecBasePath="$(OutDir)"
-        NuspecOutputPath="$(NuspecOutputPath)"
-        PackageOutputPath="$(OutDir)"
-        RestoreOutputPath="$(RestoreOutputPath)"
+        NuspecBasePath="$(RepackOutDir)net472"
+        NuspecOutputPath="$(MSBuildThisFileDirectory)obj\$(Configuration)"
+        PackageOutputPath="$(RepackOutDir)net472"
+        RestoreOutputPath="$(MSBuildThisFileDirectory)obj"
         SymbolPackageFormat="snupkg" />
   </Target>
 

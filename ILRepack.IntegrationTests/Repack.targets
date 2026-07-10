@@ -1,7 +1,7 @@
 <Project>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\ILRepack\ILRepack.csproj" ReferenceOutputAssembly="false" OutputItemType="ILRepackExe" />
+    <ProjectReference Include="..\..\..\ILRepack\ILRepack.csproj" ReferenceOutputAssembly="false" OutputItemType="ILRepackExe" SetTargetFramework="TargetFramework=net472" />
   </ItemGroup>
 
   <Target Name="GatherInputs">

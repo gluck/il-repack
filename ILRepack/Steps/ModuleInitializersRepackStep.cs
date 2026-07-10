@@ -45,9 +45,8 @@ namespace ILRepacking.Steps
         {
             _logger.Verbose("Processing module initializers");
 
-            var assemblies = _repackContext.OtherAssemblies
-                .Concat([_repackContext.PrimaryAssemblyDefinition])
-                .ToHashSet();
+            var assemblies = new HashSet<AssemblyDefinition>(_repackContext.OtherAssemblies
+                .Concat([_repackContext.PrimaryAssemblyDefinition]));
 
             var orderedAssemblies = TopologicalSort(assemblies);
 
