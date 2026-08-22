@@ -1,5 +1,8 @@
 # IL Repack changelog
 
+## 2.0.47
+ * Fix #428 - Portable PDB parent import scopes can produce TypeRefs with invalid AssemblyRef
+
 ## 2.0.46
  * PR #424 - disambiguate same-name fields by type
  * PR #425 - add integration test
