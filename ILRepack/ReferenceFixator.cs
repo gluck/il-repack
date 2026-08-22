@@ -335,7 +335,16 @@ namespace ILRepacking
 
         private void FixReferences(ImportDebugInformation import)
         {
-            if (import == null || !import.HasTargets)
+            if (import == null)
+            {
+                return;
+            }
+
+            // Portable PDB import scopes form a parent chain; fix the whole chain,
+            // otherwise aliases stored in parent scopes keep referencing removed AssemblyRef rows.
+            FixReferences(import.Parent);
+
+            if (!import.HasTargets)
             {
                 return;
             }
