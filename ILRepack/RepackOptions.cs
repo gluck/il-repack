@@ -29,10 +29,10 @@ namespace ILRepacking
         public bool DelaySign { get; set; }
 
         /// <summary>
-        /// Gets or sets a file that contains one regex per line to compare against 
+        /// Gets or sets a file that contains one regex per line to compare against
         /// FullName of types NOT to internalize. The items will replace the contents of
         /// <see cref="ExcludeInternalizeMatches" />. This option only has an effect if
-        /// <see cref="Internalize"/> is set to true. 
+        /// <see cref="Internalize"/> is set to true.
         /// </summary>
         public string ExcludeFile
         {
@@ -88,8 +88,14 @@ namespace ILRepacking
         public bool LineIndexation { get; set; }
 
         /// <summary>
-        /// If Internalize is set to true, any which match these 
-        /// regular expressions will not be internalized. 
+        /// Re-point merged System.Resources.Extensions resources at the output assembly, so that it does
+        /// not need a System.Resources.Extensions.dll beside it. Requires that assembly to be an input.
+        /// </summary>
+        public bool SelfContainedResources { get; set; }
+
+        /// <summary>
+        /// If Internalize is set to true, any which match these
+        /// regular expressions will not be internalized.
         /// If internalize is false, then this property is ignored.
         /// </summary>
         public List<Regex> ExcludeInternalizeMatches
@@ -267,6 +273,7 @@ namespace ILRepacking
             XmlDocumentation = cmd.Modifier("xmldocs");
             NoRepackRes = cmd.Modifier("norepackres");
             KeepOtherVersionReferences = cmd.Modifier("keepotherversionreferences");
+            SelfContainedResources = cmd.Modifier("selfcontainedresources");
 
             SearchDirectories = cmd
                 .Options("lib")
@@ -311,7 +318,7 @@ namespace ILRepacking
 
             if (RenameInternalized && !Internalize)
                 throw new InvalidOperationException("Option 'renameInternalized' is only valid with 'internalize'.");
-            
+
             if (string.IsNullOrEmpty(OutputFile))
                 throw new ArgumentException("No output file given.");
 

@@ -146,6 +146,8 @@ Syntax: ILRepack.exe [Options] /out:<path> <path_to_primary> [<other_assemblies>
  - /allowduplicateresources 
                       allows to duplicate resources in output assembly (by default they're ignored)
  - /noRepackRes       do not add the resource '{ResourcesRepackStep.ILRepackListResourceName}' with all merged assembly names
+ - /selfcontainedresources
+                      make merged System.Resources.Extensions resources work without its DLL beside the output
 
  - /copyattrs         copy assembly attributes (by default only the primary assembly attributes are copied)
  - /attr:<path>       take assembly attributes from the given assembly file
