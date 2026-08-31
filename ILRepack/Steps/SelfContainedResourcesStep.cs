@@ -167,8 +167,23 @@ namespace ILRepacking.Steps
                 if (!embedded.Name.EndsWith(".resources", StringComparison.Ordinal))
                     continue;
 
-                var patched = PatchResourceHeader(
-                    embedded.GetResourceData(), targetQualifier, mergedAssemblyNames, targetTypeNames);
+                var resourceData = embedded.GetResourceData();
+                // GetResourceData consumes a stream-backed resource's stream, and Cecil's second read
+                // at write time would produce all zeros - re-anchor the resource to the bytes just read.
+                resources[i] = embedded = new EmbeddedResource(embedded.Name, embedded.Attributes, resourceData);
+
+                byte[] patched;
+                try
+                {
+                    patched = PatchResourceHeader(
+                        resourceData, targetQualifier, mergedAssemblyNames, targetTypeNames);
+                }
+                catch (Exception exception)
+                {
+                    // a malformed .resources blob must not abort the merge
+                    _logger.Warn($"Could not parse resource '{embedded.Name}', leaving it unpatched: {exception.Message}");
+                    continue;
+                }
                 if (patched == null)
                     continue;
 
@@ -185,24 +200,6 @@ namespace ILRepacking.Steps
         /// which moves everything after them, so the header size, the 8-byte alignment padding in front
         /// of the name hash table and the absolute data section offset all have to be recomputed.
         /// </summary>
-        internal static byte[] PatchResourceHeader(byte[] bytes, string targetQualifier)
-        {
-            return PatchResourceHeader(
-                bytes,
-                targetQualifier,
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                new HashSet<string>(StringComparer.Ordinal));
-        }
-
-        internal static byte[] PatchResourceHeader(byte[] bytes, string targetQualifier, ISet<string> mergedAssemblyNames)
-        {
-            return PatchResourceHeader(
-                bytes,
-                targetQualifier,
-                mergedAssemblyNames,
-                new HashSet<string>(StringComparer.Ordinal));
-        }
-
         internal static byte[] PatchResourceHeader(
             byte[] bytes,
             string targetQualifier,
@@ -255,7 +252,9 @@ namespace ILRepacking.Steps
                     foreach (var typeName in typeNames)
                         writer.Write(typeName);
                     writer.Flush();
-                    writer.Write(new byte[(8 - (output.Position & 7)) & 7]);
+                    int padding = (int)((8 - (output.Position & 7)) & 7);
+                    for (int i = 0; i < padding; i++)
+                        writer.Write((byte)"PAD"[i % 3]); // same filler ResourceWriter uses
                     writer.Flush();
 
                     int shift = (int)(output.Position - afterAlignment);
@@ -282,26 +281,45 @@ namespace ILRepacking.Steps
             if (string.IsNullOrEmpty(value))
                 return value;
 
-            var separatorIndex = value.IndexOf(", ", StringComparison.Ordinal);
+            var separatorIndex = FindAssemblySeparator(value);
             var typeName = separatorIndex < 0 ? value : value.Substring(0, separatorIndex);
+
+            // A type the merge brought into the target wins even when the entry names an assembly that
+            // was not merged: the entry may use an old identity (e.g. System.Drawing) that merely
+            // type-forwards into an assembly that was merged (e.g. System.Drawing.Common).
             if (targetTypeNames != null && targetTypeNames.Contains(typeName))
                 return typeName + ", " + targetQualifier;
 
-            if (mergedAssemblyNames == null || mergedAssemblyNames.Count == 0)
+            if (separatorIndex < 0)
                 return value;
 
-            foreach (var assemblyName in mergedAssemblyNames)
-            {
-                var marker = ", " + assemblyName;
-                var markerIndex = value.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                if (markerIndex < 0)
-                    continue;
-                var afterMarker = markerIndex + marker.Length;
-                if (afterMarker == value.Length || value[afterMarker] == ',')
-                    return value.Substring(0, markerIndex + 2) + targetQualifier;
-            }
+            var assemblySpec = value.Substring(separatorIndex + 1).TrimStart();
+            var assemblyNameEnd = assemblySpec.IndexOf(',');
+            var assemblyName = (assemblyNameEnd < 0 ? assemblySpec : assemblySpec.Substring(0, assemblyNameEnd)).TrimEnd();
+            if (mergedAssemblyNames != null && mergedAssemblyNames.Contains(assemblyName))
+                return typeName + ", " + targetQualifier;
 
             return value;
+        }
+
+        /// <summary>
+        /// Returns the index of the comma separating the type name from its assembly qualifier,
+        /// ignoring commas nested in generic argument brackets, or -1 for an unqualified name.
+        /// </summary>
+        private static int FindAssemblySeparator(string value)
+        {
+            int depth = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c == '[')
+                    depth++;
+                else if (c == ']')
+                    depth--;
+                else if (c == ',' && depth == 0)
+                    return i;
+            }
+            return -1;
         }
 
         private static int MeasurePrefixedStrings(params string[] values)
