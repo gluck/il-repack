@@ -78,11 +78,52 @@ namespace ILRepack.IntegrationTests
             RunScenario("LibraryDuplicateFieldNames");
         }
 
-        private void RunScenario(string scenarioName)
+        [TestCase("Sre8", "SystemResourcesExtensions.Sre8", "net472")]
+        [TestCase("Sre8", "SystemResourcesExtensions.Sre8", "net10.0")]
+        [TestCase("Sre10", "SystemResourcesExtensions.Sre10", "net472")]
+        [TestCase("Sre10", "SystemResourcesExtensions.Sre10", "net10.0")]
+        public void GivenPreserializedResources_MergedApplicationRunsWithoutSreDependencies(
+            string resourceExtensionsVersion,
+            string assemblyName,
+            string targetFramework)
         {
-            string scenarioExecutable = GetScenarioExecutable(scenarioName);
+            RunScenario(Path.Combine("SystemResourcesExtensions", resourceExtensionsVersion), assemblyName, targetFramework, assertSreDependenciesAreMerged: true);
+        }
+
+        [TestCase("Sre8", "SystemResourcesExtensions.Sre8")]
+        [TestCase("Sre10", "SystemResourcesExtensions.Sre10")]
+        public void GivenPreserializedResourcesLoadedFromPluginDirectory_MergedNet472ApplicationRunsSuccessfully(
+            string resourceExtensionsVersion,
+            string assemblyName)
+        {
+            string scenarioExecutable = GetScenarioExecutable(Path.Combine("SystemResourcesExtensions", resourceExtensionsVersion), assemblyName, "net472");
+            string hostExecutable = Path.Combine(
+                GetScenarioDirectory("SystemResourcesExtensions"),
+                "PluginHost",
+                "bin",
+                GetRunningConfiguration(),
+                "net472",
+                "PluginHost.exe");
 
             AssertFileExists(scenarioExecutable);
+            AssertFileExists(hostExecutable);
+            RunProcess("SystemResourcesExtensions plug-in", hostExecutable, '"' + scenarioExecutable + '"');
+        }
+
+        private void RunScenario(string scenarioName, string assemblyName = null, string targetFramework = null, bool assertSreDependenciesAreMerged = false)
+        {
+            string scenarioExecutable = GetScenarioExecutable(scenarioName, assemblyName, targetFramework);
+
+            AssertFileExists(scenarioExecutable);
+            if (assertSreDependenciesAreMerged)
+            {
+                string outputDirectory = Path.GetDirectoryName(scenarioExecutable);
+                var dependencyAssemblies = Directory.GetFiles(outputDirectory, "*.dll")
+                    .Where(path => !string.Equals(path, scenarioExecutable, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                Assert.That(dependencyAssemblies, Is.Empty,
+                    "The merged application must not require System.Resources.Extensions or any of its dependencies beside it.");
+            }
 
             string fileName = scenarioExecutable;
             string arguments = null;
@@ -93,6 +134,11 @@ namespace ILRepack.IntegrationTests
                 fileName = "dotnet";
             }
 
+            RunProcess(scenarioName, fileName, arguments);
+        }
+
+        private static void RunProcess(string processName, string fileName, string arguments)
+        {
             var processStartInfo = new ProcessStartInfo(fileName, arguments)
             {
                 RedirectStandardOutput = true,
@@ -103,35 +149,48 @@ namespace ILRepack.IntegrationTests
             Assert.NotNull(process);
 
             bool processEnded = process.WaitForExit(ScenarioProcessWaitTimeInMs);
-            Console.WriteLine("\nScenario '{0}' STDOUT: {1}", scenarioName, process.StandardOutput.ReadToEnd());
+            Console.WriteLine("\nScenario '{0}' STDOUT: {1}", processName, process.StandardOutput.ReadToEnd());
 
             Assert.That(processEnded, Is.True, "Process has not ended.");
             Assert.That(process.ExitCode, Is.EqualTo(0), "Process exited with error");
         }
 
-        private string GetScenarioExecutable(string scenarioName)
+        private string GetScenarioExecutable(string scenarioName, string assemblyName, string targetFramework)
         {
-            string scenariosDirectory = Path.Combine(TestContext.CurrentContext.TestDirectory, @"..\..\..\Scenarios\");
-            scenariosDirectory = Path.GetFullPath(scenariosDirectory);
-            string scenarioDirectory = Path.Combine(scenariosDirectory, scenarioName);
+            string scenarioDirectory = GetScenarioDirectory(scenarioName);
 
             var directory = Path.Combine(
                 scenarioDirectory,
                 "bin",
                 GetRunningConfiguration());
             directory = Path.GetFullPath(directory);
-            var targetFrameworks = Directory
-                .GetDirectories(directory)
-                .Where(d => Directory.Exists(Path.Combine(d, "merged")));
-            directory = targetFrameworks.FirstOrDefault();
+            if (targetFramework == null)
+            {
+                var targetFrameworks = Directory
+                    .GetDirectories(directory)
+                    .Where(d => Directory.Exists(Path.Combine(d, "merged")));
+                directory = targetFrameworks.FirstOrDefault();
+            }
+            else
+            {
+                directory = Path.Combine(directory, targetFramework);
+            }
             directory = Path.Combine(directory, "merged");
-            var filePath = Path.Combine(directory, scenarioName + ".exe");
+            assemblyName = assemblyName ?? Path.GetFileName(scenarioName);
+            var filePath = Path.Combine(directory, assemblyName + ".exe");
             if (!File.Exists(filePath))
             {
-                filePath = Path.Combine(directory, scenarioName + ".dll");
+                filePath = Path.Combine(directory, assemblyName + ".dll");
             }
 
             return filePath;
+        }
+
+        private static string GetScenarioDirectory(string scenarioName)
+        {
+            string scenariosDirectory = Path.Combine(TestContext.CurrentContext.TestDirectory, @"..\..\..\Scenarios\");
+            scenariosDirectory = Path.GetFullPath(scenariosDirectory);
+            return Path.Combine(scenariosDirectory, scenarioName);
         }
 
         private static void AssertFileExists(string filePath)

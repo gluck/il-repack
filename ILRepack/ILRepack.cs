@@ -423,6 +423,7 @@ namespace ILRepacking
                     new TypesRepackStep(Logger, this, _repackImporter, Options),
                     new ILLinkFileMergeStep(Logger, this, Options),
                     new ResourcesRepackStep(Logger, this, Options),
+                    new SelfContainedResourcesStep(Logger, this, Options),
                     new AttributesRepackStep(Logger, this, _repackImporter, Options),
                     new ReferencesFixStep(Logger, this, _repackImporter, Options),
                     new PublicTypesFixStep(Logger, this),
@@ -534,7 +535,7 @@ namespace ILRepacking
         {
             const uint Offset = 2166136261;
             const uint Prime = 16777619;
-        
+
             uint hash = Offset;
 
             unchecked
@@ -556,7 +557,7 @@ namespace ILRepacking
                 var fileName = Path.GetFileName(sourceFilePath);
                 var targetFilePath = Path.Combine(finalDirectory, fileName);
 
-                // delete the destination first if it's a hardlink, otherwise 
+                // delete the destination first if it's a hardlink, otherwise
                 // we'll accidentally overwrite the original of the hardlink
                 if (File.Exists(targetFilePath))
                 {

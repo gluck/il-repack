@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SystemResourcesExtensions.Sre8</AssemblyName>
+    <RootNamespace>SystemResourcesExtensions</RootNamespace>
+    <TargetFrameworks>net472;net10.0</TargetFrameworks>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <ILRepackExtraArgs>/selfcontainedresources</ILRepackExtraArgs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Program.cs" Link="Program.cs" />
+    <EmbeddedResource Include="..\Resources.resx" Link="Resources.resx" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.11" Condition="'$(TargetFramework)' == 'net10.0'" />
+  </ItemGroup>
+
+  <Import Project="..\..\..\Repack.targets" />
+
+</Project>

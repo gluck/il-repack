@@ -38,6 +38,14 @@ namespace ILRepack.Tests
         }
 
         [Test]
+        public void WithSelfContainedResources__GetModifier__ReturnModifier()
+        {
+            commandLine.Setup(cmd => cmd.Modifier("selfcontainedresources")).Returns(true);
+            Parse();
+            Assert.IsTrue(options.SelfContainedResources);
+        }
+
+        [Test]
         public void WithHelpModifierQuestionMark__CallShouldShowUsage__ReturnTrue()
         {
             commandLine.Setup(cmd => cmd.HasNoOptions).Returns(false);
