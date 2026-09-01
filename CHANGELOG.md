@@ -1,5 +1,8 @@
 # IL Repack changelog
 
+## 2.0.48
+ * PR #430 - support for patching System.Resources.Extensions resources
+
 ## 2.0.47
  * Fix #428 - Portable PDB parent import scopes can produce TypeRefs with invalid AssemblyRef
 
